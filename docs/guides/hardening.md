@@ -2,7 +2,7 @@
 type: Guide
 title: Reliability and operational hardening
 description: Validation gates, shutdown ownership, operational signals, and response ordering.
-version: 1
+version: 2
 ---
 
 # Reliability and operational hardening
@@ -67,7 +67,7 @@ retry an uncertain action.
 ## Shutdown ownership
 
 The counter and users examples now use
-[`examples/internal/server`](../../examples/internal/server/server.go).
+[`internal/example/server`](../../internal/example/server/server.go).
 It owns `http.Server` startup and shutdown, explicit header/idle timeouts, and
 one shutdown budget:
 

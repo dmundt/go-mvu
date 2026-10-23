@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/internal/jsonstore"
+	"github.com/dmundt/go-mvu/internal/example/jsonstore"
 	"github.com/dmundt/go-mvu/store"
 )
 

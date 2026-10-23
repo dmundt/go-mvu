@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/dmundt/go-mvu/examples/internal/jsonstore"
-	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/httpx"
+	"github.com/dmundt/go-mvu/internal/example/jsonstore"
+	"github.com/dmundt/go-mvu/internal/example/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/static"

@@ -2,7 +2,7 @@
 type: Guide
 title: HTTP middleware contracts
 description: Standard net/http composition, response lifecycle, and framework-specific HTTP policies.
-version: 7
+version: 8
 ---
 
 # HTTP middleware
@@ -110,7 +110,7 @@ Use `context.WithTimeout`, always cancel it, and do not append timeout errors
 after response commitment. The copyable
 [counter request limits](../../examples/counter/policy.go) demonstrate this.
 Other repository examples share
-[application-owned helpers](../../examples/internal/server/policy.go); these are
+[application-owned helpers](../../internal/example/server/policy.go); these are
 example code, not framework APIs.
 
 ## Cache and HTMX policy

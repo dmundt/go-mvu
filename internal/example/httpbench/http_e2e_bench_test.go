@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/internal/jsonstore"
 	"github.com/dmundt/go-mvu/html"
+	"github.com/dmundt/go-mvu/internal/example/jsonstore"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"

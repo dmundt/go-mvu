@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 9
+version: 10
 ---
 
 # Architecture
@@ -31,6 +31,7 @@ CSS inlined in `<style>`. Source of truth:
 | `web` | runtime: `Action`/route → message → Update → store → commands → view |
 | `ui` | optional app composition: document policy, secure action forms, rooted regions, typed region views, field errors |
 | `internal/arch` | boundary enforcement test |
+| `internal/example` | private example support: server lifecycle, request policy, JSON storage, and HTTP benchmarks |
 | `benchmarks` | render benchmarks vs `html/template` |
 
 The [durable example](../examples/durable/README.md) demonstrates an
@@ -40,7 +41,7 @@ store for multi-process deployments. This storage is not part of the framework.
 See [framework positioning](guides/positioning.md).
 
 Request limits, deadlines, accepted content types, and cache policy are
-application-owned. Examples share internal server helpers; the copyable counter
+application-owned. Examples share [internal server helpers](../internal/example/server/); the copyable counter
 keeps its small request wrapper locally. Framework diagnostics and
 `RecoverWith` remain supported. See
 [ADR-0025](adr/0025-application-owned-request-policy.md).
@@ -63,7 +64,9 @@ middleware → html, session, timing, httpx
 components → html, htmx, theme
 web        → mvu, html, htmx, store, theme, timing, httpx
 ui         → components, html, htmx, middleware, static, theme, validation, web
-examples   → anything
+internal/example/jsonstore → store
+internal/example/server    → httpx
+examples   → framework packages and internal/example; never other examples
 ```
 
 ```mermaid

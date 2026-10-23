@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/internal/server"
+	"github.com/dmundt/go-mvu/internal/example/server"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/web"
 )

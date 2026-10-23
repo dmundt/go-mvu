@@ -12,8 +12,10 @@ import (
 )
 
 func TestExamplesImportOnlySharedExampleHelpers(t *testing.T) {
-	for _, err := range exampleImportViolations(filepath.Join("..", "..", "examples")) {
-		t.Error(err)
+	for _, directory := range []string{"examples", filepath.Join("internal", "example")} {
+		for _, err := range exampleImportViolations(filepath.Join("..", "..", directory)) {
+			t.Error(err)
+		}
 	}
 }
 
@@ -38,8 +40,7 @@ func exampleImportViolations(root string) []error {
 		}
 		for _, spec := range file.Imports {
 			importPath := strings.Trim(spec.Path.Value, `"`)
-			if strings.HasPrefix(importPath, module+"examples/") &&
-				!strings.HasPrefix(importPath, module+"examples/internal/") {
+			if strings.HasPrefix(importPath, module+"examples/") {
 				violations = append(violations, fmt.Errorf("%s imports another example: %s", path, importPath))
 			}
 		}
@@ -49,6 +50,17 @@ func exampleImportViolations(root string) []error {
 		violations = append(violations, err)
 	}
 	return violations
+}
+
+func TestExampleImportRuleAllowsPrivateHelpers(t *testing.T) {
+	root := t.TempDir()
+	source := "package fixture\nimport _ \"" + module + "internal/example/jsonstore\"\n"
+	if err := os.WriteFile(filepath.Join(root, "main.go"), []byte(source), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if got := exampleImportViolations(root); len(got) != 0 {
+		t.Fatalf("private helper imports must be allowed: %v", got)
+	}
 }
 
 func TestExampleImportRuleIncludesNestedModulesAndTests(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/internal/server"
+	"github.com/dmundt/go-mvu/internal/example/server"
 )
 
 func TestCleanupRemainsOwnedBeyondDeadline(t *testing.T) {
