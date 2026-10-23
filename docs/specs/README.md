@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 9
+version: 10
 ---
 
 # Specs
@@ -30,8 +30,8 @@ version: 9
 | 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`), [admin workflow](../../examples/admin/) | [runtime ownership](../guides/web-runtime.md#ownership-and-guarantees), [first-app loop](../guides/first-app.md#what-runs-after-a-click), [dialog workflows](../guides/interactions.md#dialog-workflows-temporary-pages) |
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |
-| 13 | Component library | [components](../../components/), [shared](../../shared/) | [components](../guides/components.md), ADR [0009](../adr/0009-reusable-components.md), [0010](../adr/0010-shared-ui-components.md) |
-| 13.1 | Attribute passthrough | `Attrs` field on `components`, `shared` | [components](../guides/components.md#attribute-passthrough), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
+| 13 | Component library | [components](../../components/) | [components](../guides/components.md), ADR [0009](../adr/0009-reusable-components.md), [0023](../adr/0023-unified-components.md) |
+| 13.1 | Attribute passthrough | `Attrs` field on `components` | [components](../guides/components.md#attribute-passthrough), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
 | 14 | Pagination | `components.Pagination` | [components](../guides/components.md) |
 | 15 | Counter example | [examples/counter](../../examples/counter/) | — |
 | 16 | Users example | [examples/users](../../examples/users/) | — |
@@ -46,6 +46,11 @@ version: 9
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+Reusable native widgets moved from `shared` into `components`; the old package
+and aliases are removed. Markup, styles, and dependency boundaries are retained.
+See [ADR-0023](../adr/0023-unified-components.md) and
+[migration instructions](../guides/components.md#migrating-from-shared).
 
 The framework now bundles only the Open Props default theme; application-owned
 themes still implement `theme.Theme`. Bootstrap, Bulma, and Pico adapters are
@@ -78,7 +83,7 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | CSP: no unsafe-inline for script | script strict; `style-src 'unsafe-inline'` | inline CSS requirement (ADR 0012) |
 | `AppShell` | `Shell` + `AppShell` alias | backward compatibility |
 | `html.TrustedHTML` | + `html.Trusted` alias | brevity |
-| packages per §2 | + `shared`, `static`, `internal/arch`, `benchmarks`, optional `ui` | widgets, assets, enforcement, and application-level composition without widening core dependencies |
+| packages per §2 | + `static`, `internal/arch`, `benchmarks`, optional `ui` | assets, enforcement, and application-level composition without widening core dependencies; widgets live in `components` |
 | middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
 | web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
 | session dependencies | + stdlib-only `httpx` | bounded revocation-capacity event without middleware dependency |
@@ -103,10 +108,10 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | pagination `BaseURL` only | + optional `URL func(page) string` | custom routes |
 | `Runtime.Page(Result)` | + `PageFunc(func(*http.Request) Result)` | per-request result |
 | missing model → always Init | default Init; `Route.RequireModel` → 404 | explicit init policy per route |
-| `Inline`, `EmptyState`, `Checkbox`, `Textarea` in components | in `components`; `shared` keeps type aliases | backward compatibility |
+| `Inline`, `EmptyState`, `Checkbox`, `Textarea` in components | in `components`; no `shared` aliases remain | one reusable UI package (ADR 0023) |
 | `Table` plain | `Table` wrapped in `div.table-scroll` | narrow-screen overflow |
 | no generic element API | + `html.El`, `html.Attrs`, `html.Text` (§4.1) | typed low-level markup with escaping and allowlist |
-| typed fields only | + `Attrs html.Attrs` passthrough on `components` and `shared` (§13.1) | extra id/class/aria/data/hx attributes without dropping to low level |
+| typed fields only | + `Attrs html.Attrs` passthrough on `components` (§13.1) | extra id/class/aria/data/hx attributes without dropping to low level |
 | §13.1 every component has `Attrs` | Root-bearing structs generally support it; `Document`, string/slice conveniences, rootless helpers and item records are exceptions | Preserve public APIs; [guide](../guides/components.md#attribute-passthrough) lists alternatives |
 | §5 free interoperability | Retained; ordinary examples compose semantic components, two exact files demonstrate low-level APIs | Authoring discipline, not an API restriction; [ADR-0018](../adr/0018-ui-authoring-boundaries.md) |
 | §13 layout inventory | + `components.Section` with `ID`, `Children`, `Attrs` | Semantic fragment roots without raw tags; layout remains in `Stack` |

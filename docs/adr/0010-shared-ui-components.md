@@ -2,12 +2,16 @@
 type: Architecture Decision Record
 title: "ADR-0010: Separate shared UI components from core components"
 description: Separate shared UI components from the core component package.
-version: 2
+version: 3
 ---
 
 # ADR-0010: Separate shared UI components from core components
 
-- Status: Accepted
+- Status: Superseded (package separation)
+
+Package separation superseded by
+[ADR-0023](0023-unified-components.md). Widgets now live in `components`;
+native HTML, accessibility, and styling requirements remain in force.
 
 Bundled-adapter support superseded by
 [ADR-0022](0022-default-theme-and-deployment-boundaries.md).

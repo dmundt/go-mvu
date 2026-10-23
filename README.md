@@ -7,6 +7,9 @@ without JavaScript.
 
 go-mvu is not stable yet. Its API may change at any time.
 
+Reusable controls and widgets share one `components` package.
+Upgrading from `shared`? See the [migration notes](CHANGELOG.md#unreleased).
+
 ## Try it
 
 You need Go 1.24 or newer.

@@ -9,7 +9,6 @@ import (
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/shared"
 	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -124,10 +123,10 @@ func overview(model Model) html.Component {
 			},
 		),
 		components.Grid{Columns: 4, Gap: "1rem", Children: []html.Component{
-			shared.Stat{Label: "Members", Value: strconv.Itoa(len(model.Members))},
-			shared.Stat{Label: "Active accounts", Value: strconv.Itoa(active)},
-			shared.Stat{Label: "Administrators", Value: strconv.Itoa(admins)},
-			shared.Stat{Label: "Saved changes", Value: strconv.Itoa(model.Changes)},
+			components.Stat{Label: "Members", Value: strconv.Itoa(len(model.Members))},
+			components.Stat{Label: "Active accounts", Value: strconv.Itoa(active)},
+			components.Stat{Label: "Administrators", Value: strconv.Itoa(admins)},
+			components.Stat{Label: "Saved changes", Value: strconv.Itoa(model.Changes)},
 		}},
 		components.Paragraph("Overview is a snapshot. Refresh it independently after editing members."),
 	)

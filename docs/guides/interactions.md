@@ -2,7 +2,7 @@
 type: Guide
 title: Interactive applications without application JavaScript
 description: Native HTML and HTMX interaction patterns, server-owned state, and capability limits.
-version: 3
+version: 4
 ---
 
 # Interactive applications without application JavaScript
@@ -48,9 +48,9 @@ widget. Applications own endpoints, messages, validation, and authorization.
 | Autocomplete | Return server-filtered suggestions. Native `datalist` can suit simple hints; a custom combobox needs keyboard, focus, and screen-reader behavior, not merely a swapped list. |
 | Cascading forms | Country selection sends GET with selected value; server returns valid state options. Revalidate country/state pair on final submit; offer submit-to-refresh fallback. |
 | Filtering, sorting, pagination | GET links/forms encode query, sort, and page in URL; replace stable results region. `components.Pagination` supplies pagination; reset or clamp page after filters change. |
-| Tabs and master-detail | Links select server-rendered panel or detail region. `shared.Tabs` uses server-selected link navigation, not a client-local keyboard-managed tab widget. Preserve direct URLs. |
-| Accordions | `shared.Accordion` uses native `details`/`summary`; local disclosure needs no server round trip. Exclusive groups depend on browser support for `details` grouping. |
-| Dialogs and slide-over panels | Native popover plus CSS suits non-modal overlays. `shared.Dialog` is a popover with dialog semantics, not a blocking modal. A server-rendered panel alone does not provide modal focus containment or inert background behavior. |
+| Tabs and master-detail | Links select server-rendered panel or detail region. `components.Tabs` uses server-selected link navigation, not a client-local keyboard-managed tab widget. Preserve direct URLs. |
+| Accordions | `components.Accordion` uses native `details`/`summary`; local disclosure needs no server round trip. Exclusive groups depend on browser support for `details` grouping. |
+| Dialogs and slide-over panels | Native popover plus CSS suits non-modal overlays. `components.Dialog` is a popover with dialog semantics, not a blocking modal. A server-rendered panel alone does not provide modal focus containment or inert background behavior. |
 | Confirmations | `Action.Confirm` asks HTMX to show browser confirmation before request. No-HTMX or consequential workflows need a server confirmation step; confirmation is never authorization. |
 | Toasts and validation feedback | Render status/error components in response; use deliberate live-region semantics. OOB fragments can update separate status region. Keep important feedback persistent; no built-in toast lifecycle is implied. |
 | Multi-step wizards | Server stores validated progress; next/back forms return current step. Revalidate final submission and authorize every transition; hidden fields are not trusted workflow state. |
@@ -110,7 +110,7 @@ semantics or automatically open an inserted native overlay.
 
 ### Content lifecycle is not modality
 
-`shared.Dialog` renders a native popover and its trigger. It is non-modal.
+`components.Dialog` renders a native popover and its trigger. It is non-modal.
 `role="dialog"`, `aria-modal="true"`, CSS backdrops, or `<dialog open>` do not
 make background content inert or implement modal focus containment.
 
@@ -118,7 +118,7 @@ A true modal needs the browser's modal-opening behavior, normally
 `HTMLDialogElement.showModal()`, or a supported declarative browser mechanism.
 The former needs JavaScript and is not an application-script escape hatch;
 the latter needs explicit browser support, component support, and verification.
-Neither is a current `shared.Dialog` guarantee.
+Neither is a current `components.Dialog` guarantee.
 
 For no-application-JavaScript overlays, prefer an existing native popover
 shell with its own trigger and a stable inner content region. Trigger can

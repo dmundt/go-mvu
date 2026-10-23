@@ -144,7 +144,7 @@ func TestAuthoringPolicyStaysScoped(t *testing.T) {
 		{"examples/themes/another_lowlevel.go", true},
 		{"examples/counter/browser_test.go", false},
 		{"components/components.go", false},
-		{"shared/overlay.go", false},
+		{"components/widgets_overlay.go", false},
 		{"html/element.go", false},
 		{"external/app/view.go", false},
 	} {

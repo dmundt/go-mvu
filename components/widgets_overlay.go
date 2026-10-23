@@ -1,11 +1,10 @@
-package shared
+package components
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
 )
@@ -33,30 +32,30 @@ func (accordion Accordion) RenderHTML(ctx context.Context, out *html.Context) er
 		}
 	}
 	if len(accordion.Items) == 0 {
-		return errors.New("shared: accordion requires items")
+		return errors.New("components: accordion requires items")
 	}
 	open := 0
 	for index, item := range accordion.Items {
 		if item.Title == "" {
-			return fmt.Errorf("shared: accordion item %d requires title", index)
+			return fmt.Errorf("components: accordion item %d requires title", index)
 		}
 		if item.Open {
 			open++
 		}
 	}
 	if accordion.Exclusive && open > 1 {
-		return errors.New("shared: exclusive accordion allows one open item")
+		return errors.New("components: exclusive accordion allows one open item")
 	}
 	out.Static(`<div class="accordion`)
 	out.ExtraClass(accordion.Attrs)
 	out.Static(`"`)
-	optionalAttr(out, "id", accordion.ID)
+	optionalAttribute(out, "id", accordion.ID)
 	out.PassAttrs(accordion.Attrs, when(accordion.ID, "id"))
 	out.Static(">")
 	for _, item := range accordion.Items {
 		out.Static(`<details class="accordion__item"`)
 		if accordion.Exclusive {
-			attr(out, "name", accordion.ID)
+			attribute(out, "name", accordion.ID)
 		}
 		flag(out, "open", item.Open)
 		out.Static(`><summary class="accordion__trigger">`)
@@ -94,7 +93,7 @@ func (tabs Tabs) RenderHTML(ctx context.Context, out *html.Context) error {
 		return err
 	}
 	if tabs.Label == "" || len(tabs.Items) == 0 {
-		return errors.New("shared: tabs require label and items")
+		return errors.New("components: tabs require label and items")
 	}
 	seen := make(map[string]bool, len(tabs.Items))
 	for _, tab := range tabs.Items {
@@ -102,31 +101,31 @@ func (tabs Tabs) RenderHTML(ctx context.Context, out *html.Context) error {
 			return err
 		}
 		if seen[tab.ID] {
-			return fmt.Errorf("shared: duplicate tab %q", tab.ID)
+			return fmt.Errorf("components: duplicate tab %q", tab.ID)
 		}
 		seen[tab.ID] = true
 		if tab.Label == "" {
-			return fmt.Errorf("shared: tab %q requires label", tab.ID)
+			return fmt.Errorf("components: tab %q requires label", tab.ID)
 		}
 		if err := validURL(tab.URL); err != nil {
 			return err
 		}
 	}
 	if !seen[tabs.Active] {
-		return fmt.Errorf("shared: unknown active tab %q", tabs.Active)
+		return fmt.Errorf("components: unknown active tab %q", tabs.Active)
 	}
 	out.Static(`<div class="tabset`)
 	out.ExtraClass(tabs.Attrs)
 	out.Static(`"`)
-	attr(out, "id", tabs.ID)
+	attribute(out, "id", tabs.ID)
 	out.PassAttrs(tabs.Attrs, "id")
 	out.Static(`><nav class="tabset__list"`)
-	attr(out, "aria-label", tabs.Label)
+	attribute(out, "aria-label", tabs.Label)
 	out.Static(">")
 	for _, tab := range tabs.Items {
 		out.Static(`<a class="tabset__tab"`)
-		attr(out, "id", tabs.ID+"-tab-"+tab.ID)
-		attr(out, "href", tab.URL)
+		attribute(out, "id", tabs.ID+"-tab-"+tab.ID)
+		attribute(out, "href", tab.URL)
 		if tab.ID == tabs.Active {
 			out.Static(` aria-current="page"`)
 		}
@@ -144,8 +143,8 @@ func (tabs Tabs) RenderHTML(ctx context.Context, out *html.Context) error {
 		out.Static("</a>")
 	}
 	out.Static(`</nav><section class="tabset__panel"`)
-	attr(out, "id", tabs.ID+"-panel")
-	attr(out, "aria-labelledby", tabs.ID+"-tab-"+tabs.Active)
+	attribute(out, "id", tabs.ID+"-panel")
+	attribute(out, "aria-labelledby", tabs.ID+"-tab-"+tabs.Active)
 	out.Static(">")
 	out.Component(ctx, tabs.Panel)
 	out.Static("</section></div>")
@@ -158,7 +157,7 @@ type Dialog struct {
 	ID             string
 	Title          string
 	TriggerLabel   string
-	TriggerVariant components.ButtonVariant
+	TriggerVariant ButtonVariant
 	CloseLabel     string
 	Body           html.Component
 	Footer         html.Component
@@ -171,13 +170,13 @@ func (dialog Dialog) RenderHTML(ctx context.Context, out *html.Context) error {
 		return err
 	}
 	if dialog.Title == "" || dialog.TriggerLabel == "" {
-		return errors.New("shared: dialog requires title and trigger label")
+		return errors.New("components: dialog requires title and trigger label")
 	}
 	closeLabel := dialog.CloseLabel
 	if closeLabel == "" {
 		closeLabel = "Close"
 	}
-	out.Component(ctx, components.Button{
+	out.Component(ctx, Button{
 		Label:   dialog.TriggerLabel,
 		Variant: dialog.TriggerVariant,
 		Attrs:   html.Attrs{html.A("popovertarget", dialog.ID)},
@@ -185,16 +184,16 @@ func (dialog Dialog) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Static(`<div class="dialog`)
 	out.ExtraClass(dialog.Attrs)
 	out.Static(`" popover role="dialog"`)
-	attr(out, "id", dialog.ID)
-	attr(out, "aria-labelledby", dialog.ID+"-title")
+	attribute(out, "id", dialog.ID)
+	attribute(out, "aria-labelledby", dialog.ID+"-title")
 	out.PassAttrs(dialog.Attrs, "popover", "role", "id", "aria-labelledby")
 	out.Static(`><header class="dialog__header"><h2 class="dialog__title"`)
-	attr(out, "id", dialog.ID+"-title")
+	attribute(out, "id", dialog.ID+"-title")
 	out.Static(">")
 	out.Text(dialog.Title)
 	out.Static(`</h2><button type="button" class="dialog__close" popovertargetaction="hide"`)
-	attr(out, "popovertarget", dialog.ID)
-	attr(out, "aria-label", closeLabel)
+	attribute(out, "popovertarget", dialog.ID)
+	attribute(out, "aria-label", closeLabel)
 	out.Static(`><span aria-hidden="true">&times;</span></button></header><div class="dialog__body">`)
 	out.Component(ctx, dialog.Body)
 	out.Static("</div>")
@@ -223,11 +222,11 @@ type Dropdown struct {
 
 func (dropdown Dropdown) RenderHTML(_ context.Context, out *html.Context) error {
 	if dropdown.Label == "" || len(dropdown.Items) == 0 {
-		return errors.New("shared: dropdown requires label and items")
+		return errors.New("components: dropdown requires label and items")
 	}
 	for _, item := range dropdown.Items {
 		if item.Label == "" {
-			return errors.New("shared: dropdown item requires label")
+			return errors.New("components: dropdown item requires label")
 		}
 		if err := validURL(item.URL, "mailto", "tel"); err != nil {
 			return err
@@ -245,7 +244,7 @@ func (dropdown Dropdown) RenderHTML(_ context.Context, out *html.Context) error 
 	out.Static(`</summary><ul class="dropdown__menu">`)
 	for _, item := range dropdown.Items {
 		out.Static("<li><a")
-		attr(out, "href", item.URL)
+		attribute(out, "href", item.URL)
 		out.Static(">")
 		out.Text(item.Label)
 		out.Static("</a></li>")
@@ -268,16 +267,16 @@ func (tooltip Tooltip) RenderHTML(ctx context.Context, out *html.Context) error 
 		return err
 	}
 	if tooltip.Label == "" || tooltip.Content == "" {
-		return errors.New("shared: tooltip requires label and content")
+		return errors.New("components: tooltip requires label and content")
 	}
 	out.Static(`<span class="tip`)
 	out.ExtraClass(tooltip.Attrs)
 	out.Static(`"`)
 	out.PassAttrs(tooltip.Attrs)
 	out.Static(">")
-	out.Component(ctx, components.Button{
+	out.Component(ctx, Button{
 		Label:   tooltip.Label,
-		Variant: components.ButtonSecondary,
+		Variant: ButtonSecondary,
 		Attrs: html.Attrs{
 			html.A("aria-describedby", tooltip.ID),
 			html.A("aria-controls", tooltip.ID),
@@ -285,7 +284,7 @@ func (tooltip Tooltip) RenderHTML(ctx context.Context, out *html.Context) error 
 		},
 	})
 	out.Static(`<span class="tip__content" popover="auto" role="tooltip"`)
-	attr(out, "id", tooltip.ID)
+	attribute(out, "id", tooltip.ID)
 	out.Static(">")
 	out.Text(tooltip.Content)
 	out.Static("</span></span>")

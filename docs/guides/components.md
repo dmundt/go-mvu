@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 4
+version: 5
 ---
 
 # Components and pagination
@@ -20,7 +20,7 @@ local, business-specific components should stay with the application. See
 
 | Level | API | Preferred location |
 | --- | --- | --- |
-| Semantic composition | `components`, `shared`, application components | Application views |
+| Semantic composition | `components`, application components | Application views |
 | Generic HTML | `html.El`, `Attrs`, `Text` | Named low-level components; explicit escape-hatch demos |
 | Direct streaming | `Context.Static`, escaped writers, numeric writers | Framework primitives; measured hot paths; explicit low-level components |
 
@@ -284,7 +284,7 @@ Exceptions retained for compatibility:
 | `Document` | Owns document metadata/theme attributes; use typed fields and `Head`/`Body` slots. No arbitrary root passthrough. |
 | `Paragraph` (string), `HeaderRow` (slice) | Convenience APIs, no `Attrs` field. For extra attributes, encapsulate `html.El("p", ...)` in a named component, or compose `TableRow` + `TableCell`. |
 | `Text`, `Empty`, `Sequence`, `html.Optional` | No owned root element. Put attributes on the enclosing component. |
-| `Option`, `NavItem`, `Breadcrumb`, shared item records | Configuration data, not independently rendered components. Parent component owns markup. |
+| `Option`, `NavItem`, `Breadcrumb`, widget item records | Configuration data, not independently rendered components. Parent component owns markup. |
 
 Inside a low-level custom component, use the same helpers:
 
@@ -332,20 +332,20 @@ screenshots in ignored `test-results/` and an HTML report in
 `playwright-report/`. Browser automation JavaScript is test-only, never served
 to applications.
 
-## Shared UI widgets
+## Native UI widgets
 
-Optional package `shared` holds React-style widgets with native HTML, no JS.
-See [ADR-0010](../adr/0010-shared-ui-components.md). Gallery:
+The optional `components` package includes reusable widgets with native HTML,
+no application JavaScript. See [ADR-0023](../adr/0023-unified-components.md). Gallery:
 `go run .\examples\components` → `http://localhost:8083`.
 
 | Group | Components | Native basis |
 | --- | --- | --- |
 | Overlay | `Accordion`, `Tabs`, `Dialog`, `Dropdown`, `Tooltip` | `details`, native links, auto-dismiss popovers |
-| Display | `Avatar`, `Progress`, `Spinner`, `Skeleton`, `Separator`, `Kbd`, `Stat`, `Steps` (+ aliases `Inline`, `EmptyState`) | `progress`, `role=status`, `dl`, `ol` |
-| Forms | `Switch`, `RadioGroup` (+ aliases `Checkbox`, `Textarea`) | `input[role=switch]`, `fieldset`, `textarea` |
+| Display | `Avatar`, `Progress`, `Spinner`, `Skeleton`, `Separator`, `Kbd`, `Stat`, `Steps`, `Inline`, `EmptyState` | `progress`, `role=status`, `dl`, `ol` |
+| Forms | `Switch`, `RadioGroup`, `Checkbox`, `Textarea` | `input[role=switch]`, `fieldset`, `textarea` |
 
 ```go
-shared.Dialog{
+components.Dialog{
 	ID: "invite", Title: "Invite teammate", TriggerLabel: "Open dialog",
 	Body: form, Footer: actions,
 }
@@ -357,6 +357,16 @@ shared.Dialog{
   tabs; browser link keyboard behavior and full-page fallback remain native.
 - `Tooltip` uses an auto popover tied to its button with `aria-describedby`;
   native Escape and light-dismiss behavior work without application JavaScript.
+
+### Migrating from shared
+
+Replace the `github.com/dmundt/go-mvu/shared` import with
+`github.com/dmundt/go-mvu/components`, then change `shared.Widget` to
+`components.Widget`. If both imports existed, keep only `components`.
+Exported widget names and properties are unchanged, including the four
+formerly aliased controls/layouts. There is no compatibility package.
+Widget validation messages use `components:` instead of `shared:`.
+HTML, CSS classes, tokens, and `theme/default/shared.css` remain unchanged.
 
 ## Reusing application components
 

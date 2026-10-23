@@ -1,4 +1,4 @@
-package shared
+package components
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 )
 
@@ -44,7 +43,7 @@ func (toggle Switch) RenderHTML(_ context.Context, out *html.Context) error {
 type RadioGroup struct {
 	Name     string
 	Legend   string
-	Options  []components.Option
+	Options  []Option
 	Value    string
 	Required bool
 	Disabled bool
@@ -58,11 +57,11 @@ func (group RadioGroup) RenderHTML(_ context.Context, out *html.Context) error {
 		return err
 	}
 	if group.Legend == "" || len(group.Options) == 0 {
-		return errors.New("shared: radio group requires legend and options")
+		return errors.New("components: radio group requires legend and options")
 	}
 	for index, option := range group.Options {
 		if option.Label == "" {
-			return fmt.Errorf("shared: radio option %d requires label", index)
+			return fmt.Errorf("components: radio option %d requires label", index)
 		}
 	}
 	errorID := group.Name + "-error"
@@ -70,7 +69,7 @@ func (group RadioGroup) RenderHTML(_ context.Context, out *html.Context) error {
 	out.ExtraClass(group.Attrs)
 	out.Static(`"`)
 	if group.Error != "" {
-		attr(out, "aria-describedby", errorID)
+		attribute(out, "aria-describedby", errorID)
 	}
 	flag(out, "disabled", group.Disabled)
 	out.PassAttrs(group.Attrs, when(group.Error, "aria-describedby"), whenSet(group.Disabled, "disabled"))
@@ -88,31 +87,18 @@ func (group RadioGroup) RenderHTML(_ context.Context, out *html.Context) error {
 		out.Text(option.Label)
 		out.Static("</span></label>")
 	}
-	fieldError(out, errorID, group.Error)
+	controlError(out, errorID, group.Error)
 	out.Static("</fieldset>")
 	return out.Err()
-}
-
-func controlID(id, name, label string) (string, error) {
-	if id == "" {
-		id = name
-	}
-	if err := validID(id); err != nil {
-		return "", err
-	}
-	if name == "" || label == "" {
-		return "", errors.New("shared: form control requires name and label")
-	}
-	return id, nil
 }
 
 func writeChoice(out *html.Context, id, name, value string, checked, disabled bool) {
 	if value == "" {
 		value = "on"
 	}
-	attr(out, "id", id)
-	attr(out, "name", name)
-	attr(out, "value", value)
+	attribute(out, "id", id)
+	attribute(out, "name", name)
+	attribute(out, "value", value)
 	flag(out, "checked", checked)
 	flag(out, "disabled", disabled)
 }

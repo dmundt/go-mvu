@@ -30,7 +30,6 @@ var allowed = map[string][]string{
 	"httpx":              {},
 	"middleware":         {"html", "session", "timing", "httpx"},
 	"components":         {"html", "htmx", "theme"},
-	"shared":             {"components", "html", "htmx"},
 	"ui":                 {"components", "html", "htmx", "middleware", "static", "validation", "web"},
 	"web":                {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
 }

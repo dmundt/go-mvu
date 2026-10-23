@@ -1,7 +1,7 @@
 # Example rules
 
 - Demonstrate public framework APIs and keep examples runnable using `go run`.
-- Ordinary example files compose `components`, `shared`, and application
+- Ordinary example files compose `components` and application
   components. Context calls: `Component`, `Components`, `Err`, `Fail` only;
   no `html.El`, `Element`, `ComponentFunc`, raw/trusted output, or writers.
 - Explicit low-level demos live only in `themes/lowlevel.go` and
@@ -23,11 +23,10 @@
 - Cross-example helpers live in `examples/internal/` (`modepicker`); Go
   `internal` rule keeps them out of framework API. Reuse them; do not duplicate
   mode-picker forms. Single-example code stays in that example.
-  Never name a folder `shared` here (clashes with `shared/` package).
 - Layout: `main.go` = server wiring + `newHandler`; view/components in
   separate files. Lines ≤100 cols; one field per line for multi-field
   literals that would wrap.
-- `examples/components` (port 8083) is the `shared` widget gallery. Add every
-  new `shared` widget there; cover it in `main_test.go`.
+- `examples/components` (port 8083) is the component widget gallery. Add every
+  new widget there; cover it in `main_test.go`.
 - Do not terminate an existing process just to reuse an example port; use an
   available port or an isolated HTTP test server.

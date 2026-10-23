@@ -2,7 +2,7 @@
 type: Guide
 title: Themes and CSS
 description: Theme modes, design tokens, CSS integration, and theme switching.
-version: 2
+version: 3
 ---
 
 # Themes and CSS
@@ -33,7 +33,7 @@ neutral UI for business and technical apps (admin, data browsers, consoles).
 | `open-props.css` | Generated Open Props token subset (`:where(html)`) |
 | `base.css` | Palette, public tokens, structure, tables, layout |
 | `default.css` | Design system, scoped to `html[data-theme-name="default"]` |
-| `shared.css` | `shared` widget styles |
+| `shared.css` | component widget styles |
 
 Embed order: `open-props.css` → `base.css` → `default.css` → `shared.css`.
 Package stays `theme`; `default` is a Go keyword, so `theme/default/` holds

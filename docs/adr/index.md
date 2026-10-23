@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 2
+version: 3
 ---
 
 # Architecture Decision Records
@@ -19,7 +19,7 @@ version: 2
 * [ADR-0007](0007-server-controlled-themes.md) - provide server-controlled themes.
 * [ADR-0008](0008-explicit-validation.md) - decode and validate forms explicitly.
 * [ADR-0009](0009-reusable-components.md) - keep reusable components optional.
-* [ADR-0010](0010-shared-ui-components.md) - separate shared UI components.
+* [ADR-0010](0010-shared-ui-components.md) - historical package separation, superseded by ADR-0023.
 * [ADR-0011](0011-system-theme-mode.md) - use system theme mode by default.
 * [ADR-0012](0012-csp-and-local-htmx.md) - enforce strict CSP and serve HTMX locally.
 * [ADR-0013](0013-runtime-request-context.md) - provide explicit runtime request context.
@@ -32,3 +32,4 @@ version: 2
 * [ADR-0020](0020-optional-production-integrations.md) - optional CASK persistence and OIDC application wiring.
 * [ADR-0021](0021-concise-ui-composition.md) - concise layout, page, form, region, and field composition.
 * [ADR-0022](0022-default-theme-and-deployment-boundaries.md) - one bundled theme and explicit deployment boundaries.
+* [ADR-0023](0023-unified-components.md) - one reusable component package.
