@@ -4,9 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/dmundt/go-mvu/httpx"
 )
 
 // DefaultContentSecurityPolicy allows scripts only from the application
@@ -33,23 +36,45 @@ func SecurityHeaders(next http.Handler) http.Handler {
 	})
 }
 
-// Recover converts panics into 500 responses and logs them.
-func Recover(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if value := recover(); value != nil {
-				slog.ErrorContext(r.Context(), "panic", "method", r.Method,
-					"path", r.URL.Path, "request_id", RequestIDFromContext(r.Context()),
-					"panic", value)
-				http.Error(w, http.StatusText(http.StatusInternalServerError),
-					http.StatusInternalServerError)
-			}
-		}()
-		next.ServeHTTP(w, r)
-	})
+// Chain applies middleware in request order: first listed is outermost.
+func Chain(handler http.Handler, wrappers ...func(http.Handler) http.Handler) http.Handler {
+	for i := len(wrappers) - 1; i >= 0; i-- {
+		handler = wrappers[i](handler)
+	}
+	return handler
 }
 
-type requestIDKey struct{}
+// Recover converts uncommitted panics into 500 responses. Committed responses
+// are aborted, never replaced or appended to.
+func Recover(next http.Handler) http.Handler {
+	return RecoverWith(httpx.RespondError)(next)
+}
+
+func RecoverWith(onError httpx.ErrorHandler) func(http.Handler) http.Handler {
+	if onError == nil {
+		onError = httpx.RespondError
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tracked := &httpx.Writer{ResponseWriter: w}
+			defer func() {
+				if value := recover(); value != nil {
+					if value == http.ErrAbortHandler {
+						panic(value)
+					}
+					slog.ErrorContext(r.Context(), "panic", "method", r.Method,
+						"path", r.URL.Path, "request_id", RequestIDFromContext(r.Context()),
+						"panic", value)
+					if tracked.Started {
+						panic(http.ErrAbortHandler)
+					}
+					onError(w, r, fmt.Errorf("handler panic: %v", value))
+				}
+			}()
+			next.ServeHTTP(tracked, r)
+		})
+	}
+}
 
 // RequestIDHeader carries the per-request identifier in responses.
 const RequestIDHeader = "X-Request-ID"
@@ -60,43 +85,20 @@ const RequestIDHeader = "X-Request-ID"
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var raw [16]byte
-		_, _ = rand.Read(raw[:])
+		if _, err := rand.Read(raw[:]); err != nil {
+			httpx.RespondError(w, r, err)
+			return
+		}
 		id := hex.EncodeToString(raw[:])
 		w.Header().Set(RequestIDHeader, id)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDKey{}, id)))
+		next.ServeHTTP(w, r.WithContext(httpx.WithRequestID(r.Context(), id)))
 	})
 }
 
 // RequestIDFromContext returns the ID assigned by RequestID, or "".
 func RequestIDFromContext(ctx context.Context) string {
-	id, _ := ctx.Value(requestIDKey{}).(string)
-	return id
+	return httpx.RequestID(ctx)
 }
-
-type statusRecorder struct {
-	http.ResponseWriter
-	status int
-	bytes  int
-}
-
-func (w *statusRecorder) WriteHeader(status int) {
-	if w.status == 0 {
-		w.status = status
-	}
-	w.ResponseWriter.WriteHeader(status)
-}
-
-func (w *statusRecorder) Write(p []byte) (int, error) {
-	if w.status == 0 {
-		w.status = http.StatusOK
-	}
-	n, err := w.ResponseWriter.Write(p)
-	w.bytes += n
-	return n, err
-}
-
-// Unwrap lets http.ResponseController reach Flush and deadlines.
-func (w *statusRecorder) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 
 // RequestLogger logs one structured record per request. nil uses
 // slog.Default().
@@ -107,21 +109,29 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			started := time.Now()
-			recorder := &statusRecorder{ResponseWriter: w}
+			recorder := &httpx.Writer{ResponseWriter: w}
+			completed := false
+			defer func() {
+				status := recorder.Status
+				if status == 0 {
+					status = http.StatusOK
+					if !completed {
+						status = http.StatusInternalServerError
+					}
+				}
+				logger.LogAttrs(r.Context(), slog.LevelInfo, "request",
+					slog.String("method", r.Method),
+					slog.String("path", r.URL.Path),
+					slog.Int("status", status),
+					slog.Int("bytes", recorder.Bytes),
+					slog.Bool("aborted", !completed),
+					slog.Duration("duration", time.Since(started)),
+					slog.String("request_id", RequestIDFromContext(r.Context())),
+					slog.Bool("htmx", r.Header.Get("HX-Request") == "true"),
+				)
+			}()
 			next.ServeHTTP(recorder, r)
-			status := recorder.status
-			if status == 0 {
-				status = http.StatusOK
-			}
-			logger.LogAttrs(r.Context(), slog.LevelInfo, "request",
-				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
-				slog.Int("status", status),
-				slog.Int("bytes", recorder.bytes),
-				slog.Duration("duration", time.Since(started)),
-				slog.String("request_id", RequestIDFromContext(r.Context())),
-				slog.Bool("htmx", r.Header.Get("HX-Request") == "true"),
-			)
+			completed = true
 		})
 	}
 }

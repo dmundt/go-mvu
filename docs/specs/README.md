@@ -30,6 +30,7 @@
 | 17 | Validation | [validation](../../validation/) | ADR [0008](../adr/0008-explicit-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
 | 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
+| 18 extensions | HTTP policy, lifecycle, deployment middleware | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md) |
 | 19 | CSS | [theme/*.css](../../theme/), [scripts](../../scripts/) | [themes](../guides/themes.md) |
 | 20 | Testing | `*_test.go`, `scripts/themes.test.mjs` | [README](../../README.md#validation) |
 | 21 | Benchmarks | [benchmarks](../../benchmarks/) | [benchmarks](../guides/benchmarks.md) |
@@ -47,7 +48,14 @@
 | `AppShell` | `Shell` + `AppShell` alias | backward compatibility |
 | `html.TrustedHTML` | + `html.Trusted` alias | brevity |
 | packages per §2 | + `shared`, `static`, `internal/arch`, `benchmarks` | widgets, asset, enforcement |
-| middleware deps: html only | middleware → `html`, `session`, `timing` | CSRF bound to session; shared phase trace |
+| middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
+| web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
+| outermost recovery | recovery inside observers, after request ID | completion records survive panics; request ID available to recovery |
+| unspecified HTTP policies | explicit request bounds, no-store HTML, HTMX 422 opt-in | preserve streaming, error statuses, and progressive enhancement |
+| runtime transition/effect failure | commit-aware outcomes and transition policies | distinguish persistence from effect/render failure; authorize command follow-ups |
+| signed session ID only | signed server expiry, key rollover, explicit rotation and revocation | copied cookies expire and can be revoked within one process |
+| unrestricted async runner | bounded runner recommended; unbounded `AsyncCommands` deprecated | explicit admission, per-command timeout, shutdown drain |
+| presentation context | + resolved `Locale` | views receive locale explicitly, without middleware imports |
 | `NewRuntime` | + `MustRuntime` | startup convenience |
 | pagination always rendered | hidden when ≤ 1 page | no empty nav |
 | `POST /theme` only | + `Preference.ToggleHandler` | legacy two-state switches |

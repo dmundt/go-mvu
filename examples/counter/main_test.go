@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -64,6 +65,67 @@ func TestCounterRejectsMissingCSRF(t *testing.T) {
 	handler.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403", recorder.Code)
+	}
+}
+
+func TestCounterPolicyAndStaticIsolation(t *testing.T) {
+	handler, err := newHandler([]byte(strings.Repeat("k", 32)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/", "/static/htmx.min.js"} {
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != 200 || w.Header().Get("X-Request-ID") == "" {
+			t.Fatalf("%s: %d %v", path, w.Code, w.Header())
+		}
+		if path == "/" {
+			if w.Header().Get("Cache-Control") != "no-store" ||
+				!strings.Contains(w.Body.String(), `name="htmx-config"`) {
+				t.Fatal("page missing HTTP/HTMX policy")
+			}
+		} else if len(w.Result().Cookies()) != 0 ||
+			!strings.Contains(w.Header().Get("Cache-Control"), "immutable") {
+			t.Fatal("static request creates session or loses caching")
+		}
+	}
+	r := httptest.NewRequest(http.MethodPost, "/counter/increment",
+		strings.NewReader(strings.Repeat("x", (1<<20)+1)))
+	r.Header.Set("X-CSRF-Token", "header-token")
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, r)
+	if w.Code != 413 {
+		t.Fatalf("body-limit status = %d", w.Code)
+	}
+}
+
+func TestCounterPlainFormRedirectsAndPersists(t *testing.T) {
+	handler, err := newHandler([]byte(strings.Repeat("k", 32)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	get := httptest.NewRecorder()
+	handler.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/", nil))
+	token := csrfHeader.FindStringSubmatch(get.Body.String())
+	cookies := get.Result().Cookies()
+	if token == nil || len(cookies) == 0 {
+		t.Fatal("missing session or CSRF token")
+	}
+	post := httptest.NewRequest(http.MethodPost, "/counter/increment",
+		strings.NewReader(url.Values{"_csrf": {token[1]}}.Encode()))
+	post.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	post.AddCookie(cookies[0])
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, post)
+	if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/" {
+		t.Fatalf("plain form response = %d %v", w.Code, w.Header())
+	}
+	next := httptest.NewRequest(http.MethodGet, "/", nil)
+	next.AddCookie(cookies[0])
+	w = httptest.NewRecorder()
+	handler.ServeHTTP(w, next)
+	if !strings.Contains(w.Body.String(), `<output aria-live="polite">1</output>`) {
+		t.Fatal("plain form mutation not persisted")
 	}
 }
 
