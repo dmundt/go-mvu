@@ -18,7 +18,7 @@ func main() {
 }
 
 func run() (err error) {
-	path := flag.String("ledger", "actionledger.wal", "ledger file (parent must exist)")
+	path := flag.String("ledger", "recovery.wal", "ledger file (parent must exist)")
 	scope := flag.String("scope", "demo", "application model scope")
 	id := flag.String("action", "", "stable action ID; omit to only drain pending effects")
 	amount := flag.Int64("amount", 1, "counter increment")
