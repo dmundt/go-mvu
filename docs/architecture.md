@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 14
+version: 15
 ---
 
 # Architecture
@@ -20,17 +20,16 @@ CSS inlined in `<style>`. Source of truth:
 | `html` | `Component`, `Page`, `Fragment`, `Context` (escaping, sticky error, streaming), `El` builder, `Attrs` allowlist |
 | `htmx` | typed `Action` attrs, `Request` metadata, response headers |
 | `store` | `Snapshot[M]` (`Version`), `Load`/`Create`/`CompareAndSwap`, memory store |
-| `session` | signed opaque session ID → model key |
 | `theme` | `Theme` (inline CSS), `Mode` system/light/dark, signed `Preference` cookie |
-| `components` | optional layout, controls, forms, tables, pagination, switcher, and native-HTML widgets |
-| `static` | embedded HTMX + SRI hash, `/static/` handler |
-| `middleware` | security headers/CSP, CSRF, stream-safe recovery, runtime diagnostics |
-| `httpx` | stdlib-only HTTP error policy, request metadata, events, nil-safe phase traces, Vary merging, response commitment |
-| `web` | explicit form decoding/field errors; runtime: `Action`/route → message → Update → store → commands → view |
-| `ui` | optional app composition: document policy, secure action forms, rooted regions, typed region views, field errors |
+| `web` | runtime and typed forms; signed sessions, CSRF, security headers, recovery, HTTP errors, request metadata, events, diagnostics, traces, and response commitment |
+| `components` | optional semantic controls/widgets, page policy, secure action forms, regions, field feedback, and embedded HTMX assets |
 | `internal/arch` | boundary enforcement test |
 | `internal/example` | private example support: server lifecycle, request policy, JSON storage, and HTTP benchmarks |
 | `benchmarks` | render benchmarks vs `html/template` |
+
+Exactly seven public framework packages. Examples, benchmarks, and private
+support packages are outside this count. See
+[ADR-0029](adr/0029-seven-public-packages.md).
 
 The [durable example](../examples/durable/README.md) demonstrates an
 example-only JSON file store and an outbox embedded in each model record. Its
@@ -55,40 +54,35 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ([ADR-0014](adr/0014-enforced-package-boundaries.md)).
 
 ```text
-mvu, html, store, theme, static, httpx → stdlib only
+mvu, html, store, theme → stdlib only
 htmx       → html
-session    → store, httpx
-middleware → html, session, httpx
-components → html, htmx, theme
-web        → mvu, html, htmx, store, theme, httpx
-ui         → components, html, htmx, middleware, static, theme, web
+web        → mvu, html, htmx, store, theme
+components → html, htmx, theme, web
 internal/example/jsonstore → store
-internal/example/server    → httpx
+internal/example/server    → web
 examples   → framework packages and internal/example; never other examples
 ```
 
 ```mermaid
 flowchart BT
-  html; mvu; store; theme; static; httpx
+  html; mvu; store; theme
   htmx --> html
-  session --> store & httpx
-  middleware --> html & session & httpx
-  components --> html & htmx & theme
-  web --> mvu & html & htmx & store & theme & httpx
-  ui --> components & html & htmx & middleware & static & theme & web
-  app[application] --> web & components & middleware & session & static
+  web --> mvu & html & htmx & store & theme
+  components --> html & htmx & theme & web
+  app[application] --> web & components
 ```
 
 Forbidden: `unsafe`; `reflect` in `html`/`components`; `html/template`,
 `text/template` in library code; `mvu` → anything HTTP/HTML/storage.
 
 Reusable widgets all live in `components`; the former `shared` package is
-removed without forwarding aliases. Dependencies, native interactions, and
-embedded styles remain unchanged. See [ADR-0023](adr/0023-unified-components.md).
+removed without forwarding aliases. Native interactions and embedded styles
+remain unchanged. See [ADR-0023](adr/0023-unified-components.md).
 
-`ui` sits above the existing layers; core packages never import it. Apps
+`components` sits above the existing layers; core packages never import it. Apps
 opt in explicitly and still own middleware and asset routing. See
-[ADR-0021](adr/0021-concise-ui-composition.md).
+[ADR-0029](adr/0029-seven-public-packages.md), which supersedes the separate
+`ui` layer in [ADR-0021](adr/0021-concise-ui-composition.md).
 
 ## Source organization
 
@@ -97,10 +91,10 @@ There is no separate `validation` package. MVU updates may carry typed form
 data but still must not inspect requests, render, or perform I/O.
 See [ADR-0028](adr/0028-web-owned-form-validation.md).
 
-Request timing lives in [httpx/trace.go](../httpx/trace.go), alongside request
+Request timing lives in [web/trace.go](../web/trace.go), alongside request
 metadata, events, and response tracking. There is no separate `timing` package.
-Both runtime and diagnostics depend on this stdlib-only leaf; neither needs
-to import the other. See [ADR-0027](adr/0027-consolidated-http-observability.md).
+Runtime and diagnostics share the implementation within `web`; no separate
+HTTP support package remains. See [ADR-0029](adr/0029-seven-public-packages.md).
 
 Prototype API policy: canonical names, function-based decoders/resolvers,
 explicit startup errors, and bounded asynchronous execution. Theme mode comes
@@ -108,20 +102,24 @@ from preference/application middleware through request context; the runtime
 does not resolve cookies again. See
 [ADR-0026](adr/0026-prototype-api-simplification.md).
 
-Responsibilities stay within existing packages; file boundaries do not add
-dependency layers or change public APIs.
+Focused files preserve responsibility boundaries within the larger packages.
 
 - `web`: [configuration](../web/web.go),
   [request and view contracts](../web/request.go),
   [HTTP orchestration and outcomes](../web/handler.go),
   [model transitions](../web/transition.go),
   [command execution](../web/commands.go), and
-  [response rendering](../web/response.go).
+  [response rendering](../web/response.go),
+  [sessions](../web/session.go), [CSRF](../web/csrf.go),
+  [security and recovery](../web/security.go), and
+  [diagnostics](../web/diagnostics.go).
 - `components`: [primitives and feedback](../components/components.go),
   [documents](../components/document.go), [layout](../components/layout.go),
   [buttons and links](../components/controls.go), [forms](../components/forms.go),
   [tables](../components/table.go), and [navigation](../components/navigation.go).
-  Specialized native widgets retain their existing files.
+  [page policy](../components/page_policy.go),
+  [action forms](../components/action_form.go), and
+  [assets](../components/assets.go). Specialized native widgets retain their files.
 - Durable example: [lifecycle](../examples/durable/main.go),
   [service wiring](../examples/durable/service.go), and
   [persistent secrets](../examples/durable/secret.go).

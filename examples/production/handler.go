@@ -11,12 +11,9 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/dmundt/go-mvu/httpx"
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
 	"github.com/dmundt/go-mvu/internal/example/server"
-	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/session"
-	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 	"golang.org/x/oauth2"
@@ -46,14 +43,14 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	if string(cfg.SessionKey) == string(cfg.CSRFKey) {
 		return nil, errors.New("session and CSRF keys must differ")
 	}
-	sessions, err := session.New(cfg.SessionKey, session.Options{
+	sessions, err := web.NewSession(cfg.SessionKey, web.SessionOptions{
 		Secure:   base.Scheme == "https",
 		Lifetime: 8 * time.Hour,
 	})
 	if err != nil {
 		return nil, err
 	}
-	csrf, err := middleware.NewCSRF(cfg.CSRFKey)
+	csrf, err := web.NewCSRF(cfg.CSRFKey)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +155,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	mux.Handle("/", auth.protect(private))
 	authenticated := server.NoStore(sessions.Wrap(csrf.Wrap(mux)))
 	root := http.NewServeMux()
-	root.Handle("GET "+static.Prefix, static.Handler())
+	root.Handle("GET "+components.AssetPrefix, components.AssetHandler())
 	root.Handle("/", authenticated)
 	policy, err := server.NewRequestPolicy(server.RequestPolicyOptions{
 		MaxBodyBytes: 64 << 10,
@@ -173,15 +170,15 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 			next.ServeHTTP(w, r)
 		})
 	}
-	handler := middleware.SecurityHeaders(
-		referrerPolicy(middleware.Recover(policy(root))),
+	handler := web.SecurityHeaders(
+		referrerPolicy(web.Recover(policy(root))),
 	)
 	return &application{
 		auth:   auth,
 		models: models,
 		handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Host != base.Host {
-				httpx.RespondError(w, r, &httpx.Error{Status: 400})
+				web.RespondError(w, r, &web.Error{Status: 400})
 				return
 			}
 			handler.ServeHTTP(w, r)

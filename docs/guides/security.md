@@ -2,7 +2,7 @@
 type: Guide
 title: Security
 description: Security boundaries for HTML rendering, requests, and sessions.
-version: 4
+version: 5
 ---
 
 # Security
@@ -40,7 +40,7 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 ## Security headers
 
-`middleware.SecurityHeaders` sets on every response:
+`web.SecurityHeaders` sets on every response:
 
 | Header | Value |
 | --- | --- |
@@ -56,17 +56,17 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 ## HTMX asset
 
-- `static` package embeds HTMX 2.0.4; served at `/static/` via
-  `static.Handler()`.
-- `static.HTMXPath` + `static.HTMXIntegrity` → `Document.HTMXIntegrity`
-  emits SRI `integrity`. Version bump → update hash ([static/AGENTS.md](../../static/AGENTS.md)).
+- `components` package embeds HTMX 2.0.4; served at `/static/` via
+  `components.AssetHandler()`.
+- `components.HTMXPath` + `components.HTMXIntegrity` → `Document.HTMXIntegrity`
+  emits SRI `integrity`. Version bump → update hash ([asset rules](../../components/AGENTS.md)).
 
 ## CSRF
 
-- `middleware.NewCSRF(secret)`: HMAC token bound to session ID.
+- `web.NewCSRF(secret)`: HMAC token bound to session ID.
 - Methods other than GET/HEAD/OPTIONS/TRACE require form field `_csrf` or
   header `X-CSRF-Token`; else 403.
-- `CSRFInput{}` renders hidden field in forms. `CSRFHTMX{Body}` adds
+- `components.CSRFInput{}` renders hidden field in forms. `components.CSRFHTMX{Body}` adds
   `hx-headers` so HTMX requests carry header.
 - Order: sessions → csrf (token needs session).
 
@@ -87,7 +87,7 @@ passes user input as `id` or `hx-target` still owns that choice.
   callback. Reload the document afterward: old forms carry old CSRF tokens.
 - `Invalidate` revokes copied cookies, not merely the current browser cookie.
   Its bounded memory backend is single-process and non-durable. Share
-  `Options.Revocations` across middleware instances during key rollover.
+  `SessionOptions.Revocations` across middleware instances during key rollover.
 
 ## Redirects
 
@@ -97,22 +97,22 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 ## Errors and logging
 
-- `middleware.Recover`: uncommitted panic → 500; committed panic aborts.
+- `web.Recover`: uncommitted panic → 500; committed panic aborts.
   Logged, no stack to client.
-- `httpx.RespondError`: safe HTTP status/body policy; details only in log.
+- `web.RespondError`: safe HTTP status/body policy; details only in log.
 - Errors after response start: logged, never appended to body.
 - go-mvu does not ship generic request-ID or access-log middleware. Use an
   existing `net/http` middleware. To include its ID in go-mvu error and
   diagnostics logs, have it add the ID to request context with
-  `httpx.WithRequestID`.
-- `middleware.Diagnostics`: `Server-Timing` off by default; enable only for
+  `web.WithRequestID`.
+- `web.Diagnostics`: `Server-Timing` off by default; enable only for
   development or trusted networks. Mount `Diagnostics.Handler()` on internal
   or authenticated routes only (timing data aids side-channel probing).
 
 ## Validation
 
 - Decode in `web.Decoder`; reject bad input before `Update`.
-- `validation` package collects field errors; render with
+- `web.Form` and `web.FieldErrors` collect typed validation feedback; render with
   `components.FieldError`.
 - `Update` clamps domain values (users example clamps page).
 

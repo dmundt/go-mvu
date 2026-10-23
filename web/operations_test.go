@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 )
@@ -17,17 +16,17 @@ import (
 func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		event     httpx.Event
+		event     Event
 		configure func(*RuntimeConfig[string, testModel, testMessage])
 		expected  bool
 	}{
-		{"authorization", httpx.AuthorizationRejected, func(c *RuntimeConfig[string, testModel, testMessage]) {
+		{"authorization", AuthorizationRejected, func(c *RuntimeConfig[string, testModel, testMessage]) {
 			c.AuthorizeTransition = func(context.Context, string, testModel, testMessage) error {
-				return &httpx.Error{Status: 403}
+				return &Error{Status: 403}
 			}
 		}, false},
-		{"stale", httpx.StaleAction, func(c *RuntimeConfig[string, testModel, testMessage]) {}, true},
-		{"effect", httpx.CommittedEffectFailure, func(c *RuntimeConfig[string, testModel, testMessage]) {
+		{"stale", StaleAction, func(c *RuntimeConfig[string, testModel, testMessage]) {}, true},
+		{"effect", CommittedEffectFailure, func(c *RuntimeConfig[string, testModel, testMessage]) {
 			c.Commands = failingEventCommands{}
 			c.App = mvu.Functions[testModel, testMessage]{
 				UpdateFunc: func(_ context.Context, model testModel, _ testMessage) (testModel, []mvu.Command[testMessage], error) {
@@ -37,8 +36,8 @@ func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
 		}, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			events := map[httpx.Event]int{}
-			ctx := httpx.WithEventObserver(context.Background(), func(event httpx.Event) { events[event]++ })
+			events := map[Event]int{}
+			ctx := WithEventObserver(context.Background(), func(event Event) { events[event]++ })
 			runtime := newTestRuntime(t, test.configure)
 			route := addRoute(Result{Mode: RenderNothing})
 			if test.expected {
@@ -60,8 +59,8 @@ func (failingEventCommands) Run(context.Context, []mvu.Command[testMessage], mvu
 
 func TestAsyncEventsAndRepeatedClose(t *testing.T) {
 	var mu sync.Mutex
-	events := make(map[httpx.Event]int)
-	ctx := httpx.WithEventObserver(context.Background(), func(event httpx.Event) {
+	events := make(map[Event]int)
+	ctx := WithEventObserver(context.Background(), func(event Event) {
 		mu.Lock()
 		defer mu.Unlock()
 		events[event]++
@@ -107,7 +106,7 @@ func TestAsyncEventsAndRepeatedClose(t *testing.T) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	if events[httpx.CommandOverload] != 1 || events[httpx.CommittedEffectFailure] != 1 {
+	if events[CommandOverload] != 1 || events[CommittedEffectFailure] != 1 {
 		t.Fatalf("async counters = %v", events)
 	}
 }

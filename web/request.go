@@ -6,7 +6,6 @@ import (
 
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
@@ -37,7 +36,7 @@ func NewRequestContext(r *http.Request, active theme.Theme) RequestContext {
 	}
 	return RequestContext{
 		Theme: active, Mode: mode, IsHTMX: request.IsHTMX,
-		HTMX: request, CurrentURL: current, Locale: httpx.Locale(r.Context()),
+		HTMX: request, CurrentURL: current, Locale: Locale(r.Context()),
 	}
 }
 

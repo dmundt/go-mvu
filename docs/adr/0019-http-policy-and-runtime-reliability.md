@@ -2,7 +2,7 @@
 type: Architecture Decision Record
 title: Explicit HTTP policies and reliable transitions
 description: HTTP lifecycle, shared rejection contracts, and commit-aware MVU policy.
-version: 3
+version: 4
 ---
 
 # ADR-0019: Explicit HTTP policies and reliable transitions
@@ -13,6 +13,11 @@ Generic middleware scope narrowed by
 [ADR-0022](0022-default-theme-and-deployment-boundaries.md) and
 [ADR-0024](0024-ecosystem-owned-generic-middleware.md); framework-specific
 HTTP reliability decisions remain accepted.
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Context
 

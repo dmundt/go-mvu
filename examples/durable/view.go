@@ -7,8 +7,6 @@ import (
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -21,7 +19,7 @@ type CounterFragment struct {
 func (counter CounterFragment) RenderHTML(ctx context.Context, out *html.Context) error {
 	form := components.Form{
 		URL:       "/increment",
-		CSRFField: middleware.CSRFInput{},
+		CSRFField: components.CSRFInput{},
 		Children: []html.Component{components.Button{
 			Type:  components.ButtonSubmit,
 			Label: "Increment",
@@ -64,11 +62,11 @@ func (CounterView) Page(
 	}
 	return components.Document{
 		Title:         "Durable counter",
-		HTMXSource:    static.HTMXPath,
-		HTMXIntegrity: static.HTMXIntegrity,
+		HTMXSource:    components.HTMXPath,
+		HTMXIntegrity: components.HTMXIntegrity,
 		Theme:         request.Theme,
 		Mode:          request.Mode,
-		Body:          middleware.CSRFHTMX{Body: page},
+		Body:          components.CSRFHTMX{Body: page},
 	}, nil
 }
 

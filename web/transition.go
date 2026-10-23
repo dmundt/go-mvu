@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 )
@@ -97,7 +96,7 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 		}
 		if runtime.authorize != nil {
 			if authErr := runtime.authorize(ctx, key, model, message); authErr != nil {
-				httpx.Observe(ctx, httpx.AuthorizationRejected)
+				Observe(ctx, AuthorizationRejected)
 				return nil, authErr
 			}
 		}
@@ -119,12 +118,12 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			return nil, err
 		}
 		if expected != nil && snapshot.Version != *expected {
-			httpx.Observe(ctx, httpx.StaleAction)
+			Observe(ctx, StaleAction)
 			return nil, staleVersionError()
 		}
 		if runtime.authorize != nil {
 			if err := runtime.authorize(ctx, key, snapshot.Model, message); err != nil {
-				httpx.Observe(ctx, httpx.AuthorizationRejected)
+				Observe(ctx, AuthorizationRejected)
 				return nil, err
 			}
 		}
@@ -146,7 +145,7 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			return nil, err
 		}
 		if expected != nil {
-			httpx.Observe(ctx, httpx.StaleAction)
+			Observe(ctx, StaleAction)
 			return nil, staleVersionError()
 		}
 		if err := ctx.Err(); err != nil {

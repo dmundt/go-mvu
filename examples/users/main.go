@@ -13,13 +13,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/internal/example/server"
-	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/session"
-	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -54,11 +51,11 @@ func run() error {
 }
 
 func newHandler(secret []byte) (http.Handler, error) {
-	sessions, err := session.New(secret, session.Options{Secure: false})
+	sessions, err := web.NewSession(secret, web.SessionOptions{Secure: false})
 	if err != nil {
 		return nil, err
 	}
-	csrf, err := middleware.NewCSRF(secret)
+	csrf, err := web.NewCSRF(secret)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +64,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	directory := syntheticUsers(42)
-	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
+	document := components.PagePolicy{HTMX: true, CSRF: true, SwapValidationErrors: true}
 	if err := document.Validate(); err != nil {
 		return nil, err
 	}
@@ -104,15 +101,15 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	root := http.NewServeMux()
-	root.Handle("GET "+static.Prefix, static.Handler())
+	root.Handle("GET "+components.AssetPrefix, components.AssetHandler())
 	root.Handle("/", server.NoStore(
 		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
 	))
-	return middleware.SecurityHeaders(middleware.Recover(policy(root))), nil
+	return web.SecurityHeaders(web.Recover(policy(root))), nil
 }
 
 func sessionKey(r *http.Request) (string, error) {
-	id, ok := session.ID(r)
+	id, ok := web.SessionID(r)
 	if !ok {
 		return "", http.ErrNoCookie
 	}

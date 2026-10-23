@@ -8,7 +8,6 @@ import (
 
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/store"
 )
 
@@ -48,9 +47,9 @@ func (result Result) StatusOr(fallback int) int {
 func (runtime *Runtime[K, Model, Msg]) writeResult(
 	w http.ResponseWriter, r *http.Request, model Model, result Result,
 ) error {
-	tracked, ok := w.(*httpx.Writer)
+	tracked, ok := w.(*ResponseWriter)
 	if !ok {
-		tracked = &httpx.Writer{ResponseWriter: w}
+		tracked = &ResponseWriter{ResponseWriter: w}
 		w = tracked
 	}
 	request := NewRequestContext(r, runtime.theme)
@@ -61,7 +60,7 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 	}
 	w.Header().Set("Cache-Control", cacheControl)
 	if mode == RenderAuto {
-		httpx.Vary(w.Header(), "HX-Request", "HX-Boosted", "HX-History-Restore-Request")
+		Vary(w.Header(), "HX-Request", "HX-Boosted", "HX-History-Restore-Request")
 		switch {
 		case request.IsHTMX && !request.HTMX.IsBoosted && !request.HTMX.IsHistory:
 			mode = RenderFragment
@@ -85,7 +84,7 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 	if result.ReplaceURL != "" {
 		htmx.ReplaceURL(w, result.ReplaceURL)
 	}
-	trace := httpx.TraceFromContext(r.Context())
+	trace := TraceFromContext(r.Context())
 	var err error
 	switch mode {
 	case RenderNothing:
@@ -93,27 +92,27 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		return nil
 	case RenderPage:
 		var page html.Page
-		done := trace.Start(httpx.PhaseView)
+		done := trace.Start(PhaseView)
 		page, err = runtime.view.Page(r.Context(), model, request)
 		done()
 		if err == nil {
 			err = r.Context().Err()
 		}
 		if err == nil {
-			done = trace.Start(httpx.PhaseRender)
+			done = trace.Start(PhaseRender)
 			err = WritePage(r.Context(), tracked, result.StatusOr(http.StatusOK), page)
 			done()
 		}
 	case RenderFragment:
 		var fragment html.Fragment
-		done := trace.Start(httpx.PhaseView)
+		done := trace.Start(PhaseView)
 		fragment, err = runtime.view.Fragment(r.Context(), result.Fragment, model, request)
 		done()
 		if err == nil {
 			err = r.Context().Err()
 		}
 		if err == nil {
-			done = trace.Start(httpx.PhaseRender)
+			done = trace.Start(PhaseRender)
 			err = WriteFragment(r.Context(), tracked, result.StatusOr(http.StatusOK), fragment)
 			done()
 		}
@@ -143,6 +142,7 @@ func (runtime *Runtime[K, Model, Msg]) fail(w http.ResponseWriter, r *http.Reque
 type responseAbortError struct{ cause error }
 
 func (e *responseAbortError) Error() string { return "response aborted: " + e.cause.Error() }
+
 func (e *responseAbortError) Unwrap() error { return e.cause }
 
 func isEffectError(err error) bool {
@@ -156,7 +156,7 @@ func isResponseAbort(err error) bool {
 }
 
 func staleVersionError() error {
-	return &httpx.Error{
+	return &Error{
 		Status: http.StatusConflict, Public: http.StatusText(http.StatusConflict),
 		Cause: store.ErrConflict,
 	}
@@ -164,14 +164,14 @@ func staleVersionError() error {
 
 func normalizeError(err error) error {
 	if isEffectError(err) {
-		return &httpx.Error{
+		return &Error{
 			Status: http.StatusInternalServerError, Public: http.StatusText(http.StatusInternalServerError),
 			Cause: err,
 		}
 	}
 	var tooLarge *http.MaxBytesError
 	if errors.As(err, &tooLarge) {
-		return &httpx.Error{
+		return &Error{
 			Status: http.StatusRequestEntityTooLarge, Public: http.StatusText(http.StatusRequestEntityTooLarge),
 			Cause: err,
 		}

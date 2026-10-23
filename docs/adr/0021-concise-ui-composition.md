@@ -3,10 +3,15 @@ type: Architecture Decision
 title: Concise UI composition
 status: Accepted
 description: Small layout constructors and optional application-level integration helpers.
-version: 3
+version: 4
 ---
 
 # ADR-0021: Concise UI composition
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Context
 

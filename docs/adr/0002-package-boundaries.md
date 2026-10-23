@@ -2,12 +2,17 @@
 type: Architecture Decision Record
 title: "ADR-0002: Enforce package boundaries"
 description: Define and enforce one-way package dependencies.
-version: 1
+version: 2
 ---
 
 # ADR-0002: Enforce package boundaries
 
 - Status: Accepted
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Context
 

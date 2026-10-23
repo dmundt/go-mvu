@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dmundt/go-mvu/httpx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 // RequestPolicyOptions configures transport limits. A zero body limit uses
@@ -20,7 +20,7 @@ type RequestPolicyOptions struct {
 	// ContentTypes restricts unsafe requests with a body. Empty accepts all.
 	// Apply a route-specific policy when different routes accept different types.
 	ContentTypes []string
-	OnError      httpx.ErrorHandler
+	OnError      web.ErrorHandler
 }
 
 // NewRequestPolicy bounds body reads before any parser, including requests
@@ -45,7 +45,7 @@ func NewRequestPolicy(options RequestPolicyOptions) (func(http.Handler) http.Han
 	}
 	onError := options.OnError
 	if onError == nil {
-		onError = httpx.RespondError
+		onError = web.RespondError
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +54,7 @@ func NewRequestPolicy(options RequestPolicyOptions) (func(http.Handler) http.Han
 				return
 			}
 			if r.ContentLength > options.MaxBodyBytes {
-				onError(w, r, &httpx.Error{Status: http.StatusRequestEntityTooLarge})
+				onError(w, r, &web.Error{Status: http.StatusRequestEntityTooLarge})
 				return
 			}
 			safe := r.Method == http.MethodGet || r.Method == http.MethodHead ||
@@ -62,7 +62,7 @@ func NewRequestPolicy(options RequestPolicyOptions) (func(http.Handler) http.Han
 			if !safe && r.Body != nil && r.Body != http.NoBody && len(types) != 0 {
 				contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 				if err != nil || !types[contentType] {
-					onError(w, r, &httpx.Error{Status: http.StatusUnsupportedMediaType, Cause: err})
+					onError(w, r, &web.Error{Status: http.StatusUnsupportedMediaType, Cause: err})
 					return
 				}
 			}
@@ -72,7 +72,7 @@ func NewRequestPolicy(options RequestPolicyOptions) (func(http.Handler) http.Han
 				r = r.WithContext(ctx)
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, options.MaxBodyBytes)
-			tracked := &httpx.Writer{ResponseWriter: w}
+			tracked := &web.ResponseWriter{ResponseWriter: w}
 			next.ServeHTTP(tracked, r)
 			if err := r.Context().Err(); err != nil && !tracked.Started {
 				onError(w, r, err)

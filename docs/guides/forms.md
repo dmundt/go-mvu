@@ -54,13 +54,13 @@ The contact example keeps request parsing and validation in
 ## Keep route and form together
 
 `web.Action` defines method, URL, decoder, and response once. Register it with
-the runtime, then pass `action.HTMX()` to `ui.Form`. It selects the
+the runtime, then pass `action.HTMX()` to `components.ActionForm`. It selects the
 matching fragment target and replaces it; ordinary form submissions redirect
 to the same page. See [web actions](web-runtime.md#routes).
 
 ```go
-fields := ui.Fields(form.Errors)
-body := ui.Form{
+fields := components.Fields(form.Errors)
+body := components.ActionForm{
 	Action: submit.HTMX(),
 	Body: components.FormLayout(
 		fields.Input(components.Input{
@@ -75,18 +75,18 @@ body := ui.Form{
 }
 ```
 
-`ui.Form` derives native method, URL, and HTMX behavior from one action.
+`components.ActionForm` derives native method, URL, and HTMX behavior from one action.
 Attaching HTMX to the form also covers keyboard submission. POST includes
-`middleware.CSRFInput` automatically and reports an error if the CSRF token
+`components.CSRFInput` automatically and reports an error if the CSRF token
 is unavailable. Mount session and CSRF middleware explicitly. GET includes
 no CSRF field. Only same-origin, root-relative URLs and GET/POST methods are
-supported; unsupported actions return `ui.ErrInvalidForm`. The lower-level
+supported; unsupported actions return `components.ErrInvalidForm`. The lower-level
 `components.Form` remains available for other explicit configurations.
 
 For a standalone action:
 
 ```go
-ui.ActionButton{
+components.ActionButton{
 	Action: increment.HTMX(),
 	Label: "+",
 	AriaLabel: "Increment",
@@ -96,7 +96,7 @@ ui.ActionButton{
 It composes a secure form and submit button, preserving no-JavaScript
 behavior. `Variant`, `Disabled`, and form `Attrs` remain configurable.
 
-`ui.Fields` uses each explicit control name to attach its first error.
+`components.Fields` uses each explicit control name to attach its first error.
 `Text` and `Email` take name, label, current value, and required flag.
 `Input`, `Select`, `Textarea`, and `Checkbox` accept existing control structs
 and replace their `Error` with the matching form error. All other properties
@@ -118,7 +118,7 @@ It would not shorten the form.
 An alternative is setting `Error: form.Errors.First(name)` directly on each
 control. For the contact example's six controls, that adds six property lines
 while removing one `fields` declaration: five extra lines with the same
-one-property-per-line layout. Keep `ui.Fields` when several controls share
+one-property-per-line layout. Keep `components.Fields` when several controls share
 errors. Use an explicit `Error` for isolated controls when that reads better.
 No additional public field-helper family is needed.
 

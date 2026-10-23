@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dmundt/go-mvu/httpx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func TestSaveDecoderRetainsInvalidValuesAndRejectsMalformedIDs(t *testing.T) {
@@ -40,7 +40,7 @@ func TestSaveDecoderRetainsInvalidValuesAndRejectsMalformedIDs(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "/admin/save", strings.NewReader(values.Encode()))
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		_, err := decodeSave(request)
-		var rejection *httpx.Error
+		var rejection *web.Error
 		if !errors.As(err, &rejection) || rejection.Status != http.StatusBadRequest {
 			t.Fatalf("id=%q: error = %v", id, err)
 		}

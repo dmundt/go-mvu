@@ -8,17 +8,16 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/httpx"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
 const (
-	workspaceRegion ui.Region = "admin-workspace"
-	overviewRegion  ui.Region = "admin-overview"
-	editorRegion    ui.Region = "member-editor-content"
-	editorPopover             = "member-editor"
+	workspaceRegion components.Region = "admin-workspace"
+	overviewRegion  components.Region = "admin-overview"
+	editorRegion    components.Region = "member-editor-content"
+	editorPopover                     = "member-editor"
 )
 
 var (
@@ -58,7 +57,7 @@ func saveHandler(runtime *web.Runtime[string, Model, Message]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		message, err := decodeSave(request)
 		if err != nil {
-			httpx.RespondError(w, request, err)
+			web.RespondError(w, request, err)
 			return
 		}
 		result := saveAction.Result
@@ -81,7 +80,7 @@ func saveHandler(runtime *web.Runtime[string, Model, Message]) http.Handler {
 }
 
 func badInput() error {
-	return &httpx.Error{Status: http.StatusBadRequest, Public: "Invalid dashboard request."}
+	return &web.Error{Status: http.StatusBadRequest, Public: "Invalid dashboard request."}
 }
 
 func validRole(role string) bool {

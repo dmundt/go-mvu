@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 7
+version: 8
 ---
 
 # Architecture Decision Records
@@ -38,3 +38,4 @@ version: 7
 * [ADR-0026](0026-prototype-api-simplification.md) - canonical prototype APIs without compatibility scaffolding.
 * [ADR-0027](0027-consolidated-http-observability.md) - consolidate request traces and HTTP support.
 * [ADR-0028](0028-web-owned-form-validation.md) - consolidate explicit form validation into web.
+* [ADR-0029](0029-seven-public-packages.md) - seven public packages with one-way HTTP/UI integration.

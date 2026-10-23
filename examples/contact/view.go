@@ -6,13 +6,12 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
-const contactRegion ui.Region = "contact-form"
+const contactRegion components.Region = "contact-form"
 
-func contactView(document ui.Document) web.ViewFunctions[ContactModel] {
+func contactView(document components.PagePolicy) web.ViewFunctions[ContactModel] {
 	return web.ViewFunctions[ContactModel]{
 		PageFunc: func(
 			_ context.Context, model ContactModel, request web.RequestContext,
@@ -40,7 +39,7 @@ func contactBody(model ContactModel) html.Component {
 			components.Paragraph("Thanks. We'll get back to you soon."),
 		)
 	}
-	return ui.Form{
+	return components.ActionForm{
 		Action: submitContact.HTMX(),
 		Attrs:  html.Attrs{html.A("class", "contact-form")},
 		Body:   components.FormLayout(contactFields(model.Form)...),
@@ -49,7 +48,7 @@ func contactBody(model ContactModel) html.Component {
 
 func contactFields(form web.Form[ContactDetails]) []html.Component {
 	details := form.Value
-	fields := ui.Fields(form.Errors)
+	fields := components.Fields(form.Errors)
 	return []html.Component{
 		fields.Input(components.Input{
 			Name:     nameField,

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 )
@@ -20,7 +19,7 @@ import (
 type principalContextKey struct{}
 
 func TestRuntimeUsesSharedErrorHandler(t *testing.T) {
-	var shared httpx.ErrorHandler = func(http.ResponseWriter, *http.Request, error) {}
+	var shared ErrorHandler = func(http.ResponseWriter, *http.Request, error) {}
 	config := RuntimeConfig[string, testModel, testMessage]{OnError: shared}
 	if config.OnError == nil {
 		t.Fatal("shared ErrorHandler assignment failed")
@@ -33,7 +32,7 @@ func TestDefaultErrorResponderClassifiesClientAndBodyErrors(t *testing.T) {
 		err  error
 		want int
 	}{
-		{name: "typed client status", err: &httpx.Error{Status: http.StatusUnprocessableEntity}, want: http.StatusUnprocessableEntity},
+		{name: "typed client status", err: &Error{Status: http.StatusUnprocessableEntity}, want: http.StatusUnprocessableEntity},
 		{name: "wrapped body limit", err: fmt.Errorf("decode: %w", &http.MaxBytesError{Limit: 8}), want: http.StatusRequestEntityTooLarge},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -151,7 +150,7 @@ func TestTransitionAuthorizationRunsForCASRetriesAndCommands(t *testing.T) {
 func TestTransitionAuthorizationRejectsWithoutMutation(t *testing.T) {
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.AuthorizeTransition = func(context.Context, string, testModel, testMessage) error {
-			return &httpx.Error{Status: http.StatusForbidden, Public: "Forbidden"}
+			return &Error{Status: http.StatusForbidden, Public: "Forbidden"}
 		}
 	})
 	response := serve(runtime.Handle(addRoute(Result{Mode: RenderNothing})),
@@ -507,7 +506,7 @@ func TestHandleInitCommitSurvivesRejectedTransition(t *testing.T) {
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.AuthorizeTransition = func(context.Context, string, testModel, testMessage) error {
 			if authorized.Add(1) == 2 {
-				return &httpx.Error{Status: http.StatusForbidden, Public: "Forbidden"}
+				return &Error{Status: http.StatusForbidden, Public: "Forbidden"}
 			}
 			return nil
 		}
@@ -559,7 +558,7 @@ func (cancellationEffectApp) Update(
 
 func TestRequestContextReceivesExplicitLocale(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
-	request = request.WithContext(httpx.WithLocale(request.Context(), "fr-CA"))
+	request = request.WithContext(WithLocale(request.Context(), "fr-CA"))
 	if got := NewRequestContext(request, nil).Locale; got != "fr-CA" {
 		t.Fatalf("Locale = %q", got)
 	}

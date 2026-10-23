@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 8
+version: 9
 ---
 
 # Web runtime
@@ -51,7 +51,7 @@ runtime, err := web.NewRuntime(web.RuntimeConfig[string, Model, Message]{
 	View:   View{},                         // required
 	Theme:  theme.Default,                  // nil → theme.DefaultTheme
 	Commands: web.SyncCommands[Message]{},  // nil → SyncCommands
-	OnError:  httpx.RespondError,            // nil → shared HTTP error policy
+	OnError:  web.RespondError,            // nil → shared HTTP error policy
 	Logger:   slog.Default(),               // nil → slog.Default
 	MaxRetries: 3,                          // ≤ 0 → 3
 })
@@ -105,7 +105,7 @@ if err := runtime.Register(mux, submit); err != nil {
 	return nil, err
 }
 
-ui.ActionButton{Action: submit.HTMX(), Label: "Send"}
+components.ActionButton{Action: submit.HTMX(), Label: "Send"}
 ```
 
 `HTMX()` uses `#contact-form` and `outerHTML` by default. Plain POSTs redirect
@@ -113,7 +113,7 @@ to `/contact`; set `Result.Location` to choose another destination. Set
 `Target` or `Swap` to override the browser behavior. `Register` checks the
 action and mounts its exact path and method.
 
-For multi-field forms, put `submit.HTMX()` on `ui.Form`, not only on its
+For multi-field forms, put `submit.HTMX()` on `components.ActionForm`, not only on its
 submit button. This keeps keyboard and button submissions consistent.
 See [forms](forms.md) and [shared page policy](components.md#shared-page-policy).
 
@@ -240,7 +240,7 @@ func(context.Context, Key, Model, Message) error
 ```
 
 It runs before every Update/CAS attempt, including command-dispatched
-follow-ups and Handle-created initialization. Return `&httpx.Error{Status: 403}`
+follow-ups and Handle-created initialization. Return `&web.Error{Status: 403}`
 for rejection. Never use HX request metadata as proof of identity.
 `Page`/`PageFunc` initialization remains ungated by this transition hook:
 protect private page access at the HTTP boundary.
@@ -293,9 +293,9 @@ handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	private.ServeHTTP(w, r)
 })
-handler = middleware.SecurityHeaders(
+handler = web.SecurityHeaders(
 	diagnostics.Middleware(
-		middleware.Recover(requestLimits(handler, 10*time.Second)),
+		web.Recover(requestLimits(handler, 10*time.Second)),
 	),
 )
 ```
@@ -318,7 +318,7 @@ Opt-in render timing and request diagnostics. Spec §18.1,
 [ADR-0016](../adr/0016-render-timing-diagnostics.md).
 
 ```go
-diagnostics := middleware.NewDiagnostics(middleware.DiagnosticsOptions{
+diagnostics := web.NewDiagnostics(web.DiagnosticsOptions{
 	Logger:        logger,                // nil → slog.Default()
 	SlowThreshold: 50 * time.Millisecond, // Warn log above
 	ServerTiming:  true,                  // dev / trusted networks only
@@ -344,9 +344,9 @@ handler = diagnostics.Middleware(handler)                    // wrap around appl
   `render` + `total` (streaming → render ends after headers). Browser
   devtools show the header; trailers need chunked HTTP/1.1 or HTTP/2 and
   client support.
-- Custom phases: `defer httpx.TraceFromContext(ctx).Start("db")()`.
-  `httpx.Trace` is nil-safe when diagnostics are absent. For a manually owned
-  trace, use `httpx.NewTrace` and `httpx.WithTrace`; there is no separate
+- Custom phases: `defer web.TraceFromContext(ctx).Start("db")()`.
+  `web.Trace` is nil-safe when diagnostics are absent. For a manually owned
+  trace, use `web.NewTrace` and `web.WithTrace`; there is no separate
   `timing` package.
 - No trace in context → no-op, zero allocations.
 

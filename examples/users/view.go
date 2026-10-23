@@ -5,13 +5,12 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
-const usersRegion ui.Region = "users-results"
+const usersRegion components.Region = "users-results"
 
-type UsersView struct{ Document ui.Document }
+type UsersView struct{ Document components.PagePolicy }
 
 func (UsersView) Fragment(
 	_ context.Context, name string, model UsersModel, _ web.RequestContext,
@@ -44,12 +43,13 @@ func (view UsersView) cardsPage(request web.RequestContext, users []User) html.P
 		userCards(users),
 	)
 }
+
 func (view UsersView) document(
 	request web.RequestContext, title string, body ...html.Component,
 ) html.Page {
 	header := components.Row(
 		components.Heading{Level: 1, Text: title},
-		ui.ThemeSwitcher{
+		components.SecureThemeSwitcher{
 			Mode:   request.Mode,
 			Return: request.CurrentURL,
 		},

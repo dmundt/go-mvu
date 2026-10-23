@@ -8,11 +8,10 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
-type View struct{ Document ui.Document }
+type View struct{ Document components.PagePolicy }
 
 func (view View) Page(
 	_ context.Context, model Model, request web.RequestContext,
@@ -20,7 +19,7 @@ func (view View) Page(
 	return view.Document.Page(request, "Operations dashboard", components.Shell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Northstar / Operations"},
-			ui.ThemeSwitcher{
+			components.SecureThemeSwitcher{
 				Mode:   request.Mode,
 				Return: "/admin/view",
 			},
@@ -114,7 +113,7 @@ func overview(model Model) html.Component {
 	return components.Column(
 		components.Row(
 			components.Heading{Level: 2, Text: "Overview"},
-			ui.ActionButton{
+			components.ActionButton{
 				Label:   "Refresh overview",
 				Action:  overviewAction.HTMX(),
 				Variant: components.ButtonSecondary,
@@ -157,7 +156,7 @@ func workspace(model Model, inlineEditor bool) html.Component {
 	return body
 }
 
-func directoryNavigation(model Model, directory directoryPage) (ui.Form, components.Pagination) {
+func directoryNavigation(model Model, directory directoryPage) (components.ActionForm, components.Pagination) {
 	action := browseAction.HTMX()
 	action.PushURL = "true"
 	attrs := html.Attrs{html.A("hx-sync", "closest main:replace")}
@@ -165,7 +164,7 @@ func directoryNavigation(model Model, directory directoryPage) (ui.Form, compone
 	if model.Notice != "" {
 		filterAttrs = html.Attrs{html.Flag("autofocus")}
 	}
-	filter := ui.Form{
+	filter := components.ActionForm{
 		Action: action,
 		Body: components.Row(
 			components.Input{
@@ -275,13 +274,13 @@ func editor(model Model) html.Component {
 			Body:   components.Paragraph("Choose Edit beside a member to update their profile."),
 		}
 	}
-	fields := ui.Fields(model.Form.Errors)
+	fields := components.Fields(model.Form.Errors)
 	value := model.Form.Value
 	action := saveAction.HTMX()
 	action.DisabledElt = "find button"
 	return components.Card{
 		Header: components.Heading{Level: 2, Text: "Edit member"},
-		Body: ui.Form{
+		Body: components.ActionForm{
 			Action: action,
 			Body: components.FormLayout(
 				components.Input{Name: "id", Type: "hidden", Value: strconv.Itoa(value.ID)},

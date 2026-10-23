@@ -2,12 +2,17 @@
 type: Architecture Decision Record
 title: "ADR-0012: Strict CSP with locally served HTMX"
 description: Enforce a strict content security policy and serve HTMX locally.
-version: 1
+version: 2
 ---
 
 # ADR-0012: Strict CSP with locally served HTMX
 
 - Status: Accepted
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Context
 
@@ -28,4 +33,4 @@ styles. App JavaScript forbidden.
 - No external runtime dependency; offline/air-gapped deploys work.
 - `'unsafe-inline'` styles accepted trade-off; theme CSS trusted only.
 - Nonce/hash CSP for styles possible later at HTTP boundary.
-- HTMX upgrade = file replace + hash update ([static/AGENTS.md](../../static/AGENTS.md)).
+- HTMX upgrade = file replace + hash update ([asset rules](../../components/AGENTS.md)).
