@@ -45,9 +45,12 @@ type IdempotencyOptions struct {
 	// Scope must return an authenticated principal/session identity.
 	// Never use an unvalidated client header as the scope.
 	Scope func(*http.Request) (string, error)
-	// Validate optionally rejects decoding/domain preconditions before an
-	// action is reserved. It receives the bounded, replayable body; any reads
-	// are reset before the mutation runs. Return httpx.Error for public errors.
+	// Validate checks current replay access and input before reservation and
+	// again immediately before a duplicate is replayed (including after waits).
+	// It must be read-only and reentrant. Check current permissions here, not
+	// only in a transition authorizer skipped by replay. Body reads are reset.
+	// Do not put model-version preconditions here. Return httpx.Error for
+	// public errors.
 	Validate     func(*http.Request) error
 	ErrorHandler httpx.ErrorHandler
 }
@@ -135,7 +138,7 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 			}
 			scope, err := options.Scope(r)
 			if err != nil || scope == "" || len(scope) > 1024 {
-				rejectExtension(fail, w, r, http.StatusUnauthorized)
+				fail(w, r, &httpx.Error{Status: http.StatusUnauthorized, Cause: err})
 				return
 			}
 			contentType := r.Header.Get("Content-Type")
@@ -210,6 +213,7 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 			}
 			if !duplicate && len(entries) >= options.MaxEntries {
 				mu.Unlock()
+				httpx.Observe(r.Context(), httpx.IdempotencyCapacity)
 				setRetryAfter(w, options.TTL)
 				rejectExtension(fail, w, r, http.StatusServiceUnavailable)
 				return
@@ -221,6 +225,7 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 			} else if pending {
 				if waiters >= options.MaxWaiters {
 					mu.Unlock()
+					httpx.Observe(r.Context(), httpx.IdempotencyWaitCapacity)
 					setRetryAfter(w, options.WaitTimeout)
 					rejectExtension(fail, w, r, http.StatusServiceUnavailable)
 					return
@@ -246,6 +251,20 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 						rejectExtension(fail, w, r, http.StatusServiceUnavailable)
 						return
 					case <-entry.done:
+					}
+				}
+				// Permissions or session ownership may change while a duplicate
+				// waits. Recheck immediately before exposing the recorded body.
+				currentScope, err := options.Scope(r)
+				if err != nil || currentScope != scope {
+					fail(w, r, &httpx.Error{Status: http.StatusUnauthorized, Cause: err})
+					return
+				}
+				r.Body = io.NopCloser(bytes.NewReader(body))
+				if options.Validate != nil {
+					if err := options.Validate(r); err != nil {
+						fail(w, r, err)
+						return
 					}
 				}
 				if entry.failed {

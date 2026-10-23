@@ -103,6 +103,7 @@ func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error
 		Target:     "#users-results",
 		Swap:       htmx.OuterHTML,
 		PushURL:    true,
+		Attrs:      html.Attrs{html.A("hx-sync", "closest main:replace")},
 	}
 	out.Component(ctx, components.Section{
 		ID: "users-results",

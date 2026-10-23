@@ -259,7 +259,10 @@ mux.Handle("POST /orders", authenticate(csrf.Wrap(record(createOrder))))
 
 Authenticate, authorize replay access, verify CSRF, route, and validate input
 before reservation. `Validate func(*http.Request) error` runs before reservation
-and the body is reset afterward. Do not put current-model expected-version
+and again before duplicate replay, including after waiting. It must be read-only
+and reentrant and must check current replay access; transition authorization
+does not run on replay. Scope is also rechecked before exposing a duplicate.
+The body is reset before mutation. Do not put current-model expected-version
 checks in replay validation: those belong to the runtime transition, otherwise
 a successful duplicate would fail its now-stale precondition instead of replay.
 
@@ -285,3 +288,7 @@ List required application/HTMX response headers explicitly in `ReplayHeaders`.
 remain in memory. TTL expiry or restart allows execution again. No crash
 durability, transaction with model persistence, or exactly-once external effects.
 Use a durable application outbox or transactional action ledger when required.
+
+Race/fuzz CI, replay authorization, shutdown, bounded operational counters,
+durable action example, and response ordering:
+[hardening](hardening.md).

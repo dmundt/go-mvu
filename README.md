@@ -23,7 +23,7 @@ output, built-in database adapter, auth.
 | `static` | embedded HTMX 2.0.4 + SRI | none |
 | `validation` | explicit field errors | none |
 | `htmx` | typed actions, request/response headers | `html` |
-| `session` | signed session ID cookie | `store` |
+| `session` | signed session ID cookie and revocation signals | `store`, `httpx` |
 | `middleware` | HTTP policies, CSP/CSRF, recovery, logging, diagnostics, opt-in deployment extensions | `html`, `session`, `timing`, `httpx` |
 | `timing` | per-request phase trace (render time etc.) | none |
 | `httpx` | shared error policy, request ID context, response tracking, Vary | none |
@@ -243,6 +243,11 @@ Loopback only; random per-process secrets; in-memory state.
 - Memory store = single process; multi-instance → shared `store.Store`
   implementation + sticky or shared sessions.
 - Binary self-contained: CSS + HTMX embedded.
+- Counter/users stop HTTP admission and drain active work before dependency
+  closure. See [hardening](docs/guides/hardening.md) for shutdown ownership,
+  replay access checks, saturation counters, and cross-tab conflict policy.
+- [File-backed action ledger](examples/actionledger/README.md) demonstrates
+  application-owned transactional receipts and an at-least-once outbox.
 
 ## Validation
 
@@ -250,8 +255,10 @@ Loopback only; random per-process secrets; in-memory state.
 gofmt -l .
 go vet ./...
 go test ./...
+go test -race -count=1 ./...     # CGO_ENABLED=1 and a C compiler required
 go test '-run=^$' '-bench=.' -benchmem ./benchmarks
 npm ci; npm run test:themes      # only for theme CSS changes
+npm run test:ordering            # real Chromium response-ordering regression
 ```
 
 UI regressions: `npm ci --ignore-scripts`, then
@@ -262,6 +269,8 @@ CI runs all four viewport/mode projects. See
 
 `node_modules` needed only for browser checks or rebuilding adapter CSS and
 the Open Props subset (`npm run build:themes`), never for Go consumers.
+Set `PLAYWRIGHT_CHANNEL=chrome` to use installed Chrome for either browser suite.
+Linux CI runs race checks, six bounded fuzz campaigns, and browser regressions.
 
 ## Benchmarks
 
@@ -272,10 +281,10 @@ Details: [benchmarks](docs/guides/benchmarks.md).
 
 ## Known limitations
 
-- Race tests need cgo (`CGO_ENABLED=1 go test -race ./...`); not run on
-  cgo-less dev machine.
+- Race tests require cgo and a C compiler; Linux CI enables both.
 - `style-src 'unsafe-inline'` required.
-- No durable store, auth, rate limiting.
+- No core durable store or built-in authentication. File ledger example is
+  single-process; memory idempotency/revocation remain non-durable.
 - Tooltip lacks Escape dismissal; tabs lack ARIA arrow keys.
 
 ## Extension guidelines

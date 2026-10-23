@@ -58,6 +58,7 @@ func TestUsersPageAndFragmentShareTableSemantics(t *testing.T) {
 		content := response.Body.String()
 		for _, expected := range []string{
 			`id="users-results"`,
+			`hx-sync="closest main:replace"`,
 			"<caption>Users</caption>",
 			`<th scope="col">Name</th>`,
 			`<th scope="row">Ada Lovelace</th>`,

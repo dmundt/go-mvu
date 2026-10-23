@@ -8,7 +8,6 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/dmundt/go-mvu/httpx"
@@ -72,14 +71,18 @@ func acceptsGzip(value string) bool {
 	for _, coding := range strings.Split(value, ",") {
 		parts := strings.Split(coding, ";")
 		name, quality := strings.ToLower(strings.TrimSpace(parts[0])), 1.0
-		for _, parameter := range parts[1:] {
+		for index, parameter := range parts[1:] {
+			if index > 0 {
+				quality = 0
+				break
+			}
 			key, val, ok := strings.Cut(strings.TrimSpace(parameter), "=")
 			if !ok || !strings.EqualFold(key, "q") {
 				quality = 0
 				break
 			}
-			q, err := strconv.ParseFloat(val, 64)
-			if err != nil || q < 0 || q > 1 || q != q {
+			q, valid := qualityValue(val)
+			if !valid {
 				quality = 0
 				break
 			}

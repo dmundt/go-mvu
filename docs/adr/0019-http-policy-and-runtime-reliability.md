@@ -33,6 +33,10 @@ and command effects cannot be treated as one rollback-capable HTTP operation.
 - Bounded background execution and optional deployment policies are explicit.
   In-memory idempotency and revocation are single-process conveniences, not
   durable exactly-once or distributed security guarantees.
+- Fixed operational events cross the stdlib-only `httpx` boundary, including
+  session revocation saturation. Diagnostics do not depend on web/runtime types.
+  The application-owned file ledger example demonstrates atomic action
+  receipts/outbox descriptors without changing core storage or pure MVU APIs.
 
 ## Consequences
 

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/timing"
 )
 
@@ -49,6 +50,7 @@ type DiagnosticsSnapshot struct {
 	Errors   uint64                `json:"errors"`
 	Aborted  uint64                `json:"aborted"`
 	Phases   map[string]PhaseStats `json:"phases"`
+	Counters map[string]uint64     `json:"counters"`
 }
 
 type phaseTotals struct {
@@ -72,6 +74,7 @@ type Diagnostics struct {
 	errors   uint64
 	aborted  uint64
 	phases   map[string]*phaseTotals
+	counters map[httpx.Event]uint64
 }
 
 // NewDiagnostics returns a Diagnostics collector.
@@ -85,6 +88,7 @@ func NewDiagnostics(options DiagnosticsOptions) *Diagnostics {
 		slow:         options.SlowThreshold,
 		serverTiming: options.ServerTiming,
 		phases:       map[string]*phaseTotals{},
+		counters:     map[httpx.Event]uint64{},
 	}
 }
 
@@ -114,7 +118,10 @@ func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 			}
 			d.record(r, status, writer.bytes, writer.ttfb, total, phases, !completed)
 		}()
-		next.ServeHTTP(writer, r.WithContext(timing.WithTrace(r.Context(), trace)))
+		ctx := httpx.WithEventObserver(timing.WithTrace(r.Context(), trace), func(event httpx.Event) {
+			d.RecordEvent(event)
+		})
+		next.ServeHTTP(writer, r.WithContext(ctx))
 		completed = true
 	})
 }
@@ -133,6 +140,7 @@ func (d *Diagnostics) record(
 	}
 	if aborted {
 		d.aborted++
+		d.counters[httpx.ResponseAborted]++
 	}
 	for _, phase := range phases {
 		d.add(phase.Name, phase.Duration)
@@ -184,7 +192,8 @@ func (d *Diagnostics) Snapshot() DiagnosticsSnapshot {
 	defer d.mu.Unlock()
 	snapshot := DiagnosticsSnapshot{
 		Requests: d.requests, Slow: d.slowN, Errors: d.errors, Aborted: d.aborted,
-		Phases: make(map[string]PhaseStats, len(d.phases)),
+		Phases:   make(map[string]PhaseStats, len(d.phases)),
+		Counters: make(map[string]uint64, len(d.counters)),
 	}
 	for name, totals := range d.phases {
 		snapshot.Phases[name] = PhaseStats{
@@ -194,7 +203,22 @@ func (d *Diagnostics) Snapshot() DiagnosticsSnapshot {
 			MaxMS:   milliseconds(totals.max),
 		}
 	}
+	for event, count := range d.counters {
+		snapshot.Counters[event.String()] = count
+	}
 	return snapshot
+}
+
+// RecordEvent supports application-owned boundaries such as outbox workers.
+// Unknown enum values are rejected without allocating a metric label.
+func (d *Diagnostics) RecordEvent(event httpx.Event) bool {
+	if event.String() == "" {
+		return false
+	}
+	d.mu.Lock()
+	d.counters[event]++
+	d.mu.Unlock()
+	return true
 }
 
 // Reset clears aggregates.
@@ -204,6 +228,7 @@ func (d *Diagnostics) Reset() {
 	d.requests, d.slowN, d.errors = 0, 0, 0
 	d.aborted = 0
 	d.phases = map[string]*phaseTotals{}
+	d.counters = map[httpx.Event]uint64{}
 }
 
 // Handler serves Snapshot as JSON. Mount on an internal or authenticated

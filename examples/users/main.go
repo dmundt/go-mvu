@@ -4,12 +4,17 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
+	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/static"
@@ -19,16 +24,33 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// run serves until SIGINT/SIGTERM, then shuts down gracefully. A second
+// signal terminates immediately. Commands are synchronous (no effects), so
+// no command runner needs draining.
+func run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	context.AfterFunc(ctx, stop)
 	secret := make([]byte, 32)
 	if _, err := rand.Read(secret); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	handler, err := newHandler(secret)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	log.Println("users example listening on http://localhost:8081/users?page=1")
-	log.Fatal(http.ListenAndServe("localhost:8081", handler))
+	err = server.Run(ctx, server.Config{
+		Server:          server.New("localhost:8081", handler),
+		ShutdownTimeout: 15 * time.Second,
+	})
+	log.Println("users example stopped")
+	return err
 }
 
 func newHandler(secret []byte) (http.Handler, error) {
