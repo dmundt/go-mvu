@@ -28,6 +28,11 @@ html[data-theme] {
 	background: transparent;
 }
 
+.button:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
 .badge {
 	color: var(--bs-body-color);
 }
@@ -156,7 +161,7 @@ html[data-theme] {
 
 @media (max-width: 48rem) {
 	.shell {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.grid--columns-2,
@@ -170,6 +175,6 @@ html[data-theme] {
 	.grid--columns-10,
 	.grid--columns-11,
 	.grid--columns-12 {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 }

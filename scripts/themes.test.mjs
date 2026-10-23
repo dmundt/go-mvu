@@ -38,6 +38,22 @@ test("default design system stays scoped and includes both palettes and keyboard
   assert.ok(dark, "missing default dark palette");
 });
 
+test("mobile layout tracks shrink below intrinsic content width", async () => {
+  const css = postcss.parse(await defaultFile("base.css"));
+  const selectors = [];
+  css.walkAtRules("media", media => {
+    if (media.params !== "(max-width: 48rem)") return;
+    media.walkRules(rule => {
+      rule.walkDecls("grid-template-columns", decl => {
+        assert.equal(decl.value, "minmax(0, 1fr)");
+        selectors.push(...rule.selectors);
+      });
+    });
+  });
+  assert.ok(selectors.includes(".shell"));
+  assert.ok(selectors.includes(".grid--columns-2"));
+});
+
 test("open props subset defines every token default CSS references", async () => {
   const subset = await defaultFile("open-props.css");
   const own = (await Promise.all(["base.css", "default.css", "shared.css"].map(defaultFile))).join("\n");
@@ -63,6 +79,13 @@ for (const name of ["bootstrap", "bulma", "pico"]) {
     const selectors = [];
     css.walkRules(rule => selectors.push(rule.selector));
     assert.ok(selectors.some(selector => selector.includes(".button--primary")));
+    if (name === "bootstrap" || name === "pico") {
+      const focus = css.nodes.findLast(node =>
+        node.type === "rule" && node.selectors.includes(".button:focus-visible"));
+      assert.ok(focus, "missing adapter keyboard focus fallback");
+      assert.ok(focus.nodes.some(node =>
+        node.prop === "outline" && node.value === "2px solid var(--primary)"));
+    }
     if (name === "bootstrap") {
       assert.ok(selectors.some(selector => selector.includes("select.input")));
       css.walkRules(rule => {

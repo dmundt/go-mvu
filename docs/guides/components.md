@@ -160,16 +160,27 @@ run; occupied ports fail startup rather than reusing an unrelated process.
 Projects: `desktop-light`, `desktop-dark`, `mobile-light`, `mobile-dark`
 (1280px / 390px). Every project covers all four themes with actual computed
 styles, native popover open/close, and theme-form navigation preserving tabs.
-Counter and pagination assert HTMX preserves the document; no-JavaScript
-counter forms verify redirect/persistence fallback. User cards and plain tables
-also get computed-style checks. No arbitrary sleeps or selector-only styling
-assertions.
+Counter and pagination assert HTMX preserves the document. Pagination also
+checks Back/Forward restoration; no-JavaScript counter forms and pagination
+verify full-page fallback and reload persistence. User cards and plain tables
+also get computed-style checks.
+
+Each theme checks keyboard tab order, visible focus, Enter/Space dialog
+activation, Escape dismissal, focus restoration, dialog accessible names and
+tooltip descriptions. Tooltips hide on blur; Escape dismissal remains an
+explicit native-CSS limitation. System mode must match explicit palettes under
+both OS preferences and respond to live preference changes. Reduced motion
+must suppress tooltip transitions and limit spinners to one iteration lasting
+at most 1ms. No arbitrary sleeps or selector-only styling assertions.
 
 Focused run: `npm run test:browser -- --project=mobile-dark`.
 If browser installation is unavailable locally, set `PLAYWRIGHT_CHANNEL` to
 `msedge` or `chrome` to use an already installed Chromium-based browser;
 CI uses the pinned Playwright browser with no channel override.
-CI runs each project as a separate matrix job; failures retain traces and
+The UI matrix has 64 checks, alongside request-ordering tests.
+CI runs each project as a separate matrix job with
+pinned Chromium Headless Shell; browser jobs stop after 20 minutes and Go jobs
+after 15 minutes, including server startup and teardown. Failures retain traces and
 screenshots in ignored `test-results/` and an HTML report in
 `playwright-report/`. Browser automation JavaScript is test-only, never served
 to applications.
