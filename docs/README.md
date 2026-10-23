@@ -13,6 +13,8 @@
   - [Themes and CSS](guides/themes.md): inline CSS, tokens, system/light/dark,
     `POST /theme`, Bootstrap/Bulma/Pico adapters.
   - [Security](guides/security.md): escaping, CSP, local HTMX, CSRF, cookies.
+  - [Middleware](guides/middleware.md): composition, streaming, request bounds,
+    rejection policies, HTMX error handling, optional extensions.
   - [Benchmarks](guides/benchmarks.md): numbers, interpretation, rules.
 - [Engineering brief](engineering-brief.md): original design conversation;
   history only.

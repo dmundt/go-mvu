@@ -80,12 +80,13 @@ func (CounterView) Page(
 		Footer: components.Paragraph("Server-rendered MVU. No application JavaScript."),
 	}
 	return components.Document{
-		Title:         "Go MVU Counter",
-		HTMXSource:    static.HTMXPath,
-		HTMXIntegrity: static.HTMXIntegrity,
-		Theme:         request.Theme,
-		Mode:          request.Mode,
-		Body:          middleware.CSRFHTMX{Body: shell},
+		Title:                    "Go MVU Counter",
+		HTMXSource:               static.HTMXPath,
+		HTMXIntegrity:            static.HTMXIntegrity,
+		HTMXSwapValidationErrors: true,
+		Theme:                    request.Theme,
+		Mode:                     request.Mode,
+		Body:                     middleware.CSRFHTMX{Body: shell},
 	}, nil
 }
 

@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/dmundt/go-mvu/html"
+	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/session"
 )
 
@@ -27,14 +28,26 @@ var (
 type csrfContextKey struct{}
 
 type CSRF struct {
-	secret []byte
+	secret  []byte
+	onError httpx.ErrorHandler
 }
 
 func NewCSRF(secret []byte) (*CSRF, error) {
 	if len(secret) < 32 {
 		return nil, ErrWeakCSRFSecret
 	}
-	return &CSRF{secret: append([]byte(nil), secret...)}, nil
+	return &CSRF{secret: append([]byte(nil), secret...), onError: httpx.RespondError}, nil
+}
+
+// WithErrorHandler returns an independent configuration using a shared
+// application rejection policy. A nil handler restores the default policy.
+func (protection *CSRF) WithErrorHandler(handler httpx.ErrorHandler) *CSRF {
+	copy := *protection
+	if handler == nil {
+		handler = httpx.RespondError
+	}
+	copy.onError = handler
+	return &copy
 }
 
 func CSRFToken(ctx context.Context) (string, bool) {
@@ -46,7 +59,7 @@ func (protection *CSRF) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionID, hasSession := session.ID(r)
 		if !hasSession && unsafeMethod(r.Method) {
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			protection.onError(w, r, &httpx.Error{Status: http.StatusForbidden})
 			return
 		}
 
@@ -61,16 +74,19 @@ func (protection *CSRF) Wrap(next http.Handler) http.Handler {
 				if err := r.ParseForm(); err != nil {
 					var tooLarge *http.MaxBytesError
 					if errors.As(err, &tooLarge) {
-						http.Error(w, http.StatusText(http.StatusRequestEntityTooLarge), http.StatusRequestEntityTooLarge)
+						protection.onError(w, r, &httpx.Error{Status: http.StatusRequestEntityTooLarge, Cause: err})
 						return
 					}
-					http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+					protection.onError(w, r, &httpx.Error{Status: http.StatusForbidden, Cause: err})
 					return
 				}
 				provided = r.PostForm.Get(CSRFFieldName)
 			}
 			if !hmac.Equal([]byte(token), []byte(provided)) {
-				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				protection.onError(w, r, &httpx.Error{
+					Status: http.StatusForbidden,
+					Public: "Request verification failed. Reload the page before trying again.",
+				})
 				return
 			}
 		}

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
@@ -57,7 +58,6 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("GET "+static.Prefix, static.Handler())
 	mux.Handle("GET /users", runtime.Handle(web.Route[UsersMessage]{
 		Method:  http.MethodGet,
 		Pattern: "/users",
@@ -73,13 +73,23 @@ func newHandler(secret []byte) (http.Handler, error) {
 	})
 	mux.Handle("POST /theme", preference.Handler("/users"))
 
-	var handler http.Handler = mux
-	handler = csrf.Wrap(handler)
-	handler = preference.Wrap(handler)
-	handler = sessions.Wrap(handler)
-	handler = middleware.RequestID(handler)
-	handler = middleware.SecurityHeaders(handler)
-	return middleware.Recover(handler), nil
+	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
+		MaxBodyBytes: 1 << 20,
+		Timeout:      10 * time.Second,
+	})
+	if err != nil {
+		return nil, err
+	}
+	root := http.NewServeMux()
+	root.Handle("GET "+static.Prefix, static.Handler())
+	root.Handle("/", middleware.Chain(mux, middleware.NoStore,
+		sessions.Wrap, preference.Wrap, csrf.Wrap))
+	return middleware.Chain(root,
+		middleware.RequestID,
+		middleware.SecurityHeaders,
+		middleware.Recover,
+		policy,
+	), nil
 }
 
 // decodeShowPage reads ?page=N. Missing or invalid → page 1.

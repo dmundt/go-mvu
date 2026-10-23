@@ -21,6 +21,7 @@ CSS inlined in `<style>`. Source of truth:
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
 | `middleware` | security headers/CSP, CSRF, recover, request ID, logging, diagnostics |
 | `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
+| `httpx` | stdlib-only HTTP error policy, request IDs, Vary merging, response commitment |
 | `web` | runtime: route → message → Update → store → commands → view |
 | `internal/arch` | boundary enforcement test |
 | `benchmarks` | render benchmarks vs `html/template` |
@@ -31,25 +32,25 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ([ADR-0014](adr/0014-enforced-package-boundaries.md)).
 
 ```text
-mvu, html, store, theme, static, validation, timing → stdlib only
+mvu, html, store, theme, static, validation, timing, httpx → stdlib only
 htmx       → html
 session    → store
-middleware → html, session, timing
+middleware → html, session, timing, httpx
 components → html, htmx, theme
 shared     → components, html, htmx
-web        → mvu, html, htmx, store, theme, timing
+web        → mvu, html, htmx, store, theme, timing, httpx
 examples   → anything
 ```
 
 ```mermaid
 flowchart BT
-  html; mvu; store; theme; static; validation; timing
+  html; mvu; store; theme; static; validation; timing; httpx
   htmx --> html
   session --> store
-  middleware --> html & session & timing
+  middleware --> html & session & timing & httpx
   components --> html & htmx & theme
   shared --> components & html & htmx
-  web --> mvu & html & htmx & store & theme & timing
+  web --> mvu & html & htmx & store & theme & timing & httpx
   app[application] --> web & components & shared & middleware & session & static
 ```
 
@@ -86,6 +87,11 @@ sequenceDiagram
 7. View gets `RequestContext{Theme, Mode, IsHTMX, HTMX, CurrentURL}`.
 8. Stream to `http.ResponseWriter`; error before first byte → `OnError`,
    after → log.
+
+HTTP policy and runtime extensions: [middleware](guides/middleware.md),
+[ADR-0018](adr/0018-http-policy-and-runtime-reliability.md).
+Late panics abort the stream; ordinary render errors remain logged without
+appending a replacement body. HTTP failure after CAS does not undo persistence.
 
 ## Page vs fragment
 

@@ -11,9 +11,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
@@ -21,10 +25,43 @@ import (
 )
 
 var (
-	ErrUnknownFragment = errors.New("unknown HTML fragment")
-	ErrInvalidRuntime  = errors.New("incomplete web runtime configuration")
-	ErrUnknownRender   = errors.New("unknown render mode")
+	ErrUnknownFragment            = errors.New("unknown HTML fragment")
+	ErrInvalidRuntime             = errors.New("incomplete web runtime configuration")
+	ErrUnknownRender              = errors.New("unknown render mode")
+	ErrCommandOverload            = errors.New("async command queue full")
+	ErrCommandClosed              = errors.New("async command runner closed")
+	ErrInvalidCommandRunnerConfig = errors.New("invalid async command runner configuration")
 )
+
+// EffectError marks failures from commands after a model transition committed.
+type EffectError struct{ Cause error }
+
+func (e *EffectError) Error() string {
+	if e.Cause == nil {
+		return "command effect failed after commit"
+	}
+	return "command effect failed after commit: " + e.Cause.Error()
+}
+func (e *EffectError) Unwrap() error { return e.Cause }
+
+type OutcomeState uint8
+
+const (
+	OutcomeRejected OutcomeState = iota + 1
+	OutcomeCompleted
+	OutcomeCommitted
+	OutcomeEffectFailed
+	OutcomeResponseAborted
+)
+
+// RequestOutcome describes storage and response state when request handling ends.
+type RequestOutcome struct {
+	State     OutcomeState
+	Committed bool
+	Err       error
+}
+
+type OutcomeObserver func(*http.Request, RequestOutcome)
 
 // RequestContext carries per-request presentation state into views.
 type RequestContext struct {
@@ -33,6 +70,8 @@ type RequestContext struct {
 	IsHTMX     bool
 	HTMX       htmx.Request
 	CurrentURL string
+	// Locale is explicitly resolved by HTTP middleware and passed to views.
+	Locale string
 }
 
 // ThemeResolver reads and stores the visitor's color mode.
@@ -61,7 +100,7 @@ func NewRequestContext(r *http.Request, active theme.Theme, resolver ThemeResolv
 	}
 	return RequestContext{
 		Theme: active, Mode: mode, IsHTMX: request.IsHTMX,
-		HTMX: request, CurrentURL: current,
+		HTMX: request, CurrentURL: current, Locale: httpx.Locale(r.Context()),
 	}
 }
 
@@ -115,6 +154,16 @@ type KeyResolverFunc[K comparable] func(*http.Request) (K, error)
 
 func (fn KeyResolverFunc[K]) Resolve(r *http.Request) (K, error) { return fn(r) }
 
+type ExpectedVersionResolver interface {
+	ResolveVersion(*http.Request) (store.Version, error)
+}
+
+type ExpectedVersionFunc func(*http.Request) (store.Version, error)
+
+func (fn ExpectedVersionFunc) ResolveVersion(r *http.Request) (store.Version, error) {
+	return fn(r)
+}
+
 // CommandRunner executes commands returned by Init and Update.
 // dispatch performs a full transition and runs follow-up commands.
 type CommandRunner[Msg mvu.Message] interface {
@@ -141,9 +190,8 @@ func (SyncCommands[Msg]) Run(
 	return nil
 }
 
-// AsyncCommands runs each command in its own goroutine, detached from
-// request cancellation. Errors go to OnError (default: slog).
-// Response renders before commands finish.
+// Deprecated: AsyncCommands creates unbounded goroutines. Use
+// AsyncCommandRunner for bounded concurrency, queueing, and shutdown.
 type AsyncCommands[Msg mvu.Message] struct {
 	OnError func(error)
 }
@@ -173,6 +221,122 @@ func (runner AsyncCommands[Msg]) report(err error) {
 	slog.Error("mvu async command failed", "error", err)
 }
 
+type asyncTask[Msg mvu.Message] struct {
+	command  mvu.Command[Msg]
+	dispatch mvu.Dispatch[Msg]
+	ctx      context.Context
+}
+
+// AsyncCommandRunner bounds concurrent command execution and queued work.
+// Jobs retain request context values but not cancellation or deadlines.
+// Close stops acceptance and drains queued jobs; a Close context timeout only
+// bounds waiting and does not cancel running work. Per-command timeout bounds
+// cooperative jobs independently of request and shutdown contexts.
+type AsyncCommandRunner[Msg mvu.Message] struct {
+	queue   chan asyncTask[Msg]
+	timeout time.Duration
+	onError func(error)
+	mu      sync.Mutex
+	closed  bool
+	workers sync.WaitGroup
+}
+
+func NewAsyncCommandRunner[Msg mvu.Message](
+	concurrency, queueSize int, timeout time.Duration, onError func(error),
+) (*AsyncCommandRunner[Msg], error) {
+	if concurrency <= 0 || queueSize < 0 || timeout <= 0 {
+		return nil, ErrInvalidCommandRunnerConfig
+	}
+	runner := &AsyncCommandRunner[Msg]{
+		queue: make(chan asyncTask[Msg], queueSize), timeout: timeout, onError: onError,
+	}
+	runner.workers.Add(concurrency)
+	for range concurrency {
+		go runner.worker()
+	}
+	return runner, nil
+}
+
+func (runner *AsyncCommandRunner[Msg]) Run(
+	ctx context.Context, commands []mvu.Command[Msg], dispatch mvu.Dispatch[Msg],
+) error {
+	runner.mu.Lock()
+	defer runner.mu.Unlock()
+	if runner.closed {
+		return ErrCommandClosed
+	}
+	count := 0
+	for _, command := range commands {
+		if command != nil {
+			count++
+		}
+	}
+	if count > cap(runner.queue)-len(runner.queue) {
+		if cap(runner.queue) == 0 && count == 1 {
+			for _, command := range commands {
+				if command == nil {
+					continue
+				}
+				select {
+				case runner.queue <- asyncTask[Msg]{
+					command: command, dispatch: dispatch, ctx: context.WithoutCancel(ctx),
+				}:
+					return nil
+				default:
+					return ErrCommandOverload
+				}
+			}
+		}
+		return ErrCommandOverload
+	}
+	for _, command := range commands {
+		if command == nil {
+			continue
+		}
+		runner.queue <- asyncTask[Msg]{
+			command: command, dispatch: dispatch, ctx: context.WithoutCancel(ctx),
+		}
+	}
+	return nil
+}
+
+func (runner *AsyncCommandRunner[Msg]) worker() {
+	defer runner.workers.Done()
+	for task := range runner.queue {
+		ctx, cancel := context.WithTimeout(task.ctx, runner.timeout)
+		err := task.command.Execute(ctx, task.dispatch)
+		cancel()
+		if err != nil {
+			runner.report(&EffectError{Cause: err})
+		}
+	}
+}
+
+func (runner *AsyncCommandRunner[Msg]) report(err error) {
+	if runner.onError != nil {
+		runner.onError(err)
+		return
+	}
+	slog.Error("mvu async command failed", "error", err)
+}
+
+func (runner *AsyncCommandRunner[Msg]) Close(ctx context.Context) error {
+	runner.mu.Lock()
+	if !runner.closed {
+		runner.closed = true
+		close(runner.queue)
+	}
+	runner.mu.Unlock()
+	done := make(chan struct{})
+	go func() { runner.workers.Wait(); close(done) }()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
 type RenderMode uint8
 
 const (
@@ -194,6 +358,9 @@ type Result struct {
 	Location   string
 	PushURL    string
 	ReplaceURL string
+	// CacheControl overrides the default no-store policy for this result.
+	// Set explicitly only when response content is safe to cache.
+	CacheControl string
 }
 
 func (result Result) StatusOr(fallback int) int {
@@ -211,9 +378,19 @@ type Route[Msg mvu.Message] struct {
 	// RequireModel disables Init for this route: a missing model yields 404
 	// instead of being created.
 	RequireModel bool
+	// ExpectedVersion is trusted application parsing of an intent version.
+	// A stale intent is rejected with 409, never retried against newer state.
+	ExpectedVersion ExpectedVersionResolver
 }
 
-type ErrorHandler func(http.ResponseWriter, *http.Request, error)
+type ErrorHandler = httpx.ErrorHandler
+
+// TransitionAuthorizer authorizes each transition attempt using current
+// stored model state. Page/PageFunc initialization remains governed by Init
+// and is not gated here; a missing model created during Handle is gated.
+type TransitionAuthorizer[K comparable, Model any, Msg mvu.Message] func(
+	context.Context, K, Model, Msg,
+) error
 
 type RuntimeConfig[K comparable, Model any, Msg mvu.Message] struct {
 	App   mvu.Application[Model, Msg]
@@ -228,6 +405,12 @@ type RuntimeConfig[K comparable, Model any, Msg mvu.Message] struct {
 	Commands CommandRunner[Msg]
 	// OnError handles errors before the response starts. Nil → 500 text.
 	OnError ErrorHandler
+	// AuthorizeTransition runs before every Update/CAS attempt and before
+	// Handle creates a missing model for that intent. Page initialization
+	// remains ungated. HX headers are never authorization evidence.
+	AuthorizeTransition TransitionAuthorizer[K, Model, Msg]
+	// ObserveOutcome receives one commit-aware completion per routed request.
+	ObserveOutcome OutcomeObserver
 	// Logger records errors after the response started. Nil → slog.Default.
 	Logger     *slog.Logger
 	MaxRetries int
@@ -242,6 +425,8 @@ type Runtime[K comparable, Model any, Msg mvu.Message] struct {
 	themes     ThemeResolver
 	commands   CommandRunner[Msg]
 	onError    ErrorHandler
+	authorize  TransitionAuthorizer[K, Model, Msg]
+	observe    OutcomeObserver
 	logger     *slog.Logger
 	maxRetries int
 }
@@ -256,7 +441,8 @@ func NewRuntime[K comparable, Model any, Msg mvu.Message](
 	runtime := &Runtime[K, Model, Msg]{
 		app: config.App, store: config.Store, keys: config.Keys, view: config.View,
 		theme: config.Theme, themes: config.Themes, commands: config.Commands,
-		onError: config.OnError, logger: config.Logger, maxRetries: config.MaxRetries,
+		onError: config.OnError, authorize: config.AuthorizeTransition,
+		observe: config.ObserveOutcome, logger: config.Logger, maxRetries: config.MaxRetries,
 	}
 	if runtime.theme == nil {
 		runtime.theme = theme.DefaultTheme{}
@@ -288,68 +474,111 @@ func MustRuntime[K comparable, Model any, Msg mvu.Message](
 }
 
 // InternalServerError writes a generic 500 without leaking err.
-func InternalServerError(w http.ResponseWriter, _ *http.Request, _ error) {
-	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
+	httpx.RespondError(w, r, err)
 }
 
 // Handle decodes a message, applies Update, runs commands, renders Result.
 func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tracked := &httpx.Writer{ResponseWriter: w}
+		var committed atomic.Bool
+		var outcomeErr error
+		defer func() {
+			panicValue := recover()
+			runtime.notifyOutcome(r, tracked, committed.Load(), outcomeErr, panicValue)
+			if panicValue != nil {
+				panic(panicValue)
+			}
+		}()
+		fail := func(err error) {
+			outcomeErr = err
+			runtime.fail(tracked, r, err)
+		}
 		if route.Pattern != "" && r.URL.Path != route.Pattern {
-			http.NotFound(w, r)
+			fail(&httpx.Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound)})
 			return
 		}
 		if route.Method != "" && r.Method != route.Method {
-			w.Header().Set("Allow", route.Method)
-			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			tracked.Header().Set("Allow", route.Method)
+			fail(&httpx.Error{Status: http.StatusMethodNotAllowed, Public: http.StatusText(http.StatusMethodNotAllowed)})
 			return
 		}
 		if route.Decode == nil {
-			runtime.fail(w, r, ErrInvalidRuntime)
+			fail(ErrInvalidRuntime)
 			return
 		}
 		key, err := runtime.keys.Resolve(r)
 		if err != nil {
-			runtime.fail(w, r, err)
+			fail(err)
 			return
 		}
 		ctx := r.Context()
+		if err := ctx.Err(); err != nil {
+			fail(err)
+			return
+		}
+		var expected *store.Version
+		if route.ExpectedVersion != nil {
+			version, err := route.ExpectedVersion.ResolveVersion(r)
+			if err != nil {
+				fail(err)
+				return
+			}
+			expected = &version
+		}
 		trace := timing.FromContext(ctx)
 		if route.RequireModel {
+			if err := ctx.Err(); err != nil {
+				fail(err)
+				return
+			}
 			done := trace.Start(timing.PhaseLoad)
 			_, err := runtime.store.Load(ctx, key)
 			done()
 			if err != nil {
 				if errors.Is(err, store.ErrNotFound) {
-					http.NotFound(w, r)
+					fail(&httpx.Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound), Cause: err})
 				} else {
-					runtime.fail(w, r, err)
+					fail(err)
 				}
 				return
 			}
+		}
+		if err := ctx.Err(); err != nil {
+			fail(err)
+			return
 		}
 		done := trace.Start(timing.PhaseDecode)
 		message, err := route.Decode.Decode(r)
 		done()
 		if err != nil {
-			runtime.fail(w, r, err)
+			fail(err)
+			return
+		}
+		if err := ctx.Err(); err != nil {
+			fail(err)
 			return
 		}
 		done = trace.Start(timing.PhaseDispatch)
-		err = runtime.dispatcher(key)(ctx, message)
+		err = runtime.dispatcher(key, expected, func() { committed.Store(true) })(ctx, message)
 		done()
 		if err != nil {
-			runtime.fail(w, r, err)
+			fail(err)
+			return
+		}
+		if err := ctx.Err(); err != nil {
+			fail(err)
 			return
 		}
 		done = trace.Start(timing.PhaseLoad)
 		snapshot, err := runtime.store.Load(ctx, key)
 		done()
 		if err != nil {
-			runtime.fail(w, r, err)
+			fail(err)
 			return
 		}
-		runtime.writeResult(w, r, snapshot.Model, route.Result)
+		outcomeErr = runtime.writeResult(tracked, r, snapshot.Model, route.Result)
 	})
 }
 
@@ -362,104 +591,228 @@ func (runtime *Runtime[K, Model, Msg]) Page(result Result) http.Handler {
 // chosen from the query).
 func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Result) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tracked := &httpx.Writer{ResponseWriter: w}
+		var committed atomic.Bool
+		var outcomeErr error
+		defer func() {
+			panicValue := recover()
+			runtime.notifyOutcome(r, tracked, committed.Load(), outcomeErr, panicValue)
+			if panicValue != nil {
+				panic(panicValue)
+			}
+		}()
+		fail := func(err error) {
+			outcomeErr = err
+			runtime.fail(tracked, r, err)
+		}
 		if result == nil {
-			runtime.fail(w, r, ErrInvalidRuntime)
+			fail(ErrInvalidRuntime)
 			return
 		}
 		key, err := runtime.keys.Resolve(r)
 		if err != nil {
-			runtime.fail(w, r, err)
+			fail(err)
+			return
+		}
+		if err := r.Context().Err(); err != nil {
+			fail(err)
 			return
 		}
 		trace := timing.FromContext(r.Context())
 		done := trace.Start(timing.PhaseLoad)
-		snapshot, commands, err := runtime.loadOrCreate(r.Context(), key)
+		snapshot, commands, created, err := runtime.loadOrCreate(r.Context(), key)
 		done()
 		if err != nil {
-			runtime.fail(w, r, err)
+			fail(err)
 			return
 		}
+		committed.Store(created)
 		if len(commands) > 0 {
 			done = trace.Start(timing.PhaseDispatch)
-			err = runtime.commands.Run(r.Context(), commands, runtime.dispatcher(key))
+			err = runtime.commands.Run(r.Context(), commands,
+				runtime.dispatcher(key, nil, func() { committed.Store(true) }))
 			done()
 			if err != nil {
-				runtime.fail(w, r, err)
+				if committed.Load() && !isEffectError(err) {
+					err = &EffectError{Cause: err}
+				}
+				fail(err)
 				return
 			}
 			done = trace.Start(timing.PhaseLoad)
 			snapshot, err = runtime.store.Load(r.Context(), key)
 			done()
 			if err != nil {
-				runtime.fail(w, r, err)
+				fail(err)
 				return
 			}
 		}
-		runtime.writeResult(w, r, snapshot.Model, result(r))
+		outcomeErr = runtime.writeResult(tracked, r, snapshot.Model, result(r))
 	})
+}
+
+func (runtime *Runtime[K, Model, Msg]) notifyOutcome(
+	r *http.Request, tracked *httpx.Writer, committed bool, err error, panicValue any,
+) {
+	if runtime.observe == nil {
+		return
+	}
+	state := OutcomeRejected
+	switch {
+	case panicValue != nil && tracked.Started:
+		state = OutcomeResponseAborted
+	case isEffectError(err):
+		state = OutcomeEffectFailed
+	case isResponseAbort(err):
+		state = OutcomeResponseAborted
+	case committed:
+		state = OutcomeCommitted
+	case err == nil && panicValue == nil:
+		state = OutcomeCompleted
+	}
+	if panicValue != nil && err == nil {
+		err = fmt.Errorf("request panic: %v", panicValue)
+	}
+	runtime.observe(r, RequestOutcome{State: state, Committed: committed, Err: err})
 }
 
 // dispatcher returns a Dispatch that transitions the model for key and
 // hands follow-up commands to the CommandRunner. Commands never run while
 // the store holds a lock: CAS completes before Run.
-func (runtime *Runtime[K, Model, Msg]) dispatcher(key K) mvu.Dispatch[Msg] {
-	var dispatch mvu.Dispatch[Msg]
-	dispatch = func(ctx context.Context, message Msg) error {
-		commands, err := runtime.transition(ctx, key, message)
-		if err != nil {
-			return err
-		}
-		if len(commands) == 0 {
-			return nil
-		}
-		return runtime.commands.Run(ctx, commands, dispatch)
+func (runtime *Runtime[K, Model, Msg]) dispatcher(
+	key K, expected *store.Version, onCommit func(),
+) mvu.Dispatch[Msg] {
+	var followup mvu.Dispatch[Msg]
+	followup = func(ctx context.Context, message Msg) error {
+		return runtime.dispatchMessage(ctx, key, message, nil, onCommit, followup)
 	}
-	return dispatch
+	return func(ctx context.Context, message Msg) error {
+		return runtime.dispatchMessage(ctx, key, message, expected, onCommit, followup)
+	}
+}
+
+func (runtime *Runtime[K, Model, Msg]) dispatchMessage(
+	ctx context.Context, key K, message Msg, expected *store.Version,
+	onCommit func(), followup mvu.Dispatch[Msg],
+) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	commands, err := runtime.transition(ctx, key, message, expected, onCommit)
+	if err != nil {
+		return err
+	}
+	if len(commands) == 0 {
+		return nil
+	}
+	if err := runtime.commands.Run(ctx, commands, followup); err != nil {
+		if onCommit != nil {
+			return &EffectError{Cause: err}
+		}
+		return err
+	}
+	return nil
 }
 
 func (runtime *Runtime[K, Model, Msg]) loadOrCreate(
 	ctx context.Context, key K,
-) (store.Snapshot[Model], []mvu.Command[Msg], error) {
+) (store.Snapshot[Model], []mvu.Command[Msg], bool, error) {
 	for range runtime.maxRetries {
+		if err := ctx.Err(); err != nil {
+			return store.Snapshot[Model]{}, nil, false, err
+		}
 		snapshot, err := runtime.store.Load(ctx, key)
 		if err == nil {
-			return snapshot, nil, nil
+			return snapshot, nil, false, nil
 		}
 		if !errors.Is(err, store.ErrNotFound) {
-			return store.Snapshot[Model]{}, nil, err
+			return store.Snapshot[Model]{}, nil, false, err
 		}
 		model, commands, err := runtime.app.Init(ctx)
 		if err != nil {
-			return store.Snapshot[Model]{}, nil, err
+			return store.Snapshot[Model]{}, nil, false, err
+		}
+		if err := ctx.Err(); err != nil {
+			return store.Snapshot[Model]{}, nil, false, err
 		}
 		snapshot, err = runtime.store.Create(ctx, key, model)
 		if err == nil {
-			return snapshot, commands, nil
+			return snapshot, commands, true, nil
 		}
 		if !errors.Is(err, store.ErrAlreadyExists) {
-			return store.Snapshot[Model]{}, nil, err
+			return store.Snapshot[Model]{}, nil, false, err
 		}
 	}
-	return store.Snapshot[Model]{}, nil, store.ErrConflict
+	return store.Snapshot[Model]{}, nil, false, store.ErrConflict
 }
 
 func (runtime *Runtime[K, Model, Msg]) transition(
-	ctx context.Context, key K, message Msg,
+	ctx context.Context, key K, message Msg, expected *store.Version, onCommit func(),
 ) ([]mvu.Command[Msg], error) {
-	snapshot, initCommands, err := runtime.loadOrCreate(ctx, key)
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	snapshot, err := runtime.store.Load(ctx, key)
+	var initCommands []mvu.Command[Msg]
+	if errors.Is(err, store.ErrNotFound) {
+		model, commands, initErr := runtime.app.Init(ctx)
+		if initErr != nil {
+			return nil, initErr
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if runtime.authorize != nil {
+			if authErr := runtime.authorize(ctx, key, model, message); authErr != nil {
+				return nil, authErr
+			}
+		}
+		snapshot, err = runtime.store.Create(ctx, key, model)
+		if errors.Is(err, store.ErrAlreadyExists) {
+			snapshot, err = runtime.store.Load(ctx, key)
+		} else if err == nil {
+			initCommands = commands
+			if onCommit != nil {
+				onCommit()
+			}
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
-	for range runtime.maxRetries {
+	for attempt := 0; attempt < runtime.maxRetries; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if expected != nil && snapshot.Version != *expected {
+			return nil, staleVersionError()
+		}
+		if runtime.authorize != nil {
+			if err := runtime.authorize(ctx, key, snapshot.Model, message); err != nil {
+				return nil, err
+			}
+		}
 		model, commands, err := runtime.app.Update(ctx, snapshot.Model, message)
 		if err != nil {
 			return nil, err
 		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		_, err = runtime.store.CompareAndSwap(ctx, key, snapshot.Version, model)
 		if err == nil {
+			if onCommit != nil {
+				onCommit()
+			}
 			return append(initCommands, commands...), nil
 		}
 		if !errors.Is(err, store.ErrConflict) {
+			return nil, err
+		}
+		if expected != nil {
+			return nil, staleVersionError()
+		}
+		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		if snapshot, err = runtime.store.Load(ctx, key); err != nil {
@@ -471,22 +824,37 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 
 func (runtime *Runtime[K, Model, Msg]) writeResult(
 	w http.ResponseWriter, r *http.Request, model Model, result Result,
-) {
+) error {
+	tracked, ok := w.(*httpx.Writer)
+	if !ok {
+		tracked = &httpx.Writer{ResponseWriter: w}
+		w = tracked
+	}
 	request := NewRequestContext(r, runtime.theme, runtime.themes)
 	mode := result.Mode
+	cacheControl := result.CacheControl
+	if cacheControl == "" {
+		cacheControl = "no-store"
+	}
+	w.Header().Set("Cache-Control", cacheControl)
 	if mode == RenderAuto {
+		httpx.Vary(w.Header(), "HX-Request", "HX-Boosted", "HX-History-Restore-Request")
 		switch {
 		case request.IsHTMX && !request.HTMX.IsBoosted && !request.HTMX.IsHistory:
 			mode = RenderFragment
 		case result.Location != "":
 			http.Redirect(w, r, result.Location, result.StatusOr(http.StatusSeeOther))
-			return
+			return nil
 		default:
 			mode = RenderPage
 		}
 	} else if result.Location != "" {
 		http.Redirect(w, r, result.Location, result.StatusOr(http.StatusSeeOther))
-		return
+		return nil
+	}
+	if err := r.Context().Err(); err != nil {
+		runtime.fail(w, r, err)
+		return err
 	}
 	if result.PushURL != "" {
 		htmx.PushURL(w, result.PushURL)
@@ -494,18 +862,20 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 	if result.ReplaceURL != "" {
 		htmx.ReplaceURL(w, result.ReplaceURL)
 	}
-	tracked := &trackingWriter{ResponseWriter: w}
 	trace := timing.FromContext(r.Context())
 	var err error
 	switch mode {
 	case RenderNothing:
 		NoContent(w)
-		return
+		return nil
 	case RenderPage:
 		var page html.Page
 		done := trace.Start(timing.PhaseView)
 		page, err = runtime.view.Page(r.Context(), model, request)
 		done()
+		if err == nil {
+			err = r.Context().Err()
+		}
 		if err == nil {
 			done = trace.Start(timing.PhaseRender)
 			err = WritePage(r.Context(), tracked, result.StatusOr(http.StatusOK), page)
@@ -517,6 +887,9 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		fragment, err = runtime.view.Fragment(r.Context(), result.Fragment, model, request)
 		done()
 		if err == nil {
+			err = r.Context().Err()
+		}
+		if err == nil {
 			done = trace.Start(timing.PhaseRender)
 			err = WriteFragment(r.Context(), tracked, result.StatusOr(http.StatusOK), fragment)
 			done()
@@ -525,37 +898,63 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		err = fmt.Errorf("%w: %d", ErrUnknownRender, mode)
 	}
 	if err == nil {
-		return
+		return nil
 	}
-	if tracked.started {
+	if tracked.Started {
+		if errors.Is(err, http.ErrAbortHandler) {
+			panic(http.ErrAbortHandler)
+		}
 		runtime.logger.ErrorContext(r.Context(), "render failed after response started",
 			"path", r.URL.Path, "error", err)
-		return
+		return &responseAbortError{cause: err}
 	}
-	runtime.onError(w, r, err)
+	runtime.fail(w, r, err)
+	return err
 }
 
 func (runtime *Runtime[K, Model, Msg]) fail(w http.ResponseWriter, r *http.Request, err error) {
+	err = normalizeError(err)
 	runtime.onError(w, r, err)
 }
 
-// trackingWriter records whether headers or body were sent.
-type trackingWriter struct {
-	http.ResponseWriter
-	started bool
+type responseAbortError struct{ cause error }
+
+func (e *responseAbortError) Error() string { return "response aborted: " + e.cause.Error() }
+func (e *responseAbortError) Unwrap() error { return e.cause }
+
+func isEffectError(err error) bool {
+	var effect *EffectError
+	return errors.As(err, &effect)
 }
 
-func (w *trackingWriter) WriteHeader(status int) {
-	w.started = true
-	w.ResponseWriter.WriteHeader(status)
+func isResponseAbort(err error) bool {
+	var aborted *responseAbortError
+	return errors.As(err, &aborted)
 }
 
-func (w *trackingWriter) Write(data []byte) (int, error) {
-	w.started = true
-	return w.ResponseWriter.Write(data)
+func staleVersionError() error {
+	return &httpx.Error{
+		Status: http.StatusConflict, Public: http.StatusText(http.StatusConflict),
+		Cause: store.ErrConflict,
+	}
 }
 
-func (w *trackingWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+func normalizeError(err error) error {
+	if isEffectError(err) {
+		return &httpx.Error{
+			Status: http.StatusInternalServerError, Public: http.StatusText(http.StatusInternalServerError),
+			Cause: err,
+		}
+	}
+	var tooLarge *http.MaxBytesError
+	if errors.As(err, &tooLarge) {
+		return &httpx.Error{
+			Status: http.StatusRequestEntityTooLarge, Public: http.StatusText(http.StatusRequestEntityTooLarge),
+			Cause: err,
+		}
+	}
+	return err
+}
 
 // WritePage renders into a buffer-free stream. Headers are sent before the
 // body, so a mid-render failure yields a truncated 200; callers log it.

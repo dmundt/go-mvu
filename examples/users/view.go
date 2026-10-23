@@ -53,11 +53,12 @@ func cardsPage(request web.RequestContext, users []User) components.Document {
 }
 func document(request web.RequestContext, title string, body ...html.Component) components.Document {
 	return components.Document{
-		Title:         title,
-		HTMXSource:    static.HTMXPath,
-		HTMXIntegrity: static.HTMXIntegrity,
-		Theme:         request.Theme,
-		Mode:          request.Mode,
+		Title:                    title,
+		HTMXSource:               static.HTMXPath,
+		HTMXIntegrity:            static.HTMXIntegrity,
+		HTMXSwapValidationErrors: true,
+		Theme:                    request.Theme,
+		Mode:                     request.Mode,
 		Body: middleware.CSRFHTMX{Body: components.AppShell{
 			Header: components.Inline{Children: []html.Component{
 				components.Heading{Level: 1, Text: title},

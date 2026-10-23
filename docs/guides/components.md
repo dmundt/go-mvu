@@ -1,5 +1,9 @@
 # Components and pagination
 
+`Document.HTMXSwapValidationErrors` explicitly enables 422 validation fragment
+swaps through an escaped HTMX configuration meta element. Other error statuses
+keep default no-swap behavior. See [HTTP policy](middleware.md#cache-and-htmx-policy).
+
 Reusable components are optional helpers, not a required rendering layer.
 Applications can combine `components` package elements with local components;
 local, business-specific components should stay with the application. See
