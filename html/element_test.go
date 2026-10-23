@@ -102,6 +102,33 @@ func TestUnsafeAttributeErrorIsSticky(t *testing.T) {
 	}
 }
 
+func TestElementAttributesAreFirstWinsAndClassesMerge(t *testing.T) {
+	got := render(t, El("div", Attrs{
+		A("ID", "first"), A("id", "second"),
+		A("CLASS", "wide"), A("Class", "dark"), A("class", `a"b`),
+		A("data-hx-get", "/first"), A("HX-GET", "/second"),
+		Flag("hidden"), A("HIDDEN", "false"),
+		A("data-note", "one"), A("DATA-NOTE", "two"),
+	}))
+	want := `<div ID="first" class="wide dark a&#34;b" data-hx-get="/first"` +
+		` hidden data-note="one"></div>`
+	if got != want {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+}
+
+func TestDuplicateAttributesValidateOnlyEmittedValues(t *testing.T) {
+	got := render(t, El("a", Attrs{A("href", "/first"), A("HREF", "javascript:ignored")}))
+	if got != `<a href="/first"></a>` {
+		t.Fatalf("duplicate value emitted: %s", got)
+	}
+	err := Render(context.Background(), io.Discard,
+		El("a", Attrs{A("href", "javascript:rejected"), A("HREF", "/second")}))
+	if !errors.Is(err, ErrUnsafeAttribute) {
+		t.Fatalf("unsafe first value must fail: %v", err)
+	}
+}
+
 func BenchmarkElementWithAttrs(b *testing.B) {
 	element := El("div", Attrs{A("class", "row"), A("data-id", "42"), A("hx-get", "/rows/42")},
 		El("span", nil, Text("Ada")),

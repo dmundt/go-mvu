@@ -254,8 +254,14 @@ go test '-run=^$' '-bench=.' -benchmem ./benchmarks
 npm ci; npm run test:themes      # only for theme CSS changes
 ```
 
-`node_modules` needed only to rebuild adapter CSS and the Open Props subset
-(`npm run build:themes`).
+UI regressions: `npm ci --ignore-scripts`, then
+`npx playwright install chromium --only-shell` and `npm run test:browser`.
+Real Go example handlers; four themes × desktop/mobile × light/dark.
+CI runs all four viewport/mode projects. See
+[browser checks](docs/guides/components.md#browser-regression-checks).
+
+`node_modules` needed only for browser checks or rebuilding adapter CSS and
+the Open Props subset (`npm run build:themes`), never for Go consumers.
 
 ## Benchmarks
 

@@ -29,6 +29,10 @@ Only [theme markup](../../examples/themes/lowlevel.go) and
 Framework component implementations remain free to render directly; no
 mandatory builder layer. Applications may adopt this policy without adopting
 the repository's test. See [ADR-0018](../adr/0018-ui-authoring-boundaries.md).
+Scope tests ensure framework packages and external applications remain outside
+this policy. New exceptions need an exact file path and review rationale;
+renaming a file `lowlevel.go` alone never exempts it. Go test files, including
+browser-server harnesses, are not application authoring surfaces.
 
 ## Component contract
 
@@ -111,10 +115,19 @@ components.Card{
 - Root element gets Attrs. Exceptions: form controls (`Input`, `Select`,
   `Checkbox`, `Textarea`, `Switch`) → the control; `Dialog` → popover panel;
   `Table` → `<table>`; `Shell` → `div.shell`.
-- `class` merges into component classes.
+- All non-empty `class` values merge into component classes, in input order.
+  Repeated class tokens are preserved; blank and flag-only class entries add
+  no value.
 - Component-owned names win and are skipped: e.g. `type` on `Button`,
   `href` on `Link`, `role` on `Alert`, `id` when `ID` is set, all `hx-*`
-  when `Action` is set.
+  when `Action` is set (including `data-hx-*` aliases).
+- Other repeated names are case-insensitive first-value-wins: only the first
+  is emitted, in its original position and casing. `hx-get` and `data-hx-get`
+  count as one name; unrelated `data-*` names remain independent. The same
+  duplicate policy applies to `html.El` / `Context.Attrs`.
+- Owned names and later duplicate values are discarded before emission;
+  validation applies to attributes actually emitted. A false/unset optional
+  property owns nothing unless the component still writes a default.
 - Same allowlist as `html.El`.
 
 Exceptions retained for compatibility:
@@ -135,6 +148,31 @@ out.Static(`"`)
 out.PassAttrs(panel.Attrs, "role")
 out.Static(` role="region">`)
 ```
+
+## Browser regression checks
+
+Run `npm ci --ignore-scripts`, `npx playwright install chromium --only-shell`,
+then `npm run test:browser`. Go consumers do not need Node or browser tooling.
+The suite uses real example handlers through opt-in Go test servers, not mocks.
+It starts four loopback servers on ports 18080–18083 and stops them after the
+run; occupied ports fail startup rather than reusing an unrelated process.
+
+Projects: `desktop-light`, `desktop-dark`, `mobile-light`, `mobile-dark`
+(1280px / 390px). Every project covers all four themes with actual computed
+styles, native popover open/close, and theme-form navigation preserving tabs.
+Counter and pagination assert HTMX preserves the document; no-JavaScript
+counter forms verify redirect/persistence fallback. User cards and plain tables
+also get computed-style checks. No arbitrary sleeps or selector-only styling
+assertions.
+
+Focused run: `npm run test:browser -- --project=mobile-dark`.
+If browser installation is unavailable locally, set `PLAYWRIGHT_CHANNEL` to
+`msedge` or `chrome` to use an already installed Chromium-based browser;
+CI uses the pinned Playwright browser with no channel override.
+CI runs each project as a separate matrix job; failures retain traces and
+screenshots in ignored `test-results/` and an HTML report in
+`playwright-report/`. Browser automation JavaScript is test-only, never served
+to applications.
 
 ## Shared UI widgets
 

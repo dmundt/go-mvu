@@ -1,0 +1,49 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: go test ./...
+      - run: go vet ./...
+
+  browser:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [desktop-light, desktop-dark, mobile-light, mobile-dark]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run test:themes
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser -- --project=${{ matrix.project }}
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-${{ matrix.project }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

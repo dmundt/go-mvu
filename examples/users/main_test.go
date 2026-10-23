@@ -122,7 +122,7 @@ func TestUpdateClampsAndVisibleSlices(t *testing.T) {
 func TestEmptyDirectoryRendersEmptyState(t *testing.T) {
 	model, _, _ := UsersApp{}.Init(context.Background())
 	var output strings.Builder
-	if err := html.Render(context.Background(), &output, results{Model: model}); err != nil {
+	if err := html.Render(context.Background(), &output, UserResults{Model: model}); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(output.String(), "No users") || strings.Contains(output.String(), "<table") {

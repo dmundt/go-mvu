@@ -25,6 +25,11 @@ Two gaps between high-level components and low-level `html.Context` code:
   `Document`, string/slice conveniences and rootless helpers are exceptions;
   see [guide](../guides/components.md#attribute-passthrough).
   `class` merges; component-owned names win and are skipped.
+- Other duplicate names use first-value-wins (case-insensitive); emit one
+  attribute. `hx-*` / `data-hx-*` aliases share identity and ownership.
+  All class values merge in order. Discarded owned/duplicate values are not
+  emitted or validated. This matches browser first-value handling without
+  generating duplicate attributes.
 - `Context.Class`, `ExtraClass`, `PassAttrs` let custom components do the
   same. `htmx.Action.Attrs()` bridges actions to `El`.
 - `components` URL validation delegates to `html.ValidateURL`, which gains a

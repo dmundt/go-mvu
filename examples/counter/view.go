@@ -20,16 +20,25 @@ type CounterFragment struct {
 }
 
 func (counter CounterFragment) RenderHTML(ctx context.Context, out *html.Context) error {
-	controls := components.Inline{Children: []html.Component{
+	out.Component(ctx, components.Section{
+		ID: "counter",
+		Children: []html.Component{components.Stack{
+			Children: []html.Component{CounterControls{Count: counter.Count}},
+		}},
+	})
+	return out.Err()
+}
+
+// CounterControls groups the current value and its no-JavaScript-capable actions.
+type CounterControls struct{ Count int }
+
+func (controls CounterControls) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Component(ctx, components.Inline{Children: []html.Component{
 		counterButton("-", "Decrement", "/counter/decrement", ""),
-		components.Output{Value: strconv.Itoa(counter.Count), Live: true},
+		components.Output{Value: strconv.Itoa(controls.Count), Live: true},
 		counterButton("+", "Increment", "/counter/increment", ""),
 		counterButton("Reset", "", "/counter/reset", components.ButtonSecondary),
-	}}
-	out.Component(ctx, components.Section{
-		ID:       "counter",
-		Children: []html.Component{components.Stack{Children: []html.Component{controls}}},
-	})
+	}})
 	return out.Err()
 }
 
@@ -38,21 +47,22 @@ func counterButton(
 	label, ariaLabel, url string,
 	variant components.ButtonVariant,
 ) html.Component {
+	button := components.Button{
+		Type:      components.ButtonSubmit,
+		Label:     label,
+		AriaLabel: ariaLabel,
+		Variant:   variant,
+		Action: htmx.Action{
+			Method: htmx.Post,
+			URL:    url,
+			Target: "#counter",
+			Swap:   htmx.OuterHTML,
+		},
+	}
 	return components.Form{
 		URL:       url,
 		CSRFField: middleware.CSRFInput{},
-		Children: []html.Component{components.Button{
-			Type:      components.ButtonSubmit,
-			Label:     label,
-			AriaLabel: ariaLabel,
-			Variant:   variant,
-			Action: htmx.Action{
-				Method: htmx.Post,
-				URL:    url,
-				Target: "#counter",
-				Swap:   htmx.OuterHTML,
-			},
-		}},
+		Children:  []html.Component{button},
 	}
 }
 

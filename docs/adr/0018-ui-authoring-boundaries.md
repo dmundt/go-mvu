@@ -29,6 +29,9 @@ Import boundaries alone cannot distinguish authoring levels.
   components in these examples compose existing semantic components too.
 - Low-level exceptions are exact files with documented reasons, not filename
   patterns. Third-party applications need not adopt these repository tests.
+  Scope tests guard that distinction; test files and browser harnesses are
+  excluded from authoring checks. Browser regressions execute real example
+  handlers and computed styles across all themes and desktop/mobile modes.
 - Package import tests discover production files recursively and require
   explicit declarations for new packages, including nested packages.
 - Prefer typed properties over `Attrs`. Document actual exceptions:

@@ -48,22 +48,27 @@ func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
 			Mode:   view.Mode,
 			Hidden: []themepicker.Hidden{{Name: "tab", Value: view.Tab.ID}},
 		},
-		components.Stack{Gap: "1.5rem", Children: []html.Component{
-			stats(),
-			components.Grid{Columns: 2, Gap: "1.5rem", Children: []html.Component{
-				view.tabsCard(),
-				accordionCard(),
-				overlaysCard(),
-				avatarsCard(),
-				feedbackCard(),
-				formCard(),
-				stepsCard(),
-				emptyCard(),
-				mixedCard(),
-			}},
-		}},
+		view.content(),
 	}})
 	return out.Err()
+}
+
+func (view gallery) content() html.Component {
+	cards := components.Grid{Columns: 2, Gap: "1.5rem", Children: []html.Component{
+		view.tabsCard(),
+		accordionCard(),
+		overlaysCard(),
+		avatarsCard(),
+		feedbackCard(),
+		formCard(),
+		stepsCard(),
+		emptyCard(),
+		mixedCard(),
+	}}
+	return components.Stack{
+		Gap:      "1.5rem",
+		Children: []html.Component{stats(), cards},
+	}
 }
 
 // url links to tab id while keeping the selected theme and mode.
@@ -154,7 +159,8 @@ func overlaysCard() html.Component {
 	}
 	return card("Overlays",
 		components.Paragraph("Dialogs use the native popover attribute; dropdowns use details."),
-		inline(dialog, dropdown, tooltip),
+		inline(dialog, dropdown),
+		inline(tooltip),
 	)
 }
 

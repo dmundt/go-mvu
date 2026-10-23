@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "build:themes": "node scripts/build-themes.mjs",
-    "test:themes": "node --test scripts/themes.test.mjs"
+    "test:themes": "node --test scripts/themes.test.mjs",
+    "test:browser": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "@picocss/pico": "2.1.1",
     "bootstrap": "5.3.8",
     "bulma": "1.0.4",
