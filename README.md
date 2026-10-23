@@ -19,6 +19,8 @@ Open <http://localhost:8080> and try the counter.
 
 ## Learn more
 
+- [Start with Hello World](examples/hello/)
+- [Explore an admin dashboard](examples/admin/)
 - [Build your first app](docs/guides/first-app.md)
 - [Try a form with validation](docs/guides/forms.md)
 - [See a small function-based view](examples/contact/view.go)

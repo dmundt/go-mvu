@@ -2,10 +2,14 @@
 type: Tutorial
 title: Build your first app
 description: Run a counter and make a small change.
-version: 1
+version: 2
 ---
 
 # Build your first app
+
+Want only a page and a heading? Start with [Hello World](../../examples/hello/):
+`go run .\examples\hello`, then open <http://localhost:8085>. It needs no MVU
+runtime, session, or HTMX. Continue below when you need changing state.
 
 Run a working app first. You do not need to set up sessions, themes, or
 middleware to make your first change.
@@ -65,6 +69,10 @@ fields, validation, helpful errors, and keeps entered values when a form
 needs correction. The same form works with and without JavaScript.
 
 ## Before putting it online
+
+For a larger learning example, try the [admin dashboard](../../examples/admin/).
+It combines filtering, paging, editable records, validation, and independent
+page regions. It has no login or durable storage.
 
 The counter is for learning: it stores data in memory, changes secrets when
 restarted, and has no login. Do not expose it unchanged. Read the

@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 6
+version: 7
 ---
 
 # Specs
@@ -46,6 +46,11 @@ version: 6
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+Additional learning examples: [hello](../../examples/hello/) uses only
+document composition and an HTTP page writer; [admin](../../examples/admin/)
+combines per-session state, validated edits, filters, pagination, and two
+independent regions. Neither changes core contracts or adds dependencies.
 
 UI conveniences: `Select.Placeholder` owns an optional empty-value choice;
 `ui.Document.Validate` rejects HTMX-only flags without HTMX. Form field
