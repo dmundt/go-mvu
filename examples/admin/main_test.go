@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dmundt/go-mvu/examples/internal/browsertest"
+	"github.com/dmundt/go-mvu/internal/browsertest"
 	"github.com/dmundt/go-mvu/validation"
 )
 

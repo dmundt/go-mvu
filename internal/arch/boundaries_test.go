@@ -16,21 +16,22 @@ const module = "github.com/dmundt/go-mvu/"
 // allowed lists permitted in-module imports per package (non-test files).
 // Spec: docs/specs/gomvu-chat-spec.md §2.
 var allowed = map[string][]string{
-	"mvu":                {},
-	"html":               {},
-	"store":              {},
-	"theme":              {},
-	"internal/arch":      {},
-	"static":             {},
-	"htmx":               {"html"},
-	"session":            {"store", "httpx"},
-	"validation":         {},
-	"timing":             {},
-	"httpx":              {},
-	"middleware":         {"html", "session", "timing", "httpx"},
-	"components":         {"html", "htmx", "theme"},
-	"ui":                 {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
-	"web":                {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
+	"mvu":                  {},
+	"html":                 {},
+	"store":                {},
+	"theme":                {},
+	"internal/arch":        {},
+	"internal/browsertest": {},
+	"static":               {},
+	"htmx":                 {"html"},
+	"session":              {"store", "httpx"},
+	"validation":           {},
+	"timing":               {},
+	"httpx":                {},
+	"middleware":           {"html", "session", "timing", "httpx"},
+	"components":           {"html", "htmx", "theme"},
+	"ui":                   {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
+	"web":                  {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
 }
 
 func TestPackageBoundaries(t *testing.T) {
