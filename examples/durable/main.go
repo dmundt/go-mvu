@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/durable/caskstore"
+	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
@@ -26,7 +26,7 @@ import (
 
 type service struct {
 	handler http.Handler
-	store   *caskstore.Store[CounterModel]
+	store   *jsonstore.Store[CounterModel]
 	sink    *FileSink
 	worker  *outboxWorker
 	wakes   chan string
@@ -98,7 +98,7 @@ func newService(dataDir string) (*service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create theme preference: %w", err)
 	}
-	modelStore, err := caskstore.Open[CounterModel](filepath.Join(dataDir, "models"))
+	modelStore, err := jsonstore.Open[CounterModel](filepath.Join(dataDir, "models"))
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func newService(dataDir string) (*service, error) {
 	}, nil
 }
 
-func closeStoreAfterError(modelStore *caskstore.Store[CounterModel], cause error) error {
+func closeStoreAfterError(modelStore *jsonstore.Store[CounterModel], cause error) error {
 	if err := modelStore.Close(); err != nil {
 		return errors.Join(cause, fmt.Errorf("close durable store: %w", err))
 	}

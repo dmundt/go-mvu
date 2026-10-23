@@ -16,7 +16,6 @@ const module = "github.com/dmundt/go-mvu/"
 // allowed lists permitted in-module imports per package (non-test files).
 // Spec: docs/specs/gomvu-chat-spec.md §2.
 var allowed = map[string][]string{
-	"adapters/caskstore": {"store"},
 	"mvu":                {},
 	"html":               {},
 	"store":              {},

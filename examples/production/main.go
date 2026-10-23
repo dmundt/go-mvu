@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/dmundt/go-mvu/adapters/caskstore"
+	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
@@ -138,7 +138,7 @@ func validateOrigin(raw string, development bool, issuer bool) (*url.URL, error)
 type application struct {
 	handler http.Handler
 	auth    *authentication
-	models  *caskstore.Store[Model]
+	models  *jsonstore.Store[Model]
 }
 
 func (app *application) Close() error {
@@ -206,7 +206,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 			return nil, fmt.Errorf("OIDC endpoint: %w", err)
 		}
 	}
-	models, err := caskstore.Open[Model](filepath.Join(cfg.DataDir, "models"))
+	models, err := jsonstore.Open[Model](filepath.Join(cfg.DataDir, "models"))
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 			result = errors.Join(result, models.Close())
 		}
 	}()
-	records, err := caskstore.Open[identity](filepath.Join(cfg.DataDir, "auth"))
+	records, err := jsonstore.Open[identity](filepath.Join(cfg.DataDir, "auth"))
 	if err != nil {
 		return nil, err
 	}

@@ -34,18 +34,16 @@ CSS inlined in `<style>`. Source of truth:
 | `internal/arch` | boundary enforcement test |
 | `benchmarks` | render benchmarks vs `html/template` |
 
-The [durable example](../examples/durable/README.md) demonstrates a go-cask
-content-addressed object store with atomically advanced model refs and an
-outbox embedded in each immutable model object. Its CAS adapter serializes
-writes in one process; use a distributed transactional store for multi-process
-deployments. See [framework positioning](guides/positioning.md).
+The [durable example](../examples/durable/README.md) demonstrates an
+example-only JSON file store and an outbox embedded in each model record. Its
+CAS operations serialize within one process; use a distributed transactional
+store for multi-process deployments. This storage is not part of the framework.
+See [framework positioning](guides/positioning.md).
 
 ## Dependency rules
 
-Optional nested modules: `adapters/caskstore` implements `store.Store` with
-go-cask and an exclusive OS directory lock; `examples/production` composes it
-with OIDC/OAuth2 libraries. Neither is imported by core framework packages.
-Root module also uses go-cask for the separate durable outbox example.
+`examples/production` composes the example-only JSON file store with
+OIDC/OAuth2 libraries. Neither is imported by core framework packages.
 See [ADR-0020](adr/0020-optional-production-integrations.md) and
 [production guide](guides/production.md).
 
