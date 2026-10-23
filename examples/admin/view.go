@@ -33,7 +33,8 @@ func (view View) Page(
 		}},
 		Main: components.Column(
 			overviewRegion.Wrap(overview(model)),
-			workspaceRegion.Wrap(workspace(model)),
+			saveStatus(model, false),
+			workspaceRegion.Wrap(workspace(model, true)),
 			components.Section{
 				ID: "about-demo",
 				Children: []html.Component{components.Card{
@@ -55,11 +56,49 @@ func (View) Fragment(
 ) (html.Fragment, error) {
 	switch name {
 	case string(workspaceRegion):
-		return workspaceRegion.Wrap(workspace(model)), nil
+		return workspaceRegion.Wrap(workspace(model, false)), nil
 	case string(overviewRegion):
 		return overviewRegion.Wrap(overview(model)), nil
+	case string(editorRegion):
+		return editorFragment{Model: model}, nil
+	case "member-saved":
+		return savedFragment{Model: model}, nil
 	default:
 		return nil, web.ErrUnknownFragment
+	}
+}
+
+type editorFragment struct {
+	html.FragmentMarker
+	Model Model
+}
+
+func (fragment editorFragment) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Component(ctx, editor(fragment.Model))
+	return out.Err()
+}
+
+type savedFragment struct {
+	html.FragmentMarker
+	Model Model
+}
+
+func (fragment savedFragment) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Component(ctx, workspaceRegion.Wrap(workspace(fragment.Model, false)))
+	out.Component(ctx, saveStatus(fragment.Model, true))
+	return out.Err()
+}
+
+func saveStatus(model Model, oob bool) html.Component {
+	attrs := html.Attrs{html.A("role", "status"), html.A("aria-live", "polite")}
+	if oob {
+		attrs = append(attrs, html.A("hx-swap-oob", "innerHTML"))
+	}
+	return components.Section{
+		ID: "save-status", Attrs: attrs,
+		Children: []html.Component{
+			html.Optional{Show: model.Notice != "", Body: components.Paragraph(model.Notice)},
+		},
 	}
 }
 
@@ -92,7 +131,7 @@ func overview(model Model) html.Component {
 	)
 }
 
-func workspace(model Model) html.Component {
+func workspace(model Model, inlineEditor bool) html.Component {
 	directory := model.directory()
 	filter, pagination := directoryNavigation(model, directory)
 	var results html.Component = memberTable(directory.Members)
@@ -101,7 +140,7 @@ func workspace(model Model) html.Component {
 			Title: "No matching members", Description: "Try another name or role.",
 		}
 	}
-	return components.Column(
+	body := components.Column(
 		components.Card{
 			Header: components.Heading{Level: 2, Text: "Member directory"},
 			Body: components.Column(
@@ -111,15 +150,22 @@ func workspace(model Model) html.Component {
 				pagination,
 			),
 		},
-		html.Optional{Show: model.Notice != "", Body: components.Paragraph(model.Notice)},
-		editor(model),
+		memberEditorShell(),
+		html.Optional{Show: inlineEditor && model.Form.Value.ID != 0, Body: editor(model)},
 	)
+	// All requests that can replace this workspace share a cancellation scope.
+	body.Attrs = filter.Attrs
+	return body
 }
 
 func directoryNavigation(model Model, directory directoryPage) (ui.Form, components.Pagination) {
 	action := browseAction.HTMX()
 	action.PushURL = "true"
 	attrs := html.Attrs{html.A("hx-sync", "closest main:replace")}
+	var filterAttrs html.Attrs
+	if model.Notice != "" {
+		filterAttrs = html.Attrs{html.Flag("autofocus")}
+	}
 	filter := ui.Form{
 		Action: action,
 		Body: components.Row(
@@ -136,7 +182,10 @@ func directoryNavigation(model Model, directory directoryPage) (ui.Form, compone
 				Placeholder: "All roles",
 				Options:     roleOptions(),
 			},
-			components.Button{Type: components.ButtonSubmit, Label: "Apply filters"},
+			components.Button{
+				Type: components.ButtonSubmit, Label: "Apply filters",
+				Attrs: filterAttrs,
+			},
 		),
 		Attrs: attrs,
 	}
@@ -150,6 +199,34 @@ func directoryNavigation(model Model, directory directoryPage) (ui.Form, compone
 		Swap:       action.Swap,
 		PushURL:    action.PushURL == "true",
 		Attrs:      attrs,
+	}
+}
+
+func memberEditorShell() html.Component {
+	return components.Section{
+		ID: editorPopover,
+		Attrs: html.Attrs{
+			html.A("class", "dialog"), html.A("popover", "auto"),
+			html.A("role", "dialog"), html.A("aria-labelledby", "member-editor-title"),
+		},
+		Children: []html.Component{components.Column(
+			components.Heading{
+				Level: 2, Text: "Quick edit member",
+				Attrs: html.Attrs{html.A("id", "member-editor-title")},
+			},
+			components.Paragraph(
+				"Non-modal editor. Other page controls remain available. "+
+					"Without HTMX, use the full-page Edit link in the directory.",
+			),
+			components.Button{
+				Label: "Cancel quick edit", Action: cancelAction.HTMX(),
+				Attrs: html.Attrs{
+					html.A("popovertarget", editorPopover),
+					html.A("popovertargetaction", "hide"),
+				},
+			},
+			editorRegion.Wrap(components.Paragraph("Loading member. Use Edit for a full page.")),
+		)},
 	}
 }
 
@@ -177,10 +254,16 @@ func memberTable(members []Member) html.Component {
 				components.TextCell(member.Email),
 				components.TextCell(member.Role),
 				components.TextCell(status),
-				components.TableCell{Body: ui.ActionLink{
-					Label:  "Edit " + member.Name,
-					Action: action,
-				}},
+				components.TableCell{Body: components.Column(
+					components.Link{Label: "Edit " + member.Name, URL: action.URL},
+					components.Button{
+						Label: "Quick edit " + member.Name, Action: action,
+						Attrs: html.Attrs{
+							html.A("popovertarget", editorPopover),
+							html.A("popovertargetaction", "show"),
+						},
+					},
+				)},
 			}}
 		}),
 	}
@@ -195,10 +278,12 @@ func editor(model Model) html.Component {
 	}
 	fields := ui.Fields(model.Form.Errors)
 	value := model.Form.Value
+	action := saveAction.HTMX()
+	action.DisabledElt = "find button"
 	return components.Card{
 		Header: components.Heading{Level: 2, Text: "Edit member"},
 		Body: ui.Form{
-			Action: saveAction.HTMX(),
+			Action: action,
 			Body: components.FormLayout(
 				components.Input{Name: "id", Type: "hidden", Value: strconv.Itoa(value.ID)},
 				fields.Input(components.Input{
@@ -206,6 +291,7 @@ func editor(model Model) html.Component {
 					Label:    "Member name",
 					Value:    value.Name,
 					Required: true,
+					Attrs:    html.Attrs{html.Flag("autofocus")},
 				}),
 				fields.Select(components.Select{
 					Name:     "role",
@@ -215,6 +301,7 @@ func editor(model Model) html.Component {
 					Required: true,
 				}),
 				components.Button{Type: components.ButtonSubmit, Label: "Save member"},
+				components.Link{Label: "Cancel editing", URL: cancelAction.Path},
 			),
 		},
 	}

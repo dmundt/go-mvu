@@ -82,15 +82,23 @@ func TestDashboardWorkflowAndIsolatedRegions(t *testing.T) {
 			strings.Contains(body, `id="admin-overview"`)) {
 			t.Fatal("workspace response included unrelated region or document")
 		}
-		status, _ = request(t, client, http.MethodGet, base+"/admin/edit?id=1", nil, enhanced)
-		if status != http.StatusOK {
-			t.Fatalf("edit status=%d", status)
+		status, body = request(t, client, http.MethodGet, base+"/admin/edit?id=1", nil, enhanced)
+		if status != http.StatusOK || !strings.Contains(body, `value="Ada Example 01"`) {
+			t.Fatalf("edit status=%d body=%s", status, body)
+		}
+		if enhanced && (strings.Contains(body, `id="admin-workspace"`) ||
+			strings.Contains(body, `id="member-editor"`) || strings.Contains(body, "<!doctype")) {
+			t.Fatal("edit response replaced native shell or unrelated content")
 		}
 		values := url.Values{
 			"_csrf": {token[1]}, "id": {"1"}, "name": {"A"}, "role": {"Admin"},
 		}
 		status, body = request(t, client, http.MethodPost, base+"/admin/save", values, enhanced)
-		if status != http.StatusOK || !strings.Contains(body, "Use 2 to 80 characters.") ||
+		wantStatus := http.StatusOK
+		if enhanced {
+			wantStatus = http.StatusUnprocessableEntity
+		}
+		if status != wantStatus || !strings.Contains(body, "Use 2 to 80 characters.") ||
 			!strings.Contains(body, `value="A"`) {
 			t.Fatalf("invalid edit status=%d body=%s", status, body)
 		}
@@ -99,6 +107,11 @@ func TestDashboardWorkflowAndIsolatedRegions(t *testing.T) {
 		status, body = request(t, client, http.MethodPost, base+"/admin/save", values, enhanced)
 		if status != http.StatusOK || !strings.Contains(body, "Member saved.") {
 			t.Fatalf("save status=%d body=%s", status, body)
+		}
+		if enhanced && (!strings.Contains(body, `hx-swap-oob="innerHTML"`) ||
+			!strings.Contains(body, `id="save-status"`) ||
+			strings.Contains(body, `value="Ada &lt;Updated&gt;"`)) {
+			t.Fatal("save did not replace workspace, close editor, and update status OOB")
 		}
 		status, body = request(t, client, http.MethodPost, base+"/admin/overview",
 			url.Values{"_csrf": {token[1]}}, enhanced)
@@ -122,6 +135,57 @@ func TestDashboardWorkflowAndIsolatedRegions(t *testing.T) {
 		if !strings.Contains(other, "No matching members") {
 			t.Fatal("mutation leaked across visitor sessions")
 		}
+	}
+}
+
+func TestDashboardCancelClearsDraftWithoutSaving(t *testing.T) {
+	client, base := clientFor(t)
+	request(t, client, http.MethodGet, base+"/admin/edit?id=1", nil, true)
+	status, body := request(t, client, http.MethodGet, base+"/admin/cancel", nil, true)
+	if status != http.StatusOK || strings.Contains(body, `name="name"`) {
+		t.Fatalf("cancel status=%d body=%s", status, body)
+	}
+	_, body = request(t, client, http.MethodGet, base+"/admin/view", nil, false)
+	if strings.Contains(body, `name="name"`) || !strings.Contains(body, "Ada Example 01") {
+		t.Fatal("cancel retained draft or changed member")
+	}
+}
+
+func TestDashboardValidationResponseContract(t *testing.T) {
+	client, base := clientFor(t)
+	_, page := request(t, client, http.MethodGet, base+"/admin", nil, false)
+	token := tokenPattern.FindStringSubmatch(page)
+	if len(token) != 2 {
+		t.Fatal("missing CSRF token")
+	}
+	values := url.Values{
+		"_csrf": {token[1]}, "id": {"1"}, "name": {"A"}, "role": {"Admin"},
+	}
+	req, err := http.NewRequest(http.MethodPost, base+"/admin/save",
+		strings.NewReader(values.Encode()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("HX-Request", "true")
+	response, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusUnprocessableEntity ||
+		response.Header.Get("HX-Retarget") != "#member-editor-content" ||
+		response.Header.Get("HX-Reswap") != "innerHTML" {
+		t.Fatalf("validation status=%d headers=%v", response.StatusCode, response.Header)
+	}
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), `aria-describedby="name-error"`) ||
+		strings.Contains(string(body), `id="member-editor"`) ||
+		strings.Contains(string(body), `hx-swap-oob`) {
+		t.Fatal("validation response changed native shell or unrelated regions")
 	}
 }
 

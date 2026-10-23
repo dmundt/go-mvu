@@ -18,6 +18,8 @@ import (
 const (
 	workspaceRegion ui.Region = "admin-workspace"
 	overviewRegion  ui.Region = "admin-overview"
+	editorRegion    ui.Region = "member-editor-content"
+	editorPopover             = "member-editor"
 )
 
 var (
@@ -31,7 +33,8 @@ var (
 		Method: htmx.Get,
 		Path:   "/admin/edit",
 		Decode: web.DecoderFunc[Message](decodeEdit),
-		Result: web.Result{Mode: web.RenderAuto, Fragment: string(workspaceRegion)},
+		Result: web.Result{Mode: web.RenderAuto, Fragment: string(editorRegion)},
+		Swap:   htmx.InnerHTML,
 	}
 	saveAction = web.Action[Message]{
 		Method: htmx.Post,
@@ -43,7 +46,40 @@ var (
 	}
 	overviewAction = web.PostMessage[Message]("/admin/overview", Refresh{},
 		web.Result{Mode: web.RenderAuto, Fragment: string(overviewRegion), Location: "/admin/view"})
+	cancelAction = web.Action[Message]{
+		Method: htmx.Get, Path: "/admin/cancel",
+		Decode: web.StaticMessage[Message]{Message: Cancel{}},
+		Result: web.Result{Mode: web.RenderAuto, Fragment: string(editorRegion)},
+		Swap:   htmx.InnerHTML,
+	}
 )
+
+// Response policy is request-local; the runtime still owns Update/save/render.
+func saveHandler(runtime *web.Runtime[string, Model, Message]) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+		message, err := decodeSave(request)
+		if err != nil {
+			httpx.RespondError(w, request, err)
+			return
+		}
+		result := saveAction.Result
+		metadata := htmx.FromRequest(request)
+		if metadata.IsHTMX && !metadata.IsBoosted && !metadata.IsHistory {
+			if !message.(Save).Form.Valid {
+				result.Status = http.StatusUnprocessableEntity
+				result.Fragment = string(editorRegion)
+				htmx.Retarget(w, "#"+string(editorRegion))
+				htmx.Reswap(w, htmx.InnerHTML)
+			} else {
+				result.Fragment = "member-saved"
+			}
+		}
+		runtime.Handle(web.Route[Message]{
+			Method: http.MethodPost, Pattern: saveAction.Path,
+			Decode: web.StaticMessage[Message]{Message: message}, Result: result,
+		}).ServeHTTP(w, request)
+	})
+}
 
 func badInput() error {
 	return &httpx.Error{Status: http.StatusBadRequest, Public: "Invalid dashboard request."}

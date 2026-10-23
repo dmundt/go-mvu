@@ -3,7 +3,9 @@
 Build web apps in Go. Pages are made on your server, and forms work with or
 without JavaScript.
 
-> **Not stable yet:** the API may change at any time.
+## Stability
+
+go-mvu is not stable yet. Its API may change at any time.
 
 ## Try it
 

@@ -78,7 +78,9 @@ func TestCounterShellStaticThemeAndNoJavaScriptFallback(t *testing.T) {
 	if increment.StatusCode != http.StatusSeeOther || increment.Header.Get("Location") != "/" {
 		t.Fatalf("no-JS increment = %d %q", increment.StatusCode, increment.Header.Get("Location"))
 	}
-	if got := post("/theme", url.Values{"mode": {"dark"}, "return": {"/"}}); got.StatusCode != http.StatusSeeOther {
+	if got := post(
+		"/theme", url.Values{"mode": {"dark"}, "return": {"/"}},
+	); got.StatusCode != http.StatusSeeOther {
 		t.Fatalf("theme post = %d", got.StatusCode)
 	}
 	page = fetch(t, client, http.MethodGet, server.URL+"/", "")

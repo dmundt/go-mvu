@@ -57,7 +57,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	document := ui.Document{HTMX: true, CSRF: true}
+	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
 	if err := document.Validate(); err != nil {
 		return nil, err
 	}
@@ -82,10 +82,11 @@ func newHandler(secret []byte) (http.Handler, error) {
 	mux.Handle("GET /{$}", http.RedirectHandler("/admin", http.StatusSeeOther))
 	mux.Handle("GET /admin/view", runtime.Page(web.Result{Mode: web.RenderPage}))
 	if err := runtime.RegisterAll(
-		mux, browseAction, editAction, saveAction, overviewAction,
+		mux, browseAction, editAction, cancelAction, overviewAction,
 	); err != nil {
 		return nil, err
 	}
+	mux.Handle("POST "+saveAction.Path, saveHandler(runtime))
 	mux.Handle("POST /theme", preference.Handler("/admin/view"))
 	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
 		MaxBodyBytes: 1 << 20,

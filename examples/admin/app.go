@@ -124,6 +124,10 @@ type Refresh struct{}
 
 func (Refresh) MessageName() string { return "admin.refresh" }
 
+type Cancel struct{}
+
+func (Cancel) MessageName() string { return "admin.cancel" }
+
 type App struct{}
 
 func (App) Init(context.Context) (Model, []mvu.Command[Message], error) {
@@ -163,6 +167,8 @@ func (App) Update(
 	case Save:
 		next, err := model.saveMember(message.Form)
 		return next, nil, err
+	case Cancel:
+		model.Form = validation.Form[Editor]{}
 	case Refresh:
 	default:
 		return model, nil, errors.New("unsupported dashboard message")

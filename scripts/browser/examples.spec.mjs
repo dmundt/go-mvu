@@ -44,17 +44,34 @@ test('admin filters, pages, edits and refreshes independent regions', async ({ p
   await expect(page.getByText('3 matching members', { exact: true })).toBeVisible();
   expect(await overview.evaluate((element) => element.isConnected)).toBe(true);
 
-  await page.getByRole('link', { name: 'Edit Ada Example 01', exact: true }).click();
+  const opener = page.getByRole('button', { name: 'Quick edit Ada Example 01', exact: true });
+  await opener.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog', { name: 'Quick edit member' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).not.toHaveAttribute('aria-modal', 'true');
+  expect(await dialog.evaluate(element => element.matches(':popover-open'))).toBe(true);
+  await expect(dialog).toHaveCSS('position', 'fixed');
   await expect(page.getByLabel('Member name')).toHaveValue('Ada Example 01');
+  await expect(page.getByLabel('Member name')).toBeFocused();
   await expect(page.getByLabel('Member name')).toHaveCSS('border-top-style', 'solid');
   await page.getByLabel('Member name').fill('A');
+  const validation = page.waitForResponse(response =>
+    response.url().endsWith('/admin/save') && response.status() === 422);
   await page.getByRole('button', { name: 'Save member', exact: true }).click();
+  await validation;
+  await expect(dialog).toBeVisible();
   await expect(page.getByText('Use 2 to 80 characters.', { exact: true })).toBeVisible();
   await expect(page.getByLabel('Member name')).toHaveValue('A');
   await page.getByLabel('Member name').fill('Ada Updated');
   await page.getByLabel('Member role').selectOption('Viewer');
-  await page.getByRole('button', { name: 'Save member', exact: true }).click();
+  await page.getByLabel('Member name').press('Enter');
   await expect(page.getByText('Member saved.', { exact: false })).toBeVisible();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Apply filters', exact: true })).toBeFocused();
+  await expect(page.getByRole('rowheader', { name: 'Ada Example 01', exact: true })).toHaveCount(0);
+  await expect(page.locator('#save-status')).toHaveAttribute('role', 'status');
+  await expect(page.locator('#save-status')).toHaveCount(1);
   expect(await overview.evaluate((element) => element.isConnected)).toBe(true);
   const workspace = await page.locator('#admin-workspace').elementHandle();
   await page.getByRole('button', { name: 'Refresh overview', exact: true }).click();
@@ -73,6 +90,112 @@ test('admin filters, pages, edits and refreshes independent regions', async ({ p
   await page.getByRole('button', { name: 'Dark', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(page.getByText('No matching members', { exact: true })).toBeVisible();
+});
+
+test('quick editor supports native dismissal, repeated open and non-modal background access', async ({ page }) => {
+  await page.goto(`${adminURL}/admin`);
+  const opener = page.getByRole('button', { name: 'Quick edit Ada Example 01', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Quick edit member' });
+  await opener.click();
+  await expect(page.getByLabel('Member name')).toHaveValue('Ada Example 01');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(opener).toBeFocused();
+  await opener.click();
+  await expect(dialog).toBeVisible();
+  await expect(page.getByLabel('Member name')).toHaveValue('Ada Example 01');
+  await page.getByLabel('Member name').fill('Unsubmitted draft');
+  await page.getByRole('button', { name: 'Cancel quick edit', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await opener.click();
+  await expect(page.getByLabel('Member name')).toHaveValue('Ada Example 01');
+  await page.getByRole('button', { name: 'Refresh overview', exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#admin-overview .stat').filter({ hasText: 'Saved changes' })
+    .locator('.stat__value')).toHaveText('0');
+});
+
+async function holdEdit(page, id) {
+  let release;
+  const released = new Promise(resolve => { release = resolve; });
+  let ready;
+  const responseReady = new Promise(resolve => { ready = resolve; });
+  let done;
+  const finished = new Promise(resolve => { done = resolve; });
+  let failure;
+  let request;
+  let canceled;
+  const cancellation = new Promise(resolve => { canceled = resolve; });
+  page.on('requestfailed', failed => {
+    if (failed === request) canceled(failed.failure()?.errorText);
+  });
+  await page.route(`${adminURL}/admin/edit?id=${id}`, async route => {
+    request = route.request();
+    try {
+      const response = await route.fetch();
+      ready();
+      await released;
+      await route.fulfill({ response });
+    } catch (error) {
+      failure = error;
+      ready();
+    } finally {
+      done();
+    }
+  });
+  return {
+    ready: responseReady, release, cancellation,
+    async finish() {
+      await finished;
+      if (failure) expect(request.failure()?.errorText, failure.message).toBe('net::ERR_ABORTED');
+    },
+  };
+}
+
+for (const next of ['another member', 'cancel']) {
+  test(`slow editor cannot override ${next}`, async ({ page }) => {
+    const held = await holdEdit(page, 1);
+    try {
+      await page.goto(`${adminURL}/admin`);
+      await page.getByRole('button', { name: 'Quick edit Ada Example 01', exact: true }).click();
+      await held.ready;
+      if (next === 'cancel') {
+        await page.getByRole('button', { name: 'Cancel quick edit', exact: true }).click();
+        await expect(page.getByRole('dialog')).toBeHidden();
+      } else {
+        await page.getByRole('button', { name: 'Quick edit Grace Example 02', exact: true }).click();
+        await expect(page.getByLabel('Member name')).toHaveValue('Grace Example 02');
+      }
+      expect(await held.cancellation).toBe('net::ERR_ABORTED');
+      held.release();
+      await held.finish();
+      if (next === 'cancel') {
+        await expect(page.getByRole('dialog')).toBeHidden();
+        await page.getByRole('button', { name: 'Quick edit Grace Example 02', exact: true }).click();
+      }
+      await expect(page.getByLabel('Member name')).toHaveValue('Grace Example 02');
+    } finally {
+      held.release();
+    }
+  });
+}
+
+test('Escape during load never reopens native popover when response arrives', async ({ page }) => {
+  const held = await holdEdit(page, 1);
+  try {
+    await page.goto(`${adminURL}/admin`);
+    await page.getByRole('button', { name: 'Quick edit Ada Example 01', exact: true }).click();
+    await held.ready;
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    held.release();
+    await held.finish();
+    await expect(page.locator('#member-editor-content input[name="name"]'))
+      .toHaveValue('Ada Example 01');
+    await expect(page.getByRole('dialog')).toBeHidden();
+  } finally {
+    held.release();
+  }
 });
 
 test('admin works without JavaScript and keeps validation through redirects', async ({ browser }, testInfo) => {
@@ -107,6 +230,11 @@ test('admin works without JavaScript and keeps validation through redirects', as
     await expect(page.getByRole('rowheader', { name: 'Grace Updated' })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('rowheader', { name: 'Grace Updated' })).toBeVisible();
+    await page.getByRole('link', { name: 'Edit Grace Updated', exact: true }).click();
+    await page.getByLabel('Member name').fill('Unsaved name');
+    await page.getByRole('link', { name: 'Cancel editing', exact: true }).click();
+    await expect(page.getByRole('rowheader', { name: 'Grace Updated' })).toBeVisible();
+    await expect(page.getByLabel('Member name')).toHaveCount(0);
   } finally {
     await context.close();
   }

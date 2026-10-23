@@ -171,7 +171,9 @@ func TestContactChoicesAndLengthBoundaries(t *testing.T) {
 			t.Errorf("invalid topic %q missing field error", topic)
 		}
 	}
-	for _, length := range []int{messageMinLength - 1, messageMinLength, messageMaxLength, messageMaxLength + 1} {
+	for _, length := range []int{
+		messageMinLength - 1, messageMinLength, messageMaxLength, messageMaxLength + 1,
+	} {
 		details := valid
 		details.Message = strings.Repeat("界", length)
 		errs := validation.Errors{}
@@ -217,7 +219,9 @@ func postForm(
 	htmxRequest bool,
 ) string {
 	t.Helper()
-	request, err := http.NewRequest(http.MethodPost, baseURL+"/contact", strings.NewReader(values.Encode()))
+	request, err := http.NewRequest(
+		http.MethodPost, baseURL+"/contact", strings.NewReader(values.Encode()),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

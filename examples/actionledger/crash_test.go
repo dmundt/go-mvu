@@ -147,15 +147,18 @@ func TestProcessCrashRecovery(t *testing.T) {
 				}
 			}
 			calls := 0
-			err = ledger.DeliverPending(context.Background(), func(ctx context.Context, effect Effect) error {
-				calls++
-				_, duplicate, err := inbox.Apply(ctx, effect.Scope, effect.ID, Add{Amount: 1})
-				wantDuplicate := stage == "effect-after-commit" || stage == "done-before-write"
-				if err == nil && duplicate != wantDuplicate {
-					t.Errorf("consumer duplicate=%t, want %t", duplicate, wantDuplicate)
-				}
-				return err
-			})
+			err = ledger.DeliverPending(
+				context.Background(), func(ctx context.Context, effect Effect) error {
+					calls++
+					_, duplicate, err := inbox.Apply(
+						ctx, effect.Scope, effect.ID, Add{Amount: 1},
+					)
+					wantDuplicate := stage == "effect-after-commit" || stage == "done-before-write"
+					if err == nil && duplicate != wantDuplicate {
+						t.Errorf("consumer duplicate=%t, want %t", duplicate, wantDuplicate)
+					}
+					return err
+				})
 			if err != nil || calls != len(effects) {
 				t.Fatalf("delivery calls=%d error=%v", calls, err)
 			}
