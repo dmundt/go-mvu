@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 3
+version: 4
 ---
 
 # Specs
@@ -27,7 +27,7 @@ version: 3
 | 7 | Versioned store | [store](../../store/), [session](../../session/) | ADR [0006](../adr/0006-versioned-session-models.md) |
 | 8 | Web views, RequestContext | [web](../../web/) | [web runtime](../guides/web-runtime.md), ADR [0013](../adr/0013-runtime-request-context.md) |
 | 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md) |
-| 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`) | [web runtime](../guides/web-runtime.md) |
+| 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`) | [web runtime](../guides/web-runtime.md) |
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |
 | 13 | Component library | [components](../../components/), [shared](../../shared/) | [components](../guides/components.md), ADR [0009](../adr/0009-reusable-components.md), [0010](../adr/0010-shared-ui-components.md) |
@@ -35,7 +35,7 @@ version: 3
 | 14 | Pagination | `components.Pagination` | [components](../guides/components.md) |
 | 15 | Counter example | [examples/counter](../../examples/counter/) | — |
 | 16 | Users example | [examples/users](../../examples/users/) | — |
-| 17 | Validation | [validation](../../validation/), [contact example](../../examples/contact/) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
+| 17 | Validation | [validation](../../validation/), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
 | 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
 | 18 extensions | HTTP policy, lifecycle, deployment middleware | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md) |

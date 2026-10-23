@@ -56,9 +56,12 @@ func newHandler(secret []byte) (http.Handler, error) {
 		App:   ContactApp{},
 		Store: store.NewMemory[string, ContactModel](),
 		Keys:  web.KeyResolverFunc[string](sessionKey),
-		View: ContactView{Document: ui.Document{
-			HTMX: true, CSRF: true,
-		}},
+		View: ContactView{
+			Document: ui.Document{HTMX: true, CSRF: true},
+			RegionView: ui.RegionView[ContactModel]{
+				Region: contactRegion, Content: contactContent,
+			},
+		},
 		Theme: contactTheme{},
 	})
 	if err != nil {

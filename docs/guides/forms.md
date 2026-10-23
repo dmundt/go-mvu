@@ -2,7 +2,7 @@
 type: Guide
 title: Forms
 description: Build typed forms with explicit decoding, validation, and errors.
-version: 2
+version: 3
 ---
 
 # Forms
@@ -88,6 +88,19 @@ behavior. `Variant`, `Disabled`, and form `Attrs` remain configurable.
 and replace their `Error` with the matching form error. All other properties
 remain unchanged. No values or validation rules are inferred. Use the
 returned concrete component to customize autocomplete, hints, or attributes.
+
+## Share field facts, not a binding schema
+
+The contact example keeps field names, consent value, message-length limits,
+and topic options in `fields.go`. Its decoder and view use those same
+definitions. The empty topic placeholder is not a valid choice. Message
+limits count Unicode characters, not bytes; the displayed hint uses the
+same limits as server validation. Required controls still have explicit
+server validation; browser checks are never sufficient.
+
+This is application-owned data, not automatic binding or reflection.
+Validation boundary tests cover accepted choices, rejected placeholders,
+and exact minimum/maximum lengths.
 
 The contact example is a learning app: requests are kept in memory for each
 visitor and are not sent or stored as real support tickets. See

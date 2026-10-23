@@ -38,13 +38,26 @@ func (controls CounterControls) RenderHTML(ctx context.Context, out *html.Contex
 	return out.Err()
 }
 
-type CounterView struct{ Document ui.Document }
+type CounterView struct {
+	ui.RegionView[CounterModel]
+	Document ui.Document
+}
+
+func counterContent(
+	_ context.Context, model CounterModel, _ web.RequestContext,
+) (html.Component, error) {
+	return CounterControls{Count: model.Count}, nil
+}
 
 func (view CounterView) Page(
-	_ context.Context,
+	ctx context.Context,
 	model CounterModel,
 	request web.RequestContext,
 ) (html.Page, error) {
+	content, err := view.Render(ctx, model, request)
+	if err != nil {
+		return nil, err
+	}
 	shell := components.AppShell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Go MVU counter"},
@@ -59,18 +72,9 @@ func (view CounterView) Page(
 		}},
 		Main: components.Card{
 			Header: components.Heading{Level: 2, Text: "Count"},
-			Body:   counterRegion.Wrap(CounterControls{Count: model.Count}),
+			Body:   content,
 		},
 		Footer: components.Paragraph("Server-rendered MVU. No application JavaScript."),
 	}
 	return view.Document.Page(request, "Go MVU Counter", shell), nil
-}
-
-func (CounterView) Fragment(
-	_ context.Context,
-	name string,
-	model CounterModel,
-	_ web.RequestContext,
-) (html.Fragment, error) {
-	return counterRegion.Select(name, CounterControls{Count: model.Count})
 }

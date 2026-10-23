@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 2
+version: 3
 ---
 
 # Components and pagination
@@ -120,6 +120,31 @@ must still mount `static.Handler`, session middleware, and CSRF middleware;
 the helper never installs routes or protection. A zero `ui.Document` emits
 plain pages without HTMX or the header wrapper.
 
+### Lists and text tables
+
+`Map` converts typed items into a `Sequence` in input order. It allocates
+the component slice immediately; it is not a lazy collection or virtual DOM.
+An empty input renders nothing.
+
+```go
+rows := components.Map(users, func(user User) html.Component {
+	return components.TableRow{Cells: []html.Component{
+		components.RowHeader(user.Name),
+		components.TextCell(user.Email),
+	}}
+})
+table := components.Table{
+	Caption: "Users",
+	Header: components.HeaderRow{"Name", "Email"},
+	Body: rows,
+}
+```
+
+`RowHeader` emits `<th scope="row">`; `TextCell` emits `<td>`. Both escape
+text and return configurable `TableCell` structs. Use `TableCell` directly
+for non-text content. Mapping callbacks return ordinary components whose
+rendering errors propagate normally.
+
 ### Rooted fragments
 
 Use a region for a stable fragment name and its section root:
@@ -143,6 +168,38 @@ an ASCII letter or underscore, followed by letters, digits, underscores, or
 hyphens; invalid names report `ui.ErrInvalidRegion`. For multiple regions,
 dispatch to the matching region explicitly. Helpers preserve rendering
 errors and escape child content.
+
+### Define region content once
+
+`ui.RegionView[Model]` binds a region to a typed content function. Embed it
+in an application view to provide its `Fragment` method automatically:
+
+```go
+type ContactView struct {
+	ui.RegionView[ContactModel]
+	Document ui.Document
+}
+
+view := ContactView{
+	Document: ui.Document{HTMX: true, CSRF: true},
+	RegionView: ui.RegionView[ContactModel]{
+		Region: contactRegion,
+		Content: func(
+			ctx context.Context, model ContactModel, request web.RequestContext,
+		) (html.Component, error) {
+			return ContactForm{Form: model.Form}, nil
+		},
+	},
+}
+```
+
+Inside `Page`, call `content, err := view.Render(ctx, model, request)`,
+check the error, and place `content` in the page. The promoted `Fragment`
+method uses the same content function and root. Context and presentation
+state are passed explicitly on every call; no model or request is retained.
+Unknown names are rejected before calling the content function. Missing
+content reports `ui.ErrMissingContent`; content errors propagate before
+rendering begins. Use explicit dispatch when a page has multiple regions.
 
 See [forms](forms.md) for secure action forms and explicit field helpers.
 Existing `Document`, `Form`, control structs, and custom fragment types

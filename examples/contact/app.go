@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -66,12 +67,12 @@ func (ContactDecoder) Decode(
 	}
 	values := request.PostForm
 	details := ContactDetails{
-		Name:      strings.TrimSpace(values.Get("name")),
-		Email:     strings.TrimSpace(values.Get("email")),
-		Company:   strings.TrimSpace(values.Get("company")),
-		Topic:     values.Get("topic"),
-		Message:   strings.TrimSpace(values.Get("message")),
-		Agreement: values.Get("agreement") == "yes",
+		Name:      strings.TrimSpace(values.Get(nameField)),
+		Email:     strings.TrimSpace(values.Get(emailField)),
+		Company:   strings.TrimSpace(values.Get(companyField)),
+		Topic:     values.Get(topicField),
+		Message:   strings.TrimSpace(values.Get(messageField)),
+		Agreement: values.Get(agreementField) == agreementValue,
 	}
 	errs := validation.Errors{}
 	validateContact(details, errs)
@@ -79,25 +80,23 @@ func (ContactDecoder) Decode(
 }
 
 func validateContact(details ContactDetails, errs validation.Errors) {
-	if utf8.RuneCountInString(details.Name) < 2 {
-		errs.Add("name", "Enter at least two characters.")
+	if utf8.RuneCountInString(details.Name) < nameMinLength {
+		errs.Add(nameField, "Enter at least two characters.")
 	}
 	if !validEmail(details.Email) {
-		errs.Add("email", "Enter a valid email address.")
+		errs.Add(emailField, "Enter a valid email address.")
 	}
-	switch details.Topic {
-	case "support", "sales", "other":
-	default:
-		errs.Add("topic", "Choose a topic.")
+	if !validContactTopic(details.Topic) {
+		errs.Add(topicField, "Choose a topic.")
 	}
 	messageLength := utf8.RuneCountInString(details.Message)
-	if messageLength < 20 {
-		errs.Add("message", "Enter at least 20 characters.")
-	} else if messageLength > 1000 {
-		errs.Add("message", "Keep your message under 1000 characters.")
+	if messageLength < messageMinLength {
+		errs.Add(messageField, fmt.Sprintf("Enter at least %d characters.", messageMinLength))
+	} else if messageLength > messageMaxLength {
+		errs.Add(messageField, fmt.Sprintf("Keep your message under %d characters.", messageMaxLength))
 	}
 	if !details.Agreement {
-		errs.Add("agreement", "Confirm we may reply to your request.")
+		errs.Add(agreementField, "Confirm we may reply to your request.")
 	}
 }
 

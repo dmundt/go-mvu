@@ -12,7 +12,7 @@ var usersPageAction = web.Action[UsersMessage]{
 	Method: htmx.Get,
 	Path:   "/users",
 	Decode: web.DecoderFunc[UsersMessage](decodeShowPage),
-	Result: web.Result{Mode: web.RenderAuto, Fragment: "results"},
+	Result: web.Result{Mode: web.RenderAuto, Fragment: string(usersRegion)},
 }
 
 func decodeShowPage(r *http.Request) (UsersMessage, error) {

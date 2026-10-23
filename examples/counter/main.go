@@ -68,9 +68,12 @@ func newHandler(secret []byte) (http.Handler, error) {
 		App:   CounterApp{},
 		Store: store.NewMemory[string, CounterModel](),
 		Keys:  web.KeyResolverFunc[string](sessionKey),
-		View: CounterView{Document: ui.Document{
-			HTMX: true, CSRF: true, SwapValidationErrors: true,
-		}},
+		View: CounterView{
+			Document: ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true},
+			RegionView: ui.RegionView[CounterModel]{
+				Region: counterRegion, Content: counterContent,
+			},
+		},
 		Theme:  theme.Default,
 		Themes: preference,
 	})
@@ -89,7 +92,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	mux.Handle("GET /debug/diagnostics", diagnostics.Handler())
 	mux.Handle("GET /{$}", runtime.Page(web.Result{Mode: web.RenderPage}))
 	mux.Handle("POST /theme", preference.Handler("/"))
-	if err := registerCounterActions(mux, runtime); err != nil {
+	if err := runtime.RegisterAll(mux, counterIncrement, counterDecrement, counterReset); err != nil {
 		return nil, err
 	}
 
