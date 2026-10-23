@@ -99,11 +99,13 @@ func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error
 		PageSize:   view.Model.PageSize,
 		TotalItems: view.Model.TotalItems,
 		Window:     1,
-		URL:        func(page int) string { return fmt.Sprintf("/users?page=%d", page) },
-		Target:     "#users-results",
-		Swap:       htmx.OuterHTML,
-		PushURL:    true,
-		Attrs:      html.Attrs{html.A("hx-sync", "closest main:replace")},
+		URL: func(page int) string {
+			return fmt.Sprintf("%s?page=%d", usersPageAction.Path, page)
+		},
+		Target:  "#users-results",
+		Swap:    htmx.OuterHTML,
+		PushURL: true,
+		Attrs:   html.Attrs{html.A("hx-sync", "closest main:replace")},
 	}
 	out.Component(ctx, components.Section{
 		ID: "users-results",

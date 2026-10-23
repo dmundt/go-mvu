@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -80,12 +79,9 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("GET /users", runtime.Handle(web.Route[UsersMessage]{
-		Method:  http.MethodGet,
-		Pattern: "/users",
-		Decode:  web.DecoderFunc[UsersMessage](decodeShowPage),
-		Result:  web.Result{Mode: web.RenderAuto, Fragment: "results"},
-	}))
+	if err := runtime.Register(mux, usersPageAction); err != nil {
+		return nil, err
+	}
 	mux.HandleFunc("GET /users/cards", func(w http.ResponseWriter, r *http.Request) {
 		request := web.NewRequestContext(r, theme.Default, preference)
 		page := cardsPage(request, directory[:6])
@@ -112,15 +108,6 @@ func newHandler(secret []byte) (http.Handler, error) {
 		middleware.Recover,
 		policy,
 	), nil
-}
-
-// decodeShowPage reads ?page=N. Missing or invalid → page 1.
-func decodeShowPage(r *http.Request) (UsersMessage, error) {
-	number, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil {
-		number = 1
-	}
-	return ShowPage{Page: number}, nil
 }
 
 func sessionKey(r *http.Request) (string, error) {

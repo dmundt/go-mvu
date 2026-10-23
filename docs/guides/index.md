@@ -3,6 +3,7 @@
 ## Framework guides
 
 * [Build your first app](first-app.md) - run and customize a complete counter.
+* [Forms](forms.md) - collect, validate, and show typed form data.
 * [Production walkthrough](production.md) - CASK, OIDC, limits, and single-host operations.
 * [Benchmarks](benchmarks.md) - measured performance and benchmark rules.
 * [Components and pagination](components.md) - reusable UI component contracts.

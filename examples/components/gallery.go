@@ -192,7 +192,7 @@ func feedbackCard() html.Component {
 }
 
 func formCard() html.Component {
-	return card("Form controls",
+	return card("Form controls", components.FormLayout(
 		shared.Switch{Name: "notifications", Label: "Email notifications", Checked: true},
 		shared.Checkbox{
 			Name:     "terms",
@@ -217,7 +217,7 @@ func formCard() html.Component {
 			Hint:        "Markdown is not supported.",
 			Rows:        3,
 		},
-	)
+	))
 }
 
 func stepsCard() html.Component {

@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Index
+title: Architecture Decision Records
+description: Links to accepted architecture decisions.
+version: 1
+---
+
 # Architecture Decision Records
 
 ## Accepted decisions
@@ -23,3 +30,4 @@
 * [ADR-0018](0018-ui-authoring-boundaries.md) - enforce semantic composition and scoped authoring boundaries.
 * [ADR-0019](0019-http-policy-and-runtime-reliability.md) - define HTTP policies and reliable transition outcomes.
 * [ADR-0020](0020-optional-production-integrations.md) - optional CASK persistence and OIDC application wiring.
+* [ADR-0021](0021-concise-ui-composition.md) - concise layout, page, form, region, and field composition.
