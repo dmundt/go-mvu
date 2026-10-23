@@ -11,8 +11,9 @@ HTTP policies stay outside pure MVU updates. The standard library handler
 signature remains the composition boundary. No registration system, reflection,
 automatic middleware sorting, or application JavaScript.
 
-Framework middleware is limited to CSRF and its rendering helpers, default
-security headers, streaming-aware recovery, and runtime diagnostics.
+Framework middleware lives in `web`: CSRF, default security headers,
+streaming-aware recovery, and runtime diagnostics. CSRF HTML helpers live in
+`components`; the HTTP layer does not depend on rendering controls.
 Request-size limits, deadlines, accepted content types, and cache policy belong
 to the application. See [ADR-0025](../adr/0025-application-owned-request-policy.md).
 
@@ -24,7 +25,7 @@ without calling the next handler.
 
 ```go
 router := chi.NewRouter()
-router.Use(existingMiddleware, middleware.SecurityHeaders, middleware.Recover)
+router.Use(existingMiddleware, web.SecurityHeaders, web.Recover)
 router.Handle("/", http.MaxBytesHandler(mux, 1<<20))
 ```
 
@@ -36,7 +37,7 @@ include it in their logs.
 Diagnostics finalize even during panic unwinding; diagnostics expose an
 `aborted` count, and include aborted responses in `errors`.
 
-`httpx.Writer` tracks final status, accepted body bytes, and commitment. A 1xx
+`web.ResponseWriter` tracks final status, accepted body bytes, and commitment. A 1xx
 other than 101 does not commit the final response. Duplicate final headers are
 ignored. Use `http.NewResponseController(w)` for flush, hijack, and deadlines:
 wrappers expose `Unwrap`, and flush commits every tracking layer before
@@ -72,12 +73,12 @@ HTML responses.
 
 ## Rejections
 
-`httpx.Error{Status, Public, Location, Cause}` separates a safe response from
-an internal cause. `httpx.RespondError` logs the cause and request ID, sets
+`web.Error{Status, Public, Location, Cause}` separates a safe response from
+an internal cause. `web.RespondError` logs the cause and request ID, sets
 `Cache-Control: no-store`, and does not expose internal error text.
 Context cancellation maps to 408; deadline exceeded maps to 504.
 
-`httpx.ErrorHandler` can be shared by `middleware.RecoverWith`,
+`web.ErrorHandler` can be shared by `web.RecoverWith`,
 `csrf.WithErrorHandler`, application request policy, and runtime `OnError`.
 Applications supply validation fragments or pages in this callback; transport
 middleware does not know field layouts.
@@ -121,7 +122,7 @@ responses. Cacheable application routes require an explicit cache policy.
 For non-runtime routes, set `Cache-Control: no-store` in application handlers
 before writing; runtime rendering already defaults to no-store.
 
-`httpx.Vary` merges case-insensitively without replacing existing values.
+`web.Vary` merges case-insensitively without replacing existing values.
 Representation-dependent responses must vary on all relevant inputs, including
 HTMX request, boosted/history mode, locale, and theme where applicable.
 Do not share session-bound CSRF markup or use model version alone as an HTML ETag.
@@ -137,17 +138,18 @@ See [runtime policies](web-runtime.md) and [security](security.md).
 
 ## Session lifecycle
 
-`session.New(secret, Options)` keeps `Wrap` and `ID`. Cookie format now includes
+`web.NewSession(secret, web.SessionOptions{})` provides `Wrap`; use
+`web.SessionID(request)` to look up identity. Cookie format includes
 a signed, server-verified expiry; legacy cookies start a new session.
 `Lifetime` defaults to 24 hours. `MaxAge` is browser retention only and cannot
 extend the signed lifetime. `Clock` supports deterministic expiry tests.
 
 ```go
-revocations, err := session.NewMemoryRevocations(10000)
+revocations, err := web.NewMemoryRevocations(10000)
 if err != nil {
 	return err
 }
-sessions, err := session.New(currentKey, session.Options{
+sessions, err := web.NewSession(currentKey, web.SessionOptions{
 	Secure:           true,
 	Lifetime:         24 * time.Hour,
 	VerificationKeys: [][]byte{oldKey},
@@ -158,7 +160,7 @@ sessions, err := session.New(currentKey, session.Options{
 Old keys verify only; no automatic renewal or re-signing occurs.
 Remove old keys only after their intended verification window.
 
-`sessions.Rotate(w, r, migrate)` returns `session.Rotation{OldID, NewID}`.
+`sessions.Rotate(w, r, migrate)` returns `web.Rotation{OldID, NewID}`.
 The callback `func(oldID, newID string) error` explicitly migrates the
 application's model key. It must leave application state unchanged on error,
 must not write the response, and must not reenter session lifecycle methods.

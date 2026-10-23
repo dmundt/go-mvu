@@ -3,10 +3,18 @@ type: Architecture Decision Record
 title: "ADR-0026: Canonical prototype APIs"
 status: Accepted
 description: Remove compatibility scaffolding and resolve presentation state once.
-version: 1
+version: 3
 ---
 
 # ADR-0026: Canonical prototype APIs
+
+Form-decoder package placement and naming are superseded by
+[ADR-0028](0028-web-owned-form-validation.md).
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Context
 

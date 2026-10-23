@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - package: session
+          - package: web
             target: FuzzSessionCookie
     steps:
       - uses: actions/checkout@v4

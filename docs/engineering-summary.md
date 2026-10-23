@@ -2,7 +2,7 @@
 type: Engineering Summary
 title: Engineering summary
 description: Project direction, implementation status, and technical summary.
-version: 6
+version: 7
 ---
 
 # Engineering Summary
@@ -36,12 +36,12 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 
 | Area | State |
 | --- | --- |
-| `mvu`, `html`, `htmx`, `store`, `session`, `validation` | done, tested |
-| `web` runtime: RequestContext, ThemeResolver, CommandRunner, RenderAuto | done, tested |
+| Pure contracts: `mvu`, `html`, `htmx`, `store` | done, tested |
+| `web`: runtime, RequestContext, typed forms, CommandRunner, RenderAuto | done, tested |
 | `theme`: default tokens, system mode, signed preference | done; Go + node tests |
-| `components`: controls, layouts, native widgets | done; unified gallery example |
-| `middleware`: CSP, CSRF, stream-safe recover, diagnostics | done, tested; request/cache policy application-owned |
-| `static`: local HTMX 2.0.4 + SRI | done |
+| `components`: controls, layouts, native widgets, page policy, secure actions | done; unified gallery example |
+| `web`: CSP, CSRF, stream-safe recover, diagnostics | done, tested; request/cache policy application-owned |
+| `components`: local HTMX 2.0.4 + SRI | done |
 | examples: counter, users, component gallery, themes | done; HTTP tests |
 | boundaries test, benchmarks | done |
 | race tests | not run locally (cgo off); CI with `CGO_ENABLED=1` |

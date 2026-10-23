@@ -1,3 +1,6 @@
+// Package components provides optional semantic HTML controls, application
+// composition helpers, and embedded HTMX assets. Applications explicitly install
+// web middleware and asset routes; rendering never installs HTTP policy.
 package components
 
 import (

@@ -23,23 +23,60 @@ var allowed = map[string][]string{
 	"internal/arch":              {},
 	"internal/browsertest":       {},
 	"internal/example/jsonstore": {"store"},
-	"internal/example/server":    {"httpx"},
-	"static":                     {},
+	"internal/example/server":    {"web"},
 	"htmx":                       {"html"},
-	"session":                    {"store", "httpx"},
-	"validation":                 {},
-	"timing":                     {},
-	"httpx":                      {},
-	"middleware":                 {"html", "session", "timing", "httpx"},
-	"components":                 {"html", "htmx", "theme"},
-	"ui":                         {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
-	"web":                        {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
+	"components":                 {"html", "htmx", "theme", "web"},
+	"web":                        {"mvu", "html", "htmx", "store", "theme"},
+}
+
+func TestPublicFrameworkPackages(t *testing.T) {
+	root := filepath.Join("..", "..")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var packages []string
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") ||
+			slices.Contains([]string{"benchmarks", "examples", "internal", "node_modules"}, entry.Name()) {
+			continue
+		}
+		files, err := os.ReadDir(filepath.Join(root, entry.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), ".go") && !strings.HasSuffix(file.Name(), "_test.go") {
+				packages = append(packages, entry.Name())
+				break
+			}
+		}
+	}
+	want := []string{"components", "html", "htmx", "mvu", "store", "theme", "web"}
+	if !slices.Equal(packages, want) {
+		t.Fatalf("public framework packages = %v, want %v", packages, want)
+	}
 }
 
 func TestPackageBoundaries(t *testing.T) {
 	root := filepath.Join("..", "..")
 	for _, err := range packageViolations(root) {
 		t.Error(err)
+	}
+}
+
+func TestWebCannotImportComponents(t *testing.T) {
+	root := t.TempDir()
+	directory := filepath.Join(root, "web")
+	if err := os.MkdirAll(directory, 0755); err != nil {
+		t.Fatal(err)
+	}
+	source := "package web\nimport _ \"" + module + "components\"\n"
+	if err := os.WriteFile(filepath.Join(directory, "cycle.go"), []byte(source), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if found := packageViolations(root); len(found) != 1 || !strings.Contains(found[0].Error(), "imports components") {
+		t.Fatalf("web to components dependency violations = %v", found)
 	}
 }
 

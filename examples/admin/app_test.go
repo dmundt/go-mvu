@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dmundt/go-mvu/validation"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func TestDirectoryPreparesRowsTotalsAndPageBounds(t *testing.T) {
@@ -46,8 +46,8 @@ func TestMemberOperationsRejectUnknownIDsWithoutChangingModel(t *testing.T) {
 	}
 	for _, message := range []Message{
 		Edit{ID: memberCount + 1},
-		Save{Form: validation.Form[Editor]{Value: Editor{ID: memberCount + 1}}},
-		Save{Form: validation.Form[Editor]{Value: Editor{ID: memberCount + 1}, Valid: true}},
+		Save{Form: web.Form[Editor]{Value: Editor{ID: memberCount + 1}}},
+		Save{Form: web.Form[Editor]{Value: Editor{ID: memberCount + 1}, Valid: true}},
 	} {
 		next, _, err := (App{}).Update(context.Background(), model, message)
 		if !errors.Is(err, errUnknownMember) || !reflect.DeepEqual(next, model) {
@@ -64,7 +64,7 @@ func TestSaveClampsFilteredPageAndPreservesOtherMemberFields(t *testing.T) {
 	model.Role, model.Page = roleAdmin, 2
 	before := model.Members[15]
 	next, _, err := (App{}).Update(context.Background(), model, Save{
-		Form: validation.Form[Editor]{
+		Form: web.Form[Editor]{
 			Value: Editor{ID: before.ID, Name: "Updated member", Role: roleViewer},
 			Valid: true,
 		},

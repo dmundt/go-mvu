@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 )
 
@@ -19,6 +18,7 @@ func (e *EffectError) Error() string {
 	}
 	return "command effect failed after commit: " + e.Cause.Error()
 }
+
 func (e *EffectError) Unwrap() error { return e.Cause }
 
 // CommandRunner executes commands returned by Init and Update.
@@ -115,12 +115,12 @@ func (runner *AsyncCommandRunner[Msg]) Run(
 				}:
 					return nil
 				default:
-					httpx.Observe(ctx, httpx.CommandOverload)
+					Observe(ctx, CommandOverload)
 					return ErrCommandOverload
 				}
 			}
 		}
-		httpx.Observe(ctx, httpx.CommandOverload)
+		Observe(ctx, CommandOverload)
 		return ErrCommandOverload
 	}
 	for _, command := range commands {
@@ -141,7 +141,7 @@ func (runner *AsyncCommandRunner[Msg]) worker() {
 		err := task.command.Execute(ctx, task.dispatch)
 		cancel()
 		if err != nil {
-			httpx.Observe(ctx, httpx.CommittedEffectFailure)
+			Observe(ctx, CommittedEffectFailure)
 			runner.report(&EffectError{Cause: err})
 		}
 	}

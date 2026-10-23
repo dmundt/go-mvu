@@ -6,9 +6,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/store"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 type OutcomeState uint8
@@ -33,7 +31,7 @@ type OutcomeObserver func(*http.Request, RequestOutcome)
 // Handle decodes a message, applies Update, runs commands, renders Result.
 func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tracked := &httpx.Writer{ResponseWriter: w}
+		tracked := &ResponseWriter{ResponseWriter: w}
 		var committed atomic.Bool
 		var outcomeErr error
 		defer func() {
@@ -48,12 +46,12 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			runtime.fail(tracked, r, err)
 		}
 		if route.Pattern != "" && r.URL.Path != route.Pattern {
-			fail(&httpx.Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound)})
+			fail(&Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound)})
 			return
 		}
 		if route.Method != "" && r.Method != route.Method {
 			tracked.Header().Set("Allow", route.Method)
-			fail(&httpx.Error{Status: http.StatusMethodNotAllowed, Public: http.StatusText(http.StatusMethodNotAllowed)})
+			fail(&Error{Status: http.StatusMethodNotAllowed, Public: http.StatusText(http.StatusMethodNotAllowed)})
 			return
 		}
 		if route.Decode == nil {
@@ -79,18 +77,18 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			}
 			expected = &version
 		}
-		trace := timing.FromContext(ctx)
+		trace := TraceFromContext(ctx)
 		if route.RequireModel {
 			if err := ctx.Err(); err != nil {
 				fail(err)
 				return
 			}
-			done := trace.Start(timing.PhaseLoad)
+			done := trace.Start(PhaseLoad)
 			_, err := runtime.store.Load(ctx, key)
 			done()
 			if err != nil {
 				if errors.Is(err, store.ErrNotFound) {
-					fail(&httpx.Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound), Cause: err})
+					fail(&Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound), Cause: err})
 				} else {
 					fail(err)
 				}
@@ -101,7 +99,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		done := trace.Start(timing.PhaseDecode)
+		done := trace.Start(PhaseDecode)
 		message, err := route.Decode(r)
 		done()
 		if err != nil {
@@ -112,7 +110,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		done = trace.Start(timing.PhaseDispatch)
+		done = trace.Start(PhaseDispatch)
 		err = runtime.dispatcher(key, expected, func() { committed.Store(true) })(ctx, message)
 		done()
 		if err != nil {
@@ -123,7 +121,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		done = trace.Start(timing.PhaseLoad)
+		done = trace.Start(PhaseLoad)
 		snapshot, err := runtime.store.Load(ctx, key)
 		done()
 		if err != nil {
@@ -143,7 +141,7 @@ func (runtime *Runtime[K, Model, Msg]) Page(result Result) http.Handler {
 // chosen from the query).
 func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Result) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		tracked := &httpx.Writer{ResponseWriter: w}
+		tracked := &ResponseWriter{ResponseWriter: w}
 		var committed atomic.Bool
 		var outcomeErr error
 		defer func() {
@@ -170,8 +168,8 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 			fail(err)
 			return
 		}
-		trace := timing.FromContext(r.Context())
-		done := trace.Start(timing.PhaseLoad)
+		trace := TraceFromContext(r.Context())
+		done := trace.Start(PhaseLoad)
 		snapshot, commands, created, err := runtime.loadOrCreate(r.Context(), key)
 		done()
 		if err != nil {
@@ -180,7 +178,7 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 		}
 		committed.Store(created)
 		if len(commands) > 0 {
-			done = trace.Start(timing.PhaseDispatch)
+			done = trace.Start(PhaseDispatch)
 			err = runtime.commands.Run(r.Context(), commands,
 				runtime.dispatcher(key, nil, func() { committed.Store(true) }))
 			done()
@@ -191,7 +189,7 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 				fail(err)
 				return
 			}
-			done = trace.Start(timing.PhaseLoad)
+			done = trace.Start(PhaseLoad)
 			snapshot, err = runtime.store.Load(r.Context(), key)
 			done()
 			if err != nil {
@@ -204,7 +202,7 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 }
 
 func (runtime *Runtime[K, Model, Msg]) notifyOutcome(
-	r *http.Request, tracked *httpx.Writer, committed bool, err error, panicValue any,
+	r *http.Request, tracked *ResponseWriter, committed bool, err error, panicValue any,
 ) {
 	state := OutcomeRejected
 	switch {
@@ -212,10 +210,10 @@ func (runtime *Runtime[K, Model, Msg]) notifyOutcome(
 		state = OutcomeResponseAborted
 	case isEffectError(err):
 		state = OutcomeEffectFailed
-		httpx.Observe(r.Context(), httpx.CommittedEffectFailure)
+		Observe(r.Context(), CommittedEffectFailure)
 	case isResponseAbort(err):
 		state = OutcomeResponseAborted
-		httpx.Observe(r.Context(), httpx.ResponseAborted)
+		Observe(r.Context(), ResponseAborted)
 	case committed:
 		state = OutcomeCommitted
 	case err == nil && panicValue == nil:

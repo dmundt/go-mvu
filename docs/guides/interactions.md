@@ -157,7 +157,7 @@ For an `InnerHTML` host, make response behavior explicit:
 | Outcome | Status and fragment contract |
 | --- | --- |
 | Open/edit/detail/next step | `200` with host contents, not another copy of host root |
-| Invalid form | `422` with submitted values and field errors; enable `components.Document.HTMXSwapValidationErrors` or `ui.Document.SwapValidationErrors` |
+| Invalid form | `422` with submitted values and field errors; enable `components.Document.HTMXSwapValidationErrors` or `components.PagePolicy.SwapValidationErrors` |
 | Successful save; remove visible panel | `200` with empty body clears host contents |
 | Successful save; refresh list too | `200` with empty primary contents plus OOB list/status updates |
 | Cancel/remove panel | Explicit safe GET returning empty contents, or native shell close control |

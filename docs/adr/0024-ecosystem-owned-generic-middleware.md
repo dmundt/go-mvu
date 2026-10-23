@@ -2,13 +2,18 @@
 type: Architecture Decision Record
 title: Ecosystem-owned generic middleware
 description: Keep generic HTTP middleware in the net/http ecosystem; retain go-mvu-specific policies.
-version: 3
+version: 4
 ---
 
 # ADR-0024: Ecosystem-owned generic middleware
 
 Status: Accepted; request/cache wrapper scope superseded by
 [ADR-0025](0025-application-owned-request-policy.md).
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Decision
 

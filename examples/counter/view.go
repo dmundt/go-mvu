@@ -6,26 +6,25 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
-const counterRegion ui.Region = "counter"
+const counterRegion components.Region = "counter"
 
 func counterControls(count int) html.Component {
 	return components.Column(components.Row(
-		ui.ActionButton{
+		components.ActionButton{
 			Label:     "-",
 			AriaLabel: "Decrement",
 			Action:    counterDecrement.HTMX(),
 		},
 		components.Output{Value: strconv.Itoa(count), Live: true},
-		ui.ActionButton{
+		components.ActionButton{
 			Label:     "+",
 			AriaLabel: "Increment",
 			Action:    counterIncrement.HTMX(),
 		},
-		ui.ActionButton{
+		components.ActionButton{
 			Label:   "Reset",
 			Action:  counterReset.HTMX(),
 			Variant: components.ButtonSecondary,
@@ -33,7 +32,7 @@ func counterControls(count int) html.Component {
 	))
 }
 
-type CounterView struct{ Document ui.Document }
+type CounterView struct{ Document components.PagePolicy }
 
 func (CounterView) Fragment(
 	_ context.Context, name string, model CounterModel, _ web.RequestContext,
@@ -49,7 +48,7 @@ func (view CounterView) Page(
 	shell := components.Shell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Go MVU counter"},
-			ui.ThemeSwitcher{
+			components.SecureThemeSwitcher{
 				Mode:   request.Mode,
 				Return: request.CurrentURL,
 			},

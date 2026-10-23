@@ -14,10 +14,9 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
-	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/web"
 	"golang.org/x/oauth2"
 )
 
@@ -41,7 +40,7 @@ type loginAttempt struct {
 }
 
 type authentication struct {
-	sessions *session.Middleware
+	sessions *web.Session
 	records  *jsonstore.Store[identity]
 	oauth    oauth2.Config
 	verifier *oidc.IDTokenVerifier
@@ -60,19 +59,19 @@ func randomToken() (string, error) {
 }
 
 func (auth *authentication) find(r *http.Request) (principal, error) {
-	id, ok := session.ID(r)
+	id, ok := web.SessionID(r)
 	if !ok {
-		return principal{}, &httpx.Error{Status: 401, Location: "/login"}
+		return principal{}, &web.Error{Status: 401, Location: "/login"}
 	}
 	value, err := auth.records.Load(r.Context(), id)
 	if errors.Is(err, store.ErrNotFound) {
-		return principal{}, &httpx.Error{Status: 401, Location: "/login"}
+		return principal{}, &web.Error{Status: 401, Location: "/login"}
 	}
 	if err != nil {
 		return principal{}, err
 	}
 	if value.Model.Account == "" || !time.Now().Before(value.Model.Expires) {
-		return principal{}, &httpx.Error{Status: 401, Location: "/login"}
+		return principal{}, &web.Error{Status: 401, Location: "/login"}
 	}
 	return principal{identity: value.Model, SessionID: id}, nil
 }
@@ -81,7 +80,7 @@ func (auth *authentication) protect(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := auth.find(r)
 		if err != nil {
-			httpx.RespondError(w, r, err)
+			web.RespondError(w, r, err)
 			return
 		}
 		ctx := context.WithValue(r.Context(), principalKey{}, user)
@@ -92,7 +91,7 @@ func (auth *authentication) protect(next http.Handler) http.Handler {
 func accountKey(r *http.Request) (string, error) {
 	user, ok := r.Context().Value(principalKey{}).(principal)
 	if !ok || user.Account == "" {
-		return "", &httpx.Error{Status: 401, Location: "/login"}
+		return "", &web.Error{Status: 401, Location: "/login"}
 	}
 	return user.Account, nil
 }
@@ -102,51 +101,51 @@ func (auth *authentication) authorize(
 ) error {
 	user, ok := ctx.Value(principalKey{}).(principal)
 	if !ok || user.Account != key {
-		return &httpx.Error{Status: 403}
+		return &web.Error{Status: 403}
 	}
 	// Recheck durable authorization for every CAS attempt/follow-up.
 	current, err := auth.records.Load(ctx, user.SessionID)
 	if errors.Is(err, store.ErrNotFound) {
-		return &httpx.Error{Status: 401, Location: "/login"}
+		return &web.Error{Status: 401, Location: "/login"}
 	}
 	if err != nil {
 		return err
 	}
 	if current.Model.Account != key || !time.Now().Before(current.Model.Expires) {
-		return &httpx.Error{Status: 403}
+		return &web.Error{Status: 403}
 	}
 	return nil
 }
 
 func (auth *authentication) begin(w http.ResponseWriter, r *http.Request) {
 	if _, err := auth.find(r); err == nil {
-		httpx.RespondError(w, r, &httpx.Error{Status: 409, Public: "Log out first."})
+		web.RespondError(w, r, &web.Error{Status: 409, Public: "Log out first."})
 		return
 	} else {
-		var rejection *httpx.Error
+		var rejection *web.Error
 		if !errors.As(err, &rejection) || rejection.Status != 401 {
-			httpx.RespondError(w, r, err)
+			web.RespondError(w, r, err)
 			return
 		}
 	}
-	id, ok := session.ID(r)
+	id, ok := web.SessionID(r)
 	if !ok {
-		httpx.RespondError(w, r, session.ErrNoSession)
+		web.RespondError(w, r, web.ErrNoSession)
 		return
 	}
 	state, err := randomToken()
 	if err != nil {
-		httpx.RespondError(w, r, err)
+		web.RespondError(w, r, err)
 		return
 	}
 	nonce, err := randomToken()
 	if err != nil {
-		httpx.RespondError(w, r, err)
+		web.RespondError(w, r, err)
 		return
 	}
 	verifier, err := randomToken()
 	if err != nil {
-		httpx.RespondError(w, r, err)
+		web.RespondError(w, r, err)
 		return
 	}
 	now := time.Now()
@@ -158,7 +157,7 @@ func (auth *authentication) begin(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(auth.attempts) >= 256 {
 		auth.mu.Unlock()
-		httpx.RespondError(w, r, &httpx.Error{Status: 503})
+		web.RespondError(w, r, &web.Error{Status: 503})
 		return
 	}
 	auth.attempts[state] = loginAttempt{
@@ -173,7 +172,7 @@ func (auth *authentication) begin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (auth *authentication) callback(w http.ResponseWriter, r *http.Request) {
-	id, ok := session.ID(r)
+	id, ok := web.SessionID(r)
 	state := r.URL.Query().Get("state")
 	auth.mu.Lock()
 	attempt, exists := auth.attempts[state]
@@ -183,29 +182,29 @@ func (auth *authentication) callback(w http.ResponseWriter, r *http.Request) {
 	auth.mu.Unlock()
 	if !exists || !ok || attempt.SessionID != id || !time.Now().Before(attempt.Expires) ||
 		r.URL.Query().Get("code") == "" || r.URL.Query().Get("error") != "" {
-		httpx.RespondError(w, r, &httpx.Error{Status: 400, Public: "Invalid login callback."})
+		web.RespondError(w, r, &web.Error{Status: 400, Public: "Invalid login callback."})
 		return
 	}
 	ctx := oidc.ClientContext(r.Context(), auth.client)
 	token, err := auth.oauth.Exchange(ctx, r.URL.Query().Get("code"),
 		oauth2.VerifierOption(attempt.Verifier))
 	if err != nil {
-		httpx.RespondError(w, r, &httpx.Error{Status: 502, Cause: fmt.Errorf("OIDC exchange: %w", err)})
+		web.RespondError(w, r, &web.Error{Status: 502, Cause: fmt.Errorf("OIDC exchange: %w", err)})
 		return
 	}
 	raw, ok := token.Extra("id_token").(string)
 	if !ok {
-		httpx.RespondError(w, r, &httpx.Error{Status: 502, Public: "Provider omitted ID token."})
+		web.RespondError(w, r, &web.Error{Status: 502, Public: "Provider omitted ID token."})
 		return
 	}
 	verified, err := auth.verifier.Verify(ctx, raw)
 	if err != nil {
-		httpx.RespondError(w, r, &httpx.Error{Status: 401, Cause: fmt.Errorf("OIDC verify: %w", err)})
+		web.RespondError(w, r, &web.Error{Status: 401, Cause: fmt.Errorf("OIDC verify: %w", err)})
 		return
 	}
 	if verified.Subject == "" ||
 		subtle.ConstantTimeCompare([]byte(verified.Nonce), []byte(attempt.Nonce)) != 1 {
-		httpx.RespondError(w, r, &httpx.Error{Status: 401, Public: "Invalid login identity."})
+		web.RespondError(w, r, &web.Error{Status: 401, Public: "Invalid login identity."})
 		return
 	}
 	// Issuer + subject, never email, identify an account. No tokens are retained.
@@ -219,7 +218,7 @@ func (auth *authentication) callback(w http.ResponseWriter, r *http.Request) {
 		return err
 	})
 	if err != nil {
-		httpx.RespondError(w, r, err)
+		web.RespondError(w, r, err)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -233,19 +232,19 @@ func minTime(a, b time.Time) time.Time {
 }
 
 func (auth *authentication) logout(w http.ResponseWriter, r *http.Request) {
-	id, ok := session.ID(r)
+	id, ok := web.SessionID(r)
 	if !ok {
-		httpx.RespondError(w, r, session.ErrNoSession)
+		web.RespondError(w, r, web.ErrNoSession)
 		return
 	}
 	// Durable denial precedes cookie invalidation. Even if invalidation fails,
 	// a copied cookie cannot recover this authentication after restart.
 	if err := auth.records.Delete(r.Context(), id); err != nil {
-		httpx.RespondError(w, r, err)
+		web.RespondError(w, r, err)
 		return
 	}
 	if err := auth.sessions.Invalidate(w, r); err != nil {
-		httpx.RespondError(w, r, err)
+		web.RespondError(w, r, err)
 		return
 	}
 	http.Redirect(w, r, "/login", http.StatusSeeOther)

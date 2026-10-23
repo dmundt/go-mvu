@@ -11,12 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/session"
-	"github.com/dmundt/go-mvu/static"
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -74,11 +71,11 @@ func serve(ctx context.Context, server *http.Server) error {
 }
 
 func newHandler(secret []byte) (http.Handler, error) {
-	sessions, err := session.New(secret, session.Options{Secure: false})
+	sessions, err := web.NewSession(secret, web.SessionOptions{Secure: false})
 	if err != nil {
 		return nil, err
 	}
-	csrf, err := middleware.NewCSRF(secret)
+	csrf, err := web.NewCSRF(secret)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +83,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
+	document := components.PagePolicy{HTMX: true, CSRF: true, SwapValidationErrors: true}
 	if err := document.Validate(); err != nil {
 		return nil, err
 	}
@@ -103,7 +100,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 
 	// Development diagnostics: Server-Timing + GET /debug/diagnostics.
 	// Keep the endpoint internal or authenticated in production.
-	diagnostics := middleware.NewDiagnostics(middleware.DiagnosticsOptions{
+	diagnostics := web.NewDiagnostics(web.DiagnosticsOptions{
 		SlowThreshold: 50 * time.Millisecond,
 		ServerTiming:  true,
 	})
@@ -117,19 +114,19 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 
 	root := http.NewServeMux()
-	root.Handle("GET "+static.Prefix, static.Handler())
+	root.Handle("GET "+components.AssetPrefix, components.AssetHandler())
 	private := sessions.Wrap(preference.Wrap(csrf.Wrap(mux)))
 	root.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		private.ServeHTTP(w, r)
 	}))
-	return middleware.SecurityHeaders(
-		diagnostics.Middleware(middleware.Recover(requestLimits(root, 10*time.Second))),
+	return web.SecurityHeaders(
+		diagnostics.Middleware(web.Recover(requestLimits(root, 10*time.Second))),
 	), nil
 }
 
 func sessionKey(r *http.Request) (string, error) {
-	id, ok := session.ID(r)
+	id, ok := web.SessionID(r)
 	if !ok {
 		return "", http.ErrNoCookie
 	}

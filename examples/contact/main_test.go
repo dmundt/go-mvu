@@ -11,7 +11,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/dmundt/go-mvu/validation"
+	"github.com/dmundt/go-mvu/web"
 )
 
 var csrfInput = regexp.MustCompile(`name="_csrf" value="([^"]+)"`)
@@ -153,7 +153,7 @@ func TestContactChoicesAndLengthBoundaries(t *testing.T) {
 	for _, option := range contactTopics() {
 		details := valid
 		details.Topic = option.Value
-		errs := validation.Errors{}
+		errs := web.FieldErrors{}
 		validateContact(details, errs)
 		if errs.Has(topicField) {
 			t.Errorf("rendered topic %q rejected: %v", option.Value, errs)
@@ -165,7 +165,7 @@ func TestContactChoicesAndLengthBoundaries(t *testing.T) {
 		}
 		details := valid
 		details.Topic = topic
-		errs := validation.Errors{}
+		errs := web.FieldErrors{}
 		validateContact(details, errs)
 		if !errs.Has(topicField) {
 			t.Errorf("invalid topic %q missing field error", topic)
@@ -176,7 +176,7 @@ func TestContactChoicesAndLengthBoundaries(t *testing.T) {
 	} {
 		details := valid
 		details.Message = strings.Repeat("界", length)
-		errs := validation.Errors{}
+		errs := web.FieldErrors{}
 		validateContact(details, errs)
 		wantError := length < messageMinLength || length > messageMaxLength
 		if errs.Has(messageField) != wantError || utf8.RuneCountInString(details.Message) != length {
@@ -186,7 +186,7 @@ func TestContactChoicesAndLengthBoundaries(t *testing.T) {
 	for _, length := range []int{nameMinLength - 1, nameMinLength} {
 		details := valid
 		details.Name = strings.Repeat("界", length)
-		errs := validation.Errors{}
+		errs := web.FieldErrors{}
 		validateContact(details, errs)
 		if errs.Has(nameField) != (length < nameMinLength) {
 			t.Errorf("name length %d: errors = %v", length, errs)

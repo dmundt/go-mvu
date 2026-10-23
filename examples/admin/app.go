@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/validation"
+	"github.com/dmundt/go-mvu/web"
 )
 
 const (
@@ -43,7 +43,7 @@ type Model struct {
 	Query   string
 	Role    string
 	Page    int
-	Form    validation.Form[Editor]
+	Form    web.Form[Editor]
 	Notice  string
 	Changes int
 }
@@ -82,7 +82,7 @@ func (model Model) memberIndex(id int) (int, error) {
 	return index, nil
 }
 
-func (model Model) saveMember(form validation.Form[Editor]) (Model, error) {
+func (model Model) saveMember(form web.Form[Editor]) (Model, error) {
 	index, err := model.memberIndex(form.Value.ID)
 	if err != nil {
 		return model, err
@@ -97,7 +97,7 @@ func (model Model) saveMember(form validation.Form[Editor]) (Model, error) {
 	model.Members[index].Role = form.Value.Role
 	model.Changes++
 	model.Notice = "Member saved. Refresh overview to update its snapshot."
-	model.Form = validation.Form[Editor]{}
+	model.Form = web.Form[Editor]{}
 	model.Page = model.directory().Page
 	return model, nil
 }
@@ -116,7 +116,7 @@ type Edit struct{ ID int }
 
 func (Edit) MessageName() string { return "admin.edit" }
 
-type Save struct{ Form validation.Form[Editor] }
+type Save struct{ Form web.Form[Editor] }
 
 func (Save) MessageName() string { return "admin.save" }
 
@@ -153,14 +153,14 @@ func (App) Update(
 		model.Query, model.Role = message.Query, message.Role
 		model.Page = message.Page
 		model.Page = model.directory().Page
-		model.Form, model.Notice = validation.Form[Editor]{}, ""
+		model.Form, model.Notice = web.Form[Editor]{}, ""
 	case Edit:
 		index, err := model.memberIndex(message.ID)
 		if err != nil {
 			return model, nil, err
 		}
 		member := model.Members[index]
-		model.Form = validation.Form[Editor]{
+		model.Form = web.Form[Editor]{
 			Value: Editor{ID: member.ID, Name: member.Name, Role: member.Role},
 		}
 		model.Notice = ""
@@ -168,7 +168,7 @@ func (App) Update(
 		next, err := model.saveMember(message.Form)
 		return next, nil, err
 	case Cancel:
-		model.Form = validation.Form[Editor]{}
+		model.Form = web.Form[Editor]{}
 	case Refresh:
 	default:
 		return model, nil, errors.New("unsupported dashboard message")

@@ -14,7 +14,7 @@ type Document struct {
 	Title       string
 	Description string
 	HTMXSource  string
-	// HTMXIntegrity is an SRI hash such as static.HTMXIntegrity.
+	// HTMXIntegrity is an SRI hash such as components.HTMXIntegrity.
 	HTMXIntegrity string
 	// HTMXSwapValidationErrors enables swapping 422 responses. Applications
 	// must return an appropriate validation fragment for the request target.

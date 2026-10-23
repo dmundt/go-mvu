@@ -7,7 +7,6 @@ import (
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/theme"
-	"github.com/dmundt/go-mvu/ui"
 )
 
 type tab struct{ ID, Label, Text string }
@@ -41,9 +40,9 @@ type gallery struct {
 func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Component(ctx, components.Main{Children: []html.Component{
 		components.Heading{Level: 1, Text: "Component gallery"},
-		ui.ModePicker{
+		components.ModePicker{
 			Mode:   view.Mode,
-			Hidden: []ui.ModePickerField{{Name: "tab", Value: view.Tab.ID}},
+			Hidden: []components.ModePickerField{{Name: "tab", Value: view.Tab.ID}},
 		},
 		view.content(),
 	}})

@@ -2,7 +2,7 @@
 type: Guide
 title: Themes and CSS
 description: Theme modes, design tokens, CSS integration, and theme switching.
-version: 4
+version: 5
 ---
 
 # Themes and CSS
@@ -113,7 +113,7 @@ type Theme interface {
 ```
 
 Treat custom theme CSS as trusted developer-owned content. Inline CSS needs
-`style-src 'unsafe-inline'`; `middleware.DefaultContentSecurityPolicy` allows
+`style-src 'unsafe-inline'`; `web.DefaultContentSecurityPolicy` allows
 it while keeping `script-src 'self'`. See [security](security.md).
 
 Custom themes can also keep styles outside Go source and embed the file in
@@ -175,8 +175,8 @@ func (View) Page(_ context.Context, model Model, request web.RequestContext) (ht
 		Title: "Dashboard",
 		Theme: request.Theme,
 		Mode:  request.Mode,
-		Body: middleware.CSRFHTMX{Body: components.Shell{
-			Header: ui.ThemeSwitcher{
+		Body: components.CSRFHTMX{Body: components.Shell{
+			Header: components.SecureThemeSwitcher{
 				Mode:   request.Mode,
 				Return: request.CurrentURL,
 			},
@@ -214,7 +214,7 @@ handler := sessions.Wrap(preference.Wrap(csrf.Wrap(mux)))
 | plain form | cookie set, 303 → `return` if same-origin path, else `fallback` |
 
 For the standard endpoint, prefer
-`ui.ThemeSwitcher{Mode: request.Mode, Return: request.CurrentURL}`. It supplies
+`components.SecureThemeSwitcher{Mode: request.Mode, Return: request.CurrentURL}`. It supplies
 the CSRF input and rejects missing CSRF context before writing markup.
 Session/CSRF middleware and the preference handler remain explicit.
 

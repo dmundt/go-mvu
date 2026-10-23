@@ -13,11 +13,9 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 type testModel struct{ Count int }
@@ -263,7 +261,7 @@ func TestErrorsUseErrorHandlerWithoutLeakingDetails(t *testing.T) {
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.OnError = func(w http.ResponseWriter, r *http.Request, err error) {
 			captured = err
-			httpx.RespondError(w, r, err)
+			RespondError(w, r, err)
 		}
 	})
 	response := serve(runtime.Handle(addRoute(Result{Mode: RenderFragment, Fragment: "missing"})),
@@ -482,7 +480,7 @@ func TestHandleCanceledRequestDoesNotRender(t *testing.T) {
 	}
 }
 
-func phaseNames(trace *timing.Trace) []string {
+func phaseNames(trace *Trace) []string {
 	var names []string
 	for _, phase := range trace.Phases() {
 		names = append(names, phase.Name)
@@ -492,21 +490,21 @@ func phaseNames(trace *timing.Trace) []string {
 
 func TestRuntimeRecordsTimingPhases(t *testing.T) {
 	runtime := newTestRuntime(t, nil)
-	trace := timing.New()
+	trace := NewTrace()
 	request := httptest.NewRequest(http.MethodPost, "/add", nil)
 	serve(runtime.Handle(addRoute(Result{Mode: RenderFragment, Fragment: "count"})),
-		request.WithContext(timing.WithTrace(request.Context(), trace)))
-	want := []string{timing.PhaseDecode, timing.PhaseDispatch, timing.PhaseLoad,
-		timing.PhaseView, timing.PhaseRender}
+		request.WithContext(WithTrace(request.Context(), trace)))
+	want := []string{PhaseDecode, PhaseDispatch, PhaseLoad,
+		PhaseView, PhaseRender}
 	if got := phaseNames(trace); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("Handle phases = %v, want %v", got, want)
 	}
 
-	trace = timing.New()
+	trace = NewTrace()
 	request = httptest.NewRequest(http.MethodGet, "/", nil)
 	serve(runtime.Page(Result{Mode: RenderPage}),
-		request.WithContext(timing.WithTrace(request.Context(), trace)))
-	want = []string{timing.PhaseLoad, timing.PhaseView, timing.PhaseRender}
+		request.WithContext(WithTrace(request.Context(), trace)))
+	want = []string{PhaseLoad, PhaseView, PhaseRender}
 	if got := phaseNames(trace); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("Page phases = %v, want %v", got, want)
 	}

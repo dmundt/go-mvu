@@ -6,10 +6,48 @@ Notable changes to go-mvu are documented here.
 
 ### Added
 
+- Architecture regression test requiring exactly seven public framework packages.
+
 - `ui.ModePicker` for native GET theme previews, with explicit hidden query
   fields. Promoted from the example-only helper; gallery behavior is unchanged.
 
 ### Changed
+
+- **Breaking:** seven public framework packages: `mvu`, `store`, `html`, `htmx`,
+  `theme`, `web`, and `components`. Internal packages and examples are not part
+  of this count. No forwarding packages or compatibility aliases remain.
+  - `httpx`, `session`, and `middleware` move into `web`.
+  - `session.New`, `Options`, `Middleware`, `ID`, and `DefaultLifetime` become
+    `web.NewSession`, `SessionOptions`, `Session`, `SessionID`, and
+    `DefaultSessionLifetime`. `ErrWeakSecret` and `ErrInvalidOptions` become
+    `ErrWeakSessionSecret` and `ErrInvalidSessionOptions`.
+  - `httpx.Writer` becomes `web.ResponseWriter`; other HTTP infrastructure,
+    session lifecycle, and middleware names keep their spelling under `web`.
+  - `ui` and `static` move into `components`. `ui.Document`, `ui.Form`, and
+    `ui.ThemeSwitcher` become `components.PagePolicy`, `ActionForm`, and
+    `SecureThemeSwitcher`. Explicit `Document`, `Form`, and `ThemeSwitcher`
+    retain their low-level contracts.
+  - CSRF renderers move from `middleware` to `components`: `CSRFInput` and
+    `CSRFHTMX`. Token lookup and server protection stay in `web`.
+  - `static.Handler` and `static.Prefix` become `components.AssetHandler` and
+    `AssetPrefix`; HTMX URL, bytes, SRI, license, and caching stay unchanged.
+  - Replace old imports, remove duplicate imports, and use the new qualifiers.
+    UI helper error strings now start with `components:`.
+  - Session cookies, CSRF signatures, markup, persistence, and HTTP behavior
+    are unchanged. `web` never imports `components`; rendering remains optional.
+  See [ADR-0029](docs/adr/0029-seven-public-packages.md).
+
+- **Breaking:** merge `validation` into `web`; remove the old package without
+  aliases. Replace `validation.Form` with `web.Form`, `validation.Errors`
+  with `web.FieldErrors`, and `validation.Decoder` with `web.FormDecoder`.
+  Use `web.Bind` and `web.ErrMissingDecoder`. The sentinel message now starts
+  with `web:`; typed feedback and explicit validation behavior are unchanged.
+
+- **Breaking:** merge `timing` into `httpx`; remove the old package without
+  forwarding aliases. Replace `timing.New()` with `httpx.NewTrace()` and
+  `timing.FromContext(ctx)` with `httpx.TraceFromContext(ctx)`. Move `Trace`,
+  `Phase`, `WithTrace`, and `Phase*` constant qualifiers to `httpx`.
+  Trace collection and diagnostics output are unchanged.
 
 - **Breaking:** request contracts are functions:
   - `web.DecoderFunc` becomes `web.Decoder`; `KeyResolverFunc` becomes

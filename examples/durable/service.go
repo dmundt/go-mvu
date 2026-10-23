@@ -8,11 +8,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
 	"github.com/dmundt/go-mvu/internal/example/server"
-	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/session"
-	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -33,11 +31,11 @@ func newService(dataDir string) (*service, error) {
 	if err != nil {
 		return nil, err
 	}
-	sessions, err := session.New(deriveSecret(rootSecret, "session"), session.Options{})
+	sessions, err := web.NewSession(deriveSecret(rootSecret, "session"), web.SessionOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("create sessions: %w", err)
 	}
-	csrf, err := middleware.NewCSRF(deriveSecret(rootSecret, "csrf"))
+	csrf, err := web.NewCSRF(deriveSecret(rootSecret, "csrf"))
 	if err != nil {
 		return nil, fmt.Errorf("create CSRF protection: %w", err)
 	}
@@ -61,9 +59,9 @@ func newService(dataDir string) (*service, error) {
 		App:   CounterApp{Wake: wakes},
 		Store: modelStore,
 		Keys: func(r *http.Request) (string, error) {
-			key, ok := session.ID(r)
+			key, ok := web.SessionID(r)
 			if !ok {
-				return "", session.ErrNoSession
+				return "", web.ErrNoSession
 			}
 			return key, nil
 		},
@@ -80,9 +78,9 @@ func newService(dataDir string) (*service, error) {
 		Method:  http.MethodPost,
 		Pattern: "/increment",
 		Decode: func(r *http.Request) (CounterMessage, error) {
-			key, ok := session.ID(r)
+			key, ok := web.SessionID(r)
 			if !ok {
-				return nil, session.ErrNoSession
+				return nil, web.ErrNoSession
 			}
 			return Increment{Key: key}, nil
 		},
@@ -99,11 +97,11 @@ func newService(dataDir string) (*service, error) {
 		return nil, closeStoreAfterError(modelStore, fmt.Errorf("create request policy: %w", err))
 	}
 	root := http.NewServeMux()
-	root.Handle("GET "+static.Prefix, static.Handler())
+	root.Handle("GET "+components.AssetPrefix, components.AssetHandler())
 	root.Handle("/", server.NoStore(
 		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
 	))
-	handler := middleware.SecurityHeaders(middleware.Recover(policy(root)))
+	handler := web.SecurityHeaders(web.Recover(policy(root)))
 	return &service{
 		handler: handler,
 		store:   modelStore,

@@ -29,3 +29,12 @@
 - Widget styles remain in `theme/default/shared.css`; preserve CSS classes
   and tokens during package moves. Add gallery entries and browser checks
   for new widgets; retain computed-style coverage in light/dark at 390px.
+- Application integration helpers may import `web`; `web` must never import
+  `components`. Keep HTTP middleware and session state out of renderers.
+- `htmx.min.js` is the vendored HTMX 2.0.4 upstream build. Never edit it.
+  Version changes replace the file, recompute `HTMXIntegrity` (SHA-384, base64),
+  update documentation, and run `go test ./components ./examples/...`.
+- Preserve `htmx.LICENSE`. Assets use `embed`; no CDN or runtime fetch.
+  Mount `AssetHandler()` at `AssetPrefix` without another `StripPrefix`.
+  Directory listing returns 404; assets cache immutable for one year.
+  Changing asset content requires a new filename or accepting stale clients.

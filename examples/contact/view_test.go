@@ -7,14 +7,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/ui"
-	"github.com/dmundt/go-mvu/validation"
 	"github.com/dmundt/go-mvu/web"
 )
 
 func TestContactFunctionsShareSubmittedContentAndRoot(t *testing.T) {
-	view := contactView(ui.Document{})
+	view := contactView(components.PagePolicy{})
 	model := ContactModel{Submitted: true}
 	page, err := view.Page(context.Background(), model, web.RequestContext{})
 	if err != nil {
@@ -46,7 +45,7 @@ func TestContactFunctionsShareSubmittedContentAndRoot(t *testing.T) {
 }
 
 func TestContactNameErrorUsesConfiguredLimit(t *testing.T) {
-	errs := validation.Errors{}
+	errs := web.FieldErrors{}
 	validateContact(ContactDetails{}, errs)
 	want := fmt.Sprintf("Enter at least %d characters.", nameMinLength)
 	if got := errs.First(nameField); got != want {

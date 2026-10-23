@@ -102,10 +102,10 @@ labels:
 - `revocation_capacity`, `command_overload`
 
 Install `Diagnostics.Middleware` outside the relevant policies and runtime.
-It attaches a concurrency-safe event sink through stdlib-only `httpx` context
+It attaches a concurrency-safe event sink through `web` context
 contracts. Signals work even without `RuntimeConfig.ObserveOutcome`.
 Async jobs retain the sink after request cancellation.
-`Diagnostics.RecordEvent(httpx.Event)` supports application workers and rejects
+`Diagnostics.RecordEvent(web.Event)` supports application workers and rejects
 unknown enum values without allocating a new label. Snapshot copies and Reset
 are synchronized. A missing counter means zero.
 

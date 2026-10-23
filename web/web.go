@@ -1,5 +1,10 @@
 // Package web binds MVU applications to net/http.
 //
+// It provides explicit form decoding, signed sessions, CSRF protection,
+// security headers, recovery, response tracking, and request diagnostics.
+// Applications install middleware and routes explicitly. Rendering uses html
+// contracts without depending on the optional components package.
+//
 // Request flow: resolve key → decode message → load or create model →
 // Update with compare-and-swap retry → run commands outside the store →
 // render page or fragment with a RequestContext.
@@ -10,7 +15,6 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
@@ -42,7 +46,7 @@ type RuntimeConfig[K comparable, Model any, Msg mvu.Message] struct {
 	// Commands runs effects. Nil → SyncCommands.
 	Commands CommandRunner[Msg]
 	// OnError handles errors before the response starts. Nil → 500 text.
-	OnError httpx.ErrorHandler
+	OnError ErrorHandler
 	// AuthorizeTransition runs before every Update/CAS attempt and before
 	// Handle creates a missing model for that intent. Page initialization
 	// remains ungated. HX headers are never authorization evidence.
@@ -61,7 +65,7 @@ type Runtime[K comparable, Model any, Msg mvu.Message] struct {
 	view       View[Model]
 	theme      theme.Theme
 	commands   CommandRunner[Msg]
-	onError    httpx.ErrorHandler
+	onError    ErrorHandler
 	authorize  TransitionAuthorizer[K, Model, Msg]
 	observe    OutcomeObserver
 	logger     *slog.Logger
@@ -88,7 +92,7 @@ func NewRuntime[K comparable, Model any, Msg mvu.Message](
 		runtime.commands = SyncCommands[Msg]{}
 	}
 	if runtime.onError == nil {
-		runtime.onError = httpx.RespondError
+		runtime.onError = RespondError
 	}
 	if runtime.logger == nil {
 		runtime.logger = slog.Default()

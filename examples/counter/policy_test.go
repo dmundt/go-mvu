@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dmundt/go-mvu/httpx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func TestRequestLimitsBoundsHeaderCSRFBody(t *testing.T) {
@@ -28,7 +28,7 @@ func TestRequestLimitsBoundsHeaderCSRFBody(t *testing.T) {
 					if !errors.As(err, &tooLarge) {
 						t.Fatal(err)
 					}
-					httpx.RespondError(w, r, &httpx.Error{Status: http.StatusRequestEntityTooLarge, Cause: err})
+					web.RespondError(w, r, &web.Error{Status: http.StatusRequestEntityTooLarge, Cause: err})
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

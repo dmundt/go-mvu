@@ -2,13 +2,18 @@
 type: Architecture Decision Record
 title: "ADR-0023: One reusable component package"
 description: Consolidate native widgets into components without widening dependencies.
-version: 1
+version: 2
 ---
 
 # ADR-0023: One reusable component package
 
 - Status: Accepted
 - Supersedes package separation in [ADR-0010](0010-shared-ui-components.md).
+
+Package placement and import names are superseded by
+[ADR-0029](0029-seven-public-packages.md). The historical decision below
+retains its behavioral contracts; use the seven-package layout and
+[migration notes](../../CHANGELOG.md#unreleased) for current APIs.
 
 ## Context
 

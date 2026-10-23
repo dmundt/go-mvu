@@ -7,8 +7,6 @@ import (
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -26,7 +24,7 @@ func (counter Counter) RenderHTML(ctx context.Context, out *html.Context) error 
 			components.Output{Value: strconv.Itoa(counter.Count), Live: true},
 			components.Form{
 				URL:       "/increment",
-				CSRFField: middleware.CSRFInput{},
+				CSRFField: components.CSRFInput{},
 				Children: []html.Component{components.Button{
 					Label: "Increment",
 					Type:  components.ButtonSubmit,
@@ -53,7 +51,7 @@ func (View) Page(
 		Counter{Count: model.Count},
 		components.Form{
 			URL:       "/logout",
-			CSRFField: middleware.CSRFInput{},
+			CSRFField: components.CSRFInput{},
 			Children: []html.Component{components.Button{
 				Label: "Log out",
 				Type:  components.ButtonSubmit,
@@ -76,11 +74,11 @@ func document(
 ) html.Page {
 	return components.Document{
 		Title:         title,
-		HTMXSource:    static.HTMXPath,
-		HTMXIntegrity: static.HTMXIntegrity,
+		HTMXSource:    components.HTMXPath,
+		HTMXIntegrity: components.HTMXIntegrity,
 		Theme:         selected,
 		Mode:          mode,
-		Body: middleware.CSRFHTMX{Body: components.Shell{
+		Body: components.CSRFHTMX{Body: components.Shell{
 			Main: components.Card{Body: body},
 		}},
 	}
@@ -92,7 +90,7 @@ func loginPage() html.Page {
 		components.Paragraph("Log in with your configured OpenID Connect provider."),
 		components.Form{
 			URL:       "/login",
-			CSRFField: middleware.CSRFInput{},
+			CSRFField: components.CSRFInput{},
 			Children: []html.Component{components.Button{
 				Label: "Log in",
 				Type:  components.ButtonSubmit,

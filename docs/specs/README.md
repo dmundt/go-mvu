@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 14
+version: 16
 ---
 
 # Specs
@@ -22,9 +22,9 @@ version: 14
 | 3 | Rendering model, markers | [html](../../html/) | ADR [0004](../adr/0004-direct-safe-html-rendering.md), [0005](../adr/0005-pages-and-fragments.md) |
 | 4 | HTML context, escaping | [html](../../html/) | [security](../guides/security.md) |
 | 4.1 | Element builder, attribute allowlist | `html.El`, `html.Attrs`, `htmx.Action.Attrs` | [components](../guides/components.md#low-level-element-builder), [security](../guides/security.md), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
-| 5 | Composition, slots | [components](../../components/), optional [ui](../../ui/) | [components](../guides/components.md), ADR [0021](../adr/0021-concise-ui-composition.md) |
+| 5 | Composition, slots | [components](../../components/), including application integration | [components](../guides/components.md), ADR [0029](../adr/0029-seven-public-packages.md) |
 | 6 | MVU contracts | [mvu](../../mvu/) | ADR [0003](../adr/0003-mvu-runtime-boundaries.md) |
-| 7 | Versioned store | [store](../../store/), [session](../../session/) | ADR [0006](../adr/0006-versioned-session-models.md) |
+| 7 | Versioned store | [store](../../store/), [web sessions](../../web/session.go) | ADR [0006](../adr/0006-versioned-session-models.md), [0029](../adr/0029-seven-public-packages.md) |
 | 8 | Web views, RequestContext | [web](../../web/) | [web runtime](../guides/web-runtime.md), ADR [0013](../adr/0013-runtime-request-context.md) |
 | 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md), [interactions](../guides/interactions.md) |
 | 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`), [admin workflow](../../examples/admin/) | [runtime ownership](../guides/web-runtime.md#ownership-and-guarantees), [first-app loop](../guides/first-app.md#what-runs-after-a-click), [dialog workflows](../guides/interactions.md#dialog-workflows-temporary-pages) |
@@ -35,10 +35,10 @@ version: 14
 | 14 | Pagination | `components.Pagination` | [components](../guides/components.md) |
 | 15 | Counter example | [examples/counter](../../examples/counter/) | — |
 | 16 | Users example | [examples/users](../../examples/users/) | — |
-| 17 | Validation | [validation](../../validation/), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
-| 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
-| 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
-| 18 extensions | HTTP policy and lifecycle; generic deployment middleware and mutation replay remain application-owned | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md), [0024](../adr/0024-ecosystem-owned-generic-middleware.md) |
+| 17 | Validation | [web forms](../../web/form.go), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md), [0028](../adr/0028-web-owned-form-validation.md) |
+| 18 | Middleware | [web](../../web/), [component assets](../../components/assets.go) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md), [0029](../adr/0029-seven-public-packages.md) |
+| 18.1 | Render timing, diagnostics | [web trace](../../web/trace.go), `web.Diagnostics` | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md), [0029](../adr/0029-seven-public-packages.md) |
+| 18 extensions | HTTP policy and lifecycle; generic deployment middleware and mutation replay remain application-owned | [web HTTP contracts](../../web/http.go), [sessions](../../web/session.go) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md), [0024](../adr/0024-ecosystem-owned-generic-middleware.md) |
 | 19 | CSS | [theme/*.css](../../theme/), [scripts](../../scripts/) | [themes](../guides/themes.md) |
 | 20 | Testing | `*_test.go`, `scripts/themes.test.mjs` | [README](../../README.md#validation) |
 | 21 | Benchmarks | [benchmarks](../../benchmarks/) | [benchmarks](../guides/benchmarks.md) |
@@ -47,9 +47,30 @@ version: 14
 
 ## Deviations
 
+Seven public framework packages remain: `mvu`, `store`, `html`, `htmx`,
+`theme`, `web`, and `components`. HTTP infrastructure from `httpx`, `session`,
+and `middleware` now belongs to `web`; `ui` helpers and `static` assets belong
+to `components`. CSRF rendering lives in `components` while protection and
+token lookup stay in `web`. Dependencies remain one-way: `components` may
+import `web`, never the reverse. Examples and internal packages are outside
+this count. See [ADR-0029](../adr/0029-seven-public-packages.md).
+
+Form validation is consolidated into `web`: `Form`, `FieldErrors`,
+`FormDecoder`, `Bind`, and `ErrMissingDecoder`. The standalone `validation`
+package is removed without forwarding aliases. Explicit decoding and typed
+feedback remain unchanged; the MVU layer still does not import web.
+See [ADR-0028](../adr/0028-web-owned-form-validation.md).
+
+The standalone `timing` package is consolidated into `web`.
+Use `web.NewTrace`, `web.TraceFromContext`, `web.WithTrace`, `web.Trace`,
+`web.Phase`, and `web.Phase*` constants. Runtime and middleware share this
+HTTP integration package without a dependency cycle or compatibility shim.
+See [ADR-0029](../adr/0029-seven-public-packages.md), superseding the earlier
+`httpx` placement in [ADR-0027](../adr/0027-consolidated-http-observability.md).
+
 Prototype APIs use one canonical name and function-based request contracts.
 `web.Decoder`, `web.KeyResolver`, `web.ExpectedVersion`, and
-`validation.Decoder` are function types, not interface/adapter pairs.
+`web.FormDecoder` are function types, not interface/adapter pairs.
 `StaticMessage(message)` returns a decoder. Theme mode is resolved once by
 middleware into request context; `RuntimeConfig.Themes` and `ThemeResolver`
 are removed. Only bounded asynchronous execution ships.
@@ -84,15 +105,15 @@ combines per-session state, validated edits, filters, pagination, and two
 independent regions. Neither changes core contracts or adds dependencies.
 
 UI conveniences: `Select.Placeholder` owns an optional empty-value choice;
-`ui.Document.Validate` rejects HTMX-only flags without HTMX. Form field
+`components.PagePolicy.Validate` rejects HTMX-only flags without HTMX. Form field
 helpers replace supplied errors explicitly. See [forms](../guides/forms.md)
 and [page policy](../guides/components.md#shared-page-policy).
 
-`ui.ActionLink` shares one GET URL between native and enhanced links;
-`ui.ThemeSwitcher` supplies the CSRF field for the standard preference form.
-`ui.ModePicker` supplies a GET-only theme preview selector, with explicit
+`components.ActionLink` shares one GET URL between native and enhanced links;
+`components.SecureThemeSwitcher` supplies the CSRF field for the standard preference form.
+`components.ModePicker` supplies a GET-only theme preview selector, with explicit
 hidden query fields and no persisted preference or CSRF requirement.
-The optional `ui` layer imports `theme` for its typed mode. Ordinary
+The optional `components` layer imports `theme` for its typed mode. Ordinary
 component-returning functions are the default example authoring pattern;
 custom types and `RegionView` remain supported. The counter can be copied
 outside the repository without internal imports. See
@@ -113,14 +134,13 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | CSP: no unsafe-inline for script | script strict; `style-src 'unsafe-inline'` | inline CSS requirement (ADR 0012) |
 | `AppShell`, `NavigationItem`, `BreadcrumbItem` | `Shell`, `NavItem`, `Breadcrumb`; no aliases | one canonical name |
 | `html.TrustedHTML` | retained; no `html.Trusted` alias | one explicit trusted-markup type |
-| packages per §2 | + `static`, `internal/arch`, `benchmarks`, optional `ui` | assets, enforcement, and application-level composition without widening core dependencies; widgets live in `components` |
-| middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
-| web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
-| session dependencies | + stdlib-only `httpx` | bounded revocation-capacity event without middleware dependency |
+| packages per §2 | seven public packages; examples, internals, and benchmarks separate | consolidate supporting APIs while retaining pure core boundaries; ADR-0029 |
+| middleware deps: html only | middleware and sessions live inside `web`; CSRF HTML lives in `components` | one-way components → web dependency; no render-control dependency in HTTP infrastructure |
+| HTTP support dependencies | contracts, traces, events, response commitment, and sessions share `web` | no separate `httpx`, `session`, or `middleware` package |
 | diagnostics aggregates | + fixed operational event counters | saturation, stale actions, authorization, effect and stream failures |
 | CAS plus commands | application WAL/outbox example outside runtime | atomic receipt/model/effect descriptor with explicit at-least-once delivery |
 | unspecified response ordering | existing `hx-sync` attributes and two-tab expected-version tests | replace stale navigation responses, reject stale mutation intent |
-| outermost recovery | recovery inside diagnostics; optional ID via `httpx.WithRequestID` | completion records survive panics; external IDs can reach recovery logs |
+| outermost recovery | recovery inside diagnostics; optional ID via `web.WithRequestID` | completion records survive panics; external IDs can reach recovery logs |
 | unspecified HTTP policies | explicit request bounds, no-store HTML, HTMX 422 opt-in | preserve streaming, error statuses, and progressive enhancement |
 | runtime transition/effect failure | commit-aware outcomes and transition policies | distinguish persistence from effect/render failure; authorize command follow-ups |
 | signed session ID only | signed server expiry, key rollover, explicit rotation and revocation | copied cookies expire and can be revoked within one process |

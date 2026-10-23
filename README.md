@@ -9,10 +9,15 @@ go-mvu is not stable yet. Its API may change at any time. Prototype cleanup
 removes compatibility aliases rather than retaining deprecated alternatives;
 see [migration notes](CHANGELOG.md#unreleased).
 
-Reusable controls and widgets share one `components` package.
-Upgrading from `shared`? See the [migration notes](CHANGELOG.md#unreleased).
-Middleware keeps CSRF, security headers, streaming-aware recovery, and
-diagnostics. Applications own request limits and cache policy; see
+Seven public framework packages: `mvu`, `store`, `html`, `htmx`, `theme`,
+`web`, and `components`. Examples and internal support packages stay separate.
+
+`web` owns HTTP runtime, sessions, CSRF, security headers, recovery, diagnostics,
+and typed form decoding. `components` owns reusable controls, application
+composition helpers, and embedded HTMX assets. Applications still install
+middleware and asset routes explicitly; request limits and cache policy remain
+application-owned. See [architecture](docs/architecture.md),
+[migration notes](CHANGELOG.md#unreleased), and
 [HTTP middleware](docs/guides/middleware.md#request-bounds).
 
 ## Try it

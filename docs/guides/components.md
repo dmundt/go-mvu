@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 7
+version: 8
 ---
 
 # Components and pagination
@@ -113,13 +113,13 @@ accessible components. Its CSS works with all shipped themes.
 
 ### Shared page policy
 
-The optional `ui` package connects existing components and HTTP helpers.
+`components.PagePolicy` connects document rendering and HTTP helpers.
 Configure document policy once when constructing your view:
 
 ```go
-type View struct{ Document ui.Document }
+type View struct{ Document components.PagePolicy }
 
-view := View{Document: ui.Document{
+view := View{Document: components.PagePolicy{
 	HTMX: true,
 	CSRF: true,
 	SwapValidationErrors: true,
@@ -129,13 +129,13 @@ view := View{Document: ui.Document{
 Inside `Page`, return `view.Document.Page(request, "Contact", body)`.
 It uses the request's theme and mode and the embedded HTMX source and SRI.
 `CSRF` enables the header wrapper when HTMX is enabled. The application
-must still mount `static.Handler`, session middleware, and CSRF middleware;
-the helper never installs routes or protection. A zero `ui.Document` emits
+must still mount `components.AssetHandler`, session middleware, and CSRF middleware;
+the helper never installs routes or protection. A zero `components.PagePolicy` emits
 plain pages without HTMX or the header wrapper.
 
 Call `document.Validate()` at startup and propagate its error. Enabling
 `CSRF` or `SwapValidationErrors` without `HTMX` returns
-`ui.ErrInvalidDocument` instead of silently ignoring the setting. `Page`
+`components.ErrInvalidDocument` instead of silently ignoring the setting. `Page`
 also rejects that configuration at render time before writing any bytes.
 `CSRF` means HTMX headers only; it does not protect server endpoints.
 
@@ -169,7 +169,7 @@ rendering errors propagate normally.
 Use a region for a stable fragment name and its section root:
 
 ```go
-const contactRegion ui.Region = "contact-form"
+const contactRegion components.Region = "contact-form"
 
 // In the shared web.Action:
 result := web.Result{Mode: web.RenderAuto, Fragment: string(contactRegion)}
@@ -184,24 +184,24 @@ return contactRegion.Select(name, contactBody(model))
 `Wrap` and `Select` render the same section ID for `outerHTML` replacement.
 `Select` reports `web.ErrUnknownFragment` for other names. Names start with
 an ASCII letter or underscore, followed by letters, digits, underscores, or
-hyphens; invalid names report `ui.ErrInvalidRegion`. For multiple regions,
+hyphens; invalid names report `components.ErrInvalidRegion`. For multiple regions,
 dispatch to the matching region explicitly. Helpers preserve rendering
 errors and escape child content.
 
 ### Optional context-aware region adapter
 
-`ui.RegionView[Model]` binds a region to a typed content function. Embed it
+`components.RegionView[Model]` binds a region to a typed content function. Embed it
 in an application view to provide its `Fragment` method automatically:
 
 ```go
 type View struct {
-	ui.RegionView[Model]
-	Document ui.Document
+	components.RegionView[Model]
+	Document components.PagePolicy
 }
 
 view := View{
-	Document: ui.Document{HTMX: true, CSRF: true},
-	RegionView: ui.RegionView[Model]{
+	Document: components.PagePolicy{HTMX: true, CSRF: true},
+	RegionView: components.RegionView[Model]{
 		Region: contactRegion,
 		Content: func(
 			ctx context.Context, model Model, request web.RequestContext,
@@ -222,7 +222,7 @@ check the error, and place `content` in the page. The promoted `Fragment`
 method uses the same content function and root. Context and presentation
 state are passed explicitly on every call; no model or request is retained.
 Unknown names are rejected before calling the content function. Missing
-content reports `ui.ErrMissingContent`; content errors propagate before
+content reports `components.ErrMissingContent`; content errors propagate before
 rendering begins. Use explicit dispatch when a page has multiple regions.
 
 For small screens, ordinary component-returning functions with
@@ -234,37 +234,37 @@ Use whichever approach leaves fewer concepts in the application.
 
 See [forms](forms.md) for secure action forms and explicit field helpers.
 Existing `Document`, `Form`, control structs, and custom fragment types
-remain supported. See [ADR-0021](../adr/0021-concise-ui-composition.md).
+remain supported. See [ADR-0029](../adr/0029-seven-public-packages.md).
 
 ### Action-aware navigation
 
-Use `ui.ActionLink` when native and enhanced navigation must use the same
+Use `components.ActionLink` when native and enhanced navigation must use the same
 GET action:
 
 ```go
 action := editAction.HTMX()
 action.URL += "?" + url.Values{"id": {strconv.Itoa(member.ID)}}.Encode()
-link := ui.ActionLink{Action: action, Label: "Edit " + member.Name}
+link := components.ActionLink{Action: action, Label: "Edit " + member.Name}
 ```
 
 It derives `href` and `hx-get` from `Action.URL`, preserves target, swap,
 history, `Variant`, and `Attrs`, and escapes labels and URLs. Non-GET
-actions return `ui.ErrInvalidLink`; invalid GET actions propagate their
-validation error before output. Use `ui.ActionButton` for POST actions.
+actions return `components.ErrInvalidLink`; invalid GET actions propagate their
+validation error before output. Use `components.ActionButton` for POST actions.
 Keep `components.Link` when different native and enhanced URLs are deliberate.
 
-For the standard `/theme` endpoint, `ui.ThemeSwitcher` takes explicit `Mode`
+For the standard `/theme` endpoint, `components.SecureThemeSwitcher` takes explicit `Mode`
 and `Return` fields and supplies the CSRF input. Missing CSRF context returns
-`middleware.ErrCSRFTokenUnset` before output. It does not install protection
+`web.ErrCSRFTokenUnset` before output. It does not install protection
 or the preference handler. Use `components.ThemeSwitcher` for custom
 endpoints, targets, or attributes.
 
-For URL-based previews, use `ui.ModePicker` instead:
+For URL-based previews, use `components.ModePicker` instead:
 
 ```go
-picker := ui.ModePicker{
+picker := components.ModePicker{
 	Mode: theme.Dark,
-	Hidden: []ui.ModePickerField{{Name: "tab", Value: "settings"}},
+	Hidden: []components.ModePickerField{{Name: "tab", Value: "settings"}},
 }
 ```
 
@@ -507,7 +507,7 @@ The `components` package currently includes:
   (`Header`, `Sidebar`, `Main`, `Footer` landmarks),
   `Section` (`ID`, `Children`, `Attrs`), `Stack`, `Grid`, `Inline`.
   Standalone landmarks: `Header`, `Sidebar{AriaLabel}`,
-  `Main`, `Footer`. `Document.HTMXSource` (`static.HTMXPath`) + `HTMXIntegrity` → local HTMX
+  `Main`, `Footer`. `Document.HTMXSource` (`components.HTMXPath`) + `HTMXIntegrity` → local HTMX
   script with SRI.
 - Primitives: `Heading` (level 1–6), `Paragraph`, `Output` (`Live` adds
   `aria-live`).
