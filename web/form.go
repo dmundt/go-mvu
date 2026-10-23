@@ -1,29 +1,29 @@
-// Package validation provides explicit, reflection-free form validation.
-package validation
+package web
 
 import (
 	"errors"
 	"net/http"
 )
 
-var ErrMissingDecoder = errors.New("validation: decoder is required")
+var ErrMissingDecoder = errors.New("web: form decoder is required")
 
-type Errors map[string][]string
+// FieldErrors holds explicit validation messages by control name.
+type FieldErrors map[string][]string
 
-func (e Errors) Add(field, message string) {
+func (e FieldErrors) Add(field, message string) {
 	e[field] = append(e[field], message)
 }
 
-func (e Errors) Has(field string) bool { return len(e[field]) != 0 }
+func (e FieldErrors) Has(field string) bool { return len(e[field]) != 0 }
 
-func (e Errors) First(field string) string {
+func (e FieldErrors) First(field string) string {
 	if len(e[field]) == 0 {
 		return ""
 	}
 	return e[field][0]
 }
 
-func (e Errors) Empty() bool {
+func (e FieldErrors) Empty() bool {
 	for _, messages := range e {
 		if len(messages) != 0 {
 			return false
@@ -34,17 +34,17 @@ func (e Errors) Empty() bool {
 
 type Form[T any] struct {
 	Value  T
-	Errors Errors
+	Errors FieldErrors
 	Dirty  bool
 	Valid  bool
 }
 
-// Decoder explicitly decodes and validates request input. Errors holds
+// FormDecoder explicitly decodes and validates request input. FieldErrors holds
 // field-level validation failures; error reports malformed requests.
-type Decoder[T any] func(*http.Request) (T, Errors, error)
+type FormDecoder[T any] func(*http.Request) (T, FieldErrors, error)
 
 // Bind decodes r into a Form. Valid is true when no field errors exist.
-func Bind[T any](r *http.Request, decoder Decoder[T]) (Form[T], error) {
+func Bind[T any](r *http.Request, decoder FormDecoder[T]) (Form[T], error) {
 	if decoder == nil {
 		return Form[T]{}, ErrMissingDecoder
 	}
@@ -53,7 +53,7 @@ func Bind[T any](r *http.Request, decoder Decoder[T]) (Form[T], error) {
 		return Form[T]{}, err
 	}
 	if errs == nil {
-		errs = Errors{}
+		errs = FieldErrors{}
 	}
 	return Form[T]{Value: value, Errors: errs, Dirty: true, Valid: errs.Empty()}, nil
 }

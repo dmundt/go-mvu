@@ -2,12 +2,13 @@
 type: Architecture Decision Record
 title: "ADR-0008: Decode and validate forms explicitly"
 description: Decode and validate form inputs without reflection.
-version: 1
+version: 2
 ---
 
 # ADR-0008: Decode and validate forms explicitly
 
-- Status: Accepted
+- Status: Accepted; package placement superseded by
+  [ADR-0028](0028-web-owned-form-validation.md).
 
 ## Context
 

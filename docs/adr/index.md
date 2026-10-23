@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 6
+version: 7
 ---
 
 # Architecture Decision Records
@@ -37,3 +37,4 @@ version: 6
 * [ADR-0025](0025-application-owned-request-policy.md) - application-owned request limits and cache policy.
 * [ADR-0026](0026-prototype-api-simplification.md) - canonical prototype APIs without compatibility scaffolding.
 * [ADR-0027](0027-consolidated-http-observability.md) - consolidate request traces and HTTP support.
+* [ADR-0028](0028-web-owned-form-validation.md) - consolidate explicit form validation into web.

@@ -7,7 +7,6 @@ import (
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/ui"
-	"github.com/dmundt/go-mvu/validation"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -48,7 +47,7 @@ func contactBody(model ContactModel) html.Component {
 	}
 }
 
-func contactFields(form validation.Form[ContactDetails]) []html.Component {
+func contactFields(form web.Form[ContactDetails]) []html.Component {
 	details := form.Value
 	fields := ui.Fields(form.Errors)
 	return []html.Component{

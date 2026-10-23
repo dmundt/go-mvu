@@ -16,7 +16,6 @@ import (
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/theme"
-	"github.com/dmundt/go-mvu/validation"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -206,7 +205,7 @@ func TestRegionPreservesRootAndUnknownFragmentError(t *testing.T) {
 }
 
 func TestFieldsKeepValuesAndAttachErrors(t *testing.T) {
-	fields := Fields(validation.Errors{
+	fields := Fields(web.FieldErrors{
 		"name": {"Name <error>", "Second"}, "email": {"Email error"},
 		"topic": {"Topic error"}, "message": {"Message error"}, "agreement": {"Agreement error"},
 	})

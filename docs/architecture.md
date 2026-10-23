@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 13
+version: 14
 ---
 
 # Architecture
@@ -22,12 +22,11 @@ CSS inlined in `<style>`. Source of truth:
 | `store` | `Snapshot[M]` (`Version`), `Load`/`Create`/`CompareAndSwap`, memory store |
 | `session` | signed opaque session ID → model key |
 | `theme` | `Theme` (inline CSS), `Mode` system/light/dark, signed `Preference` cookie |
-| `validation` | explicit field errors, no reflection |
 | `components` | optional layout, controls, forms, tables, pagination, switcher, and native-HTML widgets |
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
 | `middleware` | security headers/CSP, CSRF, stream-safe recovery, runtime diagnostics |
 | `httpx` | stdlib-only HTTP error policy, request metadata, events, nil-safe phase traces, Vary merging, response commitment |
-| `web` | runtime: `Action`/route → message → Update → store → commands → view |
+| `web` | explicit form decoding/field errors; runtime: `Action`/route → message → Update → store → commands → view |
 | `ui` | optional app composition: document policy, secure action forms, rooted regions, typed region views, field errors |
 | `internal/arch` | boundary enforcement test |
 | `internal/example` | private example support: server lifecycle, request policy, JSON storage, and HTTP benchmarks |
@@ -56,13 +55,13 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ([ADR-0014](adr/0014-enforced-package-boundaries.md)).
 
 ```text
-mvu, html, store, theme, static, validation, httpx → stdlib only
+mvu, html, store, theme, static, httpx → stdlib only
 htmx       → html
 session    → store, httpx
 middleware → html, session, httpx
 components → html, htmx, theme
 web        → mvu, html, htmx, store, theme, httpx
-ui         → components, html, htmx, middleware, static, theme, validation, web
+ui         → components, html, htmx, middleware, static, theme, web
 internal/example/jsonstore → store
 internal/example/server    → httpx
 examples   → framework packages and internal/example; never other examples
@@ -70,13 +69,13 @@ examples   → framework packages and internal/example; never other examples
 
 ```mermaid
 flowchart BT
-  html; mvu; store; theme; static; validation; httpx
+  html; mvu; store; theme; static; httpx
   htmx --> html
   session --> store & httpx
   middleware --> html & session & httpx
   components --> html & htmx & theme
   web --> mvu & html & htmx & store & theme & httpx
-  ui --> components & html & htmx & middleware & static & theme & validation & web
+  ui --> components & html & htmx & middleware & static & theme & web
   app[application] --> web & components & middleware & session & static
 ```
 
@@ -92,6 +91,11 @@ opt in explicitly and still own middleware and asset routing. See
 [ADR-0021](adr/0021-concise-ui-composition.md).
 
 ## Source organization
+
+Explicit form decoding and field feedback live in [web/form.go](../web/form.go).
+There is no separate `validation` package. MVU updates may carry typed form
+data but still must not inspect requests, render, or perform I/O.
+See [ADR-0028](adr/0028-web-owned-form-validation.md).
 
 Request timing lives in [httpx/trace.go](../httpx/trace.go), alongside request
 metadata, events, and response tracking. There is no separate `timing` package.

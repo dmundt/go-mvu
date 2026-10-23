@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/validation"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -20,14 +19,14 @@ var submitContact = web.Action[ContactMessage]{
 }
 
 func decodeContact(request *http.Request) (ContactMessage, error) {
-	form, err := validation.Bind(request, decodeContactDetails)
+	form, err := web.Bind(request, decodeContactDetails)
 	if err != nil {
 		return nil, err
 	}
 	return SubmitContact{Form: form}, nil
 }
 
-func decodeContactDetails(request *http.Request) (ContactDetails, validation.Errors, error) {
+func decodeContactDetails(request *http.Request) (ContactDetails, web.FieldErrors, error) {
 	if err := request.ParseForm(); err != nil {
 		return ContactDetails{}, nil, err
 	}
@@ -40,12 +39,12 @@ func decodeContactDetails(request *http.Request) (ContactDetails, validation.Err
 		Message:   strings.TrimSpace(values.Get(messageField)),
 		Agreement: values.Get(agreementField) == agreementValue,
 	}
-	errs := validation.Errors{}
+	errs := web.FieldErrors{}
 	validateContact(details, errs)
 	return details, errs, nil
 }
 
-func validateContact(details ContactDetails, errs validation.Errors) {
+func validateContact(details ContactDetails, errs web.FieldErrors) {
 	if utf8.RuneCountInString(details.Name) < nameMinLength {
 		errs.Add(nameField, fmt.Sprintf("Enter at least %d characters.", nameMinLength))
 	}

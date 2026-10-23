@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/internal/browsertest"
-	"github.com/dmundt/go-mvu/validation"
+	"github.com/dmundt/go-mvu/web"
 )
 
 var tokenPattern = regexp.MustCompile(`name="_csrf" value="([^"]+)"`)
@@ -215,7 +215,7 @@ func TestDashboardUpdatePreservesSnapshotsAndClampsPages(t *testing.T) {
 	}
 	original := model.Members[0]
 	next, _, err := app.Update(context.Background(), model, Save{
-		Form: validation.Form[Editor]{
+		Form: web.Form[Editor]{
 			Value: Editor{ID: 1, Name: "Updated", Role: "Viewer"}, Valid: true,
 		},
 	})
@@ -227,7 +227,7 @@ func TestDashboardUpdatePreservesSnapshotsAndClampsPages(t *testing.T) {
 		t.Fatalf("filtered=%+v error=%v", filtered, err)
 	}
 	invalid, _, err := app.Update(context.Background(), model, Save{
-		Form: validation.Form[Editor]{Value: Editor{ID: 1, Name: "A"}, Valid: false},
+		Form: web.Form[Editor]{Value: Editor{ID: 1, Name: "A"}, Valid: false},
 	})
 	if err != nil || invalid.Members[0] != original || invalid.Form.Value.Name != "A" {
 		t.Fatalf("invalid form changed member or lost values: %v", err)

@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 8
+version: 9
 ---
 
 # Architecture Decision Records
@@ -26,7 +26,7 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0005](0005-pages-and-fragments.md) | Distinguish full-page and fragment response contracts | Accepted |
 | [0006](0006-versioned-session-models.md) | Persist versioned models behind storage and session boundaries | Accepted |
 | [0007](0007-server-controlled-themes.md) | Provide server-controlled light and dark themes | Accepted |
-| [0008](0008-explicit-validation.md) | Decode and validate forms explicitly without reflection | Accepted |
+| [0008](0008-explicit-validation.md) | Decode and validate forms explicitly without reflection | Accepted; package placement superseded by 0028 |
 | [0009](0009-reusable-components.md) | Keep reusable components optional and application components local | Accepted |
 | [0010](0010-shared-ui-components.md) | Separate shared UI components from core components | Package separation superseded by 0023 |
 | [0011](0011-system-theme-mode.md) | System theme mode as default | Accepted |
@@ -46,3 +46,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0025](0025-application-owned-request-policy.md) | Keep request and cache policy in applications | Accepted |
 | [0026](0026-prototype-api-simplification.md) | Canonical names, function contracts, single theme-resolution path | Accepted |
 | [0027](0027-consolidated-http-observability.md) | Request tracing in shared HTTP support; remove standalone timing package | Accepted |
+| [0028](0028-web-owned-form-validation.md) | Explicit form validation in web; remove standalone validation package | Accepted |

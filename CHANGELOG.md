@@ -11,6 +11,12 @@ Notable changes to go-mvu are documented here.
 
 ### Changed
 
+- **Breaking:** merge `validation` into `web`; remove the old package without
+  aliases. Replace `validation.Form` with `web.Form`, `validation.Errors`
+  with `web.FieldErrors`, and `validation.Decoder` with `web.FormDecoder`.
+  Use `web.Bind` and `web.ErrMissingDecoder`. The sentinel message now starts
+  with `web:`; typed feedback and explicit validation behavior are unchanged.
+
 - **Breaking:** merge `timing` into `httpx`; remove the old package without
   forwarding aliases. Replace `timing.New()` with `httpx.NewTrace()` and
   `timing.FromContext(ctx)` with `httpx.TraceFromContext(ctx)`. Move `Trace`,

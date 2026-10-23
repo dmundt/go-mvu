@@ -2,7 +2,7 @@
 type: Guide
 title: Forms
 description: Build typed forms with explicit decoding, validation, and errors.
-version: 6
+version: 7
 ---
 
 # Forms
@@ -23,7 +23,7 @@ JavaScript.
 1. **Describe fields** with a Go struct.
 2. **Read and check input** in a decoder function; no reflection or
    automatic field binding.
-3. **Pass the result** into a typed app message with `validation.Bind`.
+3. **Pass the result** into a typed app message with `web.Bind`.
 4. **Show values and errors** using `components.Input`, `Select`, `Textarea`,
    and `Checkbox`. Each control accepts its label, current value, and error.
 
@@ -34,18 +34,20 @@ type ContactDetails struct {
 }
 
 type SubmitContact struct {
-	Form validation.Form[ContactDetails]
+	Form web.Form[ContactDetails]
 }
 ```
 
-`validation.Form` carries submitted values, field errors, and a `Valid` flag.
+`web.Form` carries submitted values, field errors, and a `Valid` flag.
 Keep validation in the decoder, then let `Update` decide what a valid form
 does. Do not read requests or render HTML in `Update`.
 
-`validation.Decoder[T]` is `func(*http.Request) (T, validation.Errors, error)`.
-Pass a function directly to `validation.Bind`; field errors are ordinary
+`web.FormDecoder[T]` is `func(*http.Request) (T, web.FieldErrors, error)`.
+Pass a function directly to `web.Bind`; field errors are ordinary
 validation results, while malformed requests return an error. A nil decoder
-returns `validation.ErrMissingDecoder`. No interface adapter is needed.
+returns `web.ErrMissingDecoder`. No interface adapter is needed.
+`web.Decoder[Message]` remains the separate request-to-message contract;
+`FormDecoder` returns typed input and field errors before constructing a message.
 The contact example keeps request parsing and validation in
 [actions.go](../../examples/contact/actions.go), separate from pure MVU updates.
 

@@ -11,7 +11,6 @@ import (
 	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/ui"
-	"github.com/dmundt/go-mvu/validation"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -127,7 +126,7 @@ func decodeSave(request *http.Request) (Message, error) {
 		Name: strings.TrimSpace(request.PostForm.Get("name")),
 		Role: request.PostForm.Get("role"),
 	}
-	errs := validation.Errors{}
+	errs := web.FieldErrors{}
 	length := utf8.RuneCountInString(value.Name)
 	if length < nameMinLength || length > nameMaxLength {
 		errs.Add("name", fmt.Sprintf("Use %d to %d characters.", nameMinLength, nameMaxLength))
@@ -135,7 +134,7 @@ func decodeSave(request *http.Request) (Message, error) {
 	if !validRole(value.Role) {
 		errs.Add("role", "Choose a valid role.")
 	}
-	return Save{Form: validation.Form[Editor]{
+	return Save{Form: web.Form[Editor]{
 		Value: value, Errors: errs, Dirty: true, Valid: errs.Empty(),
 	}}, nil
 }

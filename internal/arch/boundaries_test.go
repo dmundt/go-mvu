@@ -27,11 +27,10 @@ var allowed = map[string][]string{
 	"static":                     {},
 	"htmx":                       {"html"},
 	"session":                    {"store", "httpx"},
-	"validation":                 {},
 	"httpx":                      {},
 	"middleware":                 {"html", "session", "httpx"},
 	"components":                 {"html", "htmx", "theme"},
-	"ui":                         {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
+	"ui":                         {"components", "html", "htmx", "middleware", "static", "theme", "web"},
 	"web":                        {"mvu", "html", "htmx", "store", "theme", "httpx"},
 }
 

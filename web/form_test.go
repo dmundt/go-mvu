@@ -1,4 +1,4 @@
-package validation
+package web
 
 import (
 	"errors"
@@ -11,12 +11,12 @@ import (
 
 type signup struct{ Email string }
 
-var signupDecoder = func(r *http.Request) (signup, Errors, error) {
+var signupDecoder = func(r *http.Request) (signup, FieldErrors, error) {
 	if err := r.ParseForm(); err != nil {
 		return signup{}, nil, err
 	}
 	value := signup{Email: strings.TrimSpace(r.PostForm.Get("email"))}
-	errs := Errors{}
+	errs := FieldErrors{}
 	if !strings.Contains(value.Email, "@") {
 		errs.Add("email", "Enter an email address.")
 	}
@@ -46,7 +46,7 @@ func TestBindReportsFieldErrors(t *testing.T) {
 func TestBindPropagatesDecodeError(t *testing.T) {
 	failure := errors.New("bad")
 	_, err := Bind(httptest.NewRequest(http.MethodGet, "/", nil),
-		func(*http.Request) (int, Errors, error) { return 0, nil, failure })
+		func(*http.Request) (int, FieldErrors, error) { return 0, nil, failure })
 	if !errors.Is(err, failure) {
 		t.Fatalf("err = %v", err)
 	}
@@ -60,7 +60,7 @@ func TestBindRejectsMissingDecoder(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	errs := Errors{}
+	errs := FieldErrors{}
 	if !errs.Empty() || errs.Has("x") || errs.First("x") != "" {
 		t.Fatal("empty errors misreport")
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/validation"
+	"github.com/dmundt/go-mvu/web"
 )
 
 type ContactDetails struct {
@@ -17,7 +17,7 @@ type ContactDetails struct {
 }
 
 type ContactModel struct {
-	Form      validation.Form[ContactDetails]
+	Form      web.Form[ContactDetails]
 	Submitted bool
 }
 
@@ -27,7 +27,7 @@ type ContactMessage interface {
 }
 
 type SubmitContact struct {
-	Form validation.Form[ContactDetails]
+	Form web.Form[ContactDetails]
 }
 
 func (SubmitContact) MessageName() string { return "contact.submit" }

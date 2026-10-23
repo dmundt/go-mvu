@@ -16,6 +16,8 @@ diagnostics. Applications own request limits and cache policy; see
 [HTTP middleware](docs/guides/middleware.md#request-bounds).
 Request tracing shares `httpx` with HTTP metadata and events; no separate
 timing package is needed.
+Typed form decoding and field errors live in `web`; no separate validation
+package is needed. See [forms](docs/guides/forms.md).
 
 ## Try it
 

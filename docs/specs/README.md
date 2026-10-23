@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 15
+version: 16
 ---
 
 # Specs
@@ -35,7 +35,7 @@ version: 15
 | 14 | Pagination | `components.Pagination` | [components](../guides/components.md) |
 | 15 | Counter example | [examples/counter](../../examples/counter/) | — |
 | 16 | Users example | [examples/users](../../examples/users/) | — |
-| 17 | Validation | [validation](../../validation/), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
+| 17 | Validation | [web forms](../../web/form.go), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md), [0028](../adr/0028-web-owned-form-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
 | 18.1 | Render timing, diagnostics | [httpx trace](../../httpx/trace.go), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md), [0027](../adr/0027-consolidated-http-observability.md) |
 | 18 extensions | HTTP policy and lifecycle; generic deployment middleware and mutation replay remain application-owned | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md), [0024](../adr/0024-ecosystem-owned-generic-middleware.md) |
@@ -47,6 +47,12 @@ version: 15
 
 ## Deviations
 
+Form validation is consolidated into `web`: `Form`, `FieldErrors`,
+`FormDecoder`, `Bind`, and `ErrMissingDecoder`. The standalone `validation`
+package is removed without forwarding aliases. Explicit decoding and typed
+feedback remain unchanged; the MVU layer still does not import web.
+See [ADR-0028](../adr/0028-web-owned-form-validation.md).
+
 The standalone `timing` package is merged into stdlib-only `httpx`.
 Use `httpx.NewTrace`, `httpx.TraceFromContext`, `httpx.WithTrace`, `httpx.Trace`,
 `httpx.Phase`, and `httpx.Phase*` constants. Runtime and middleware share this
@@ -55,7 +61,7 @@ See [ADR-0027](../adr/0027-consolidated-http-observability.md).
 
 Prototype APIs use one canonical name and function-based request contracts.
 `web.Decoder`, `web.KeyResolver`, `web.ExpectedVersion`, and
-`validation.Decoder` are function types, not interface/adapter pairs.
+`web.FormDecoder` are function types, not interface/adapter pairs.
 `StaticMessage(message)` returns a decoder. Theme mode is resolved once by
 middleware into request context; `RuntimeConfig.Themes` and `ThemeResolver`
 are removed. Only bounded asynchronous execution ships.
