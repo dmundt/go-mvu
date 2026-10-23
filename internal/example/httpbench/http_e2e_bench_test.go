@@ -89,12 +89,12 @@ func newHTTPBenchmarkServer(
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, httpBenchModel, httpBenchMessage]{
 		App:   httpBenchApp{},
 		Store: modelStore,
-		Keys: web.KeyResolverFunc[string](func(r *http.Request) (string, error) {
+		Keys: func(r *http.Request) (string, error) {
 			if key := r.Header.Get("X-Bench-Session"); key != "" {
 				return key, nil
 			}
 			return "benchmark", nil
-		}),
+		},
 		View: httpBenchView{},
 	})
 	if err != nil {
@@ -105,7 +105,7 @@ func newHTTPBenchmarkServer(
 	mux.Handle("POST /increment", runtime.Handle(web.Route[httpBenchMessage]{
 		Method:  http.MethodPost,
 		Pattern: "/increment",
-		Decode:  web.StaticMessage[httpBenchMessage]{Message: httpBenchMessage{Delta: 1}},
+		Decode:  web.StaticMessage[httpBenchMessage](httpBenchMessage{Delta: 1}),
 		Result: web.Result{
 			Mode: web.RenderFragment, Fragment: "counter",
 		},

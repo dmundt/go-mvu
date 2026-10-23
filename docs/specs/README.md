@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 13
+version: 14
 ---
 
 # Specs
@@ -46,6 +46,15 @@ version: 13
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+Prototype APIs use one canonical name and function-based request contracts.
+`web.Decoder`, `web.KeyResolver`, `web.ExpectedVersion`, and
+`validation.Decoder` are function types, not interface/adapter pairs.
+`StaticMessage(message)` returns a decoder. Theme mode is resolved once by
+middleware into request context; `RuntimeConfig.Themes` and `ThemeResolver`
+are removed. Only bounded asynchronous execution ships.
+See [ADR-0026](../adr/0026-prototype-api-simplification.md) and
+[migration notes](../../CHANGELOG.md#unreleased).
 
 Request bounds, deadlines, content-type checks, and cache wrappers are
 application-owned rather than public middleware APIs. CSRF, security headers,
@@ -102,8 +111,8 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | plain theme cookie | signed cookie (`theme.Preference` = `CookieThemeResolver`) | tamper resistance |
 | `NewContext(w, theme, mode)`, `Render(..., theme, mode)`, `Context.Theme()` | `NewContext(w)`, `Render(ctx, w, c)`; theme via `web.RequestContext` / `Document` | html stays theme-free (no html → theme import) |
 | CSP: no unsafe-inline for script | script strict; `style-src 'unsafe-inline'` | inline CSS requirement (ADR 0012) |
-| `AppShell` | `Shell` + `AppShell` alias | backward compatibility |
-| `html.TrustedHTML` | + `html.Trusted` alias | brevity |
+| `AppShell`, `NavigationItem`, `BreadcrumbItem` | `Shell`, `NavItem`, `Breadcrumb`; no aliases | one canonical name |
+| `html.TrustedHTML` | retained; no `html.Trusted` alias | one explicit trusted-markup type |
 | packages per §2 | + `static`, `internal/arch`, `benchmarks`, optional `ui` | assets, enforcement, and application-level composition without widening core dependencies; widgets live in `components` |
 | middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
 | web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
@@ -115,9 +124,11 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | unspecified HTTP policies | explicit request bounds, no-store HTML, HTMX 422 opt-in | preserve streaming, error statuses, and progressive enhancement |
 | runtime transition/effect failure | commit-aware outcomes and transition policies | distinguish persistence from effect/render failure; authorize command follow-ups |
 | signed session ID only | signed server expiry, key rollover, explicit rotation and revocation | copied cookies expire and can be revoked within one process |
-| unrestricted async runner | bounded runner recommended; unbounded `AsyncCommands` deprecated | explicit admission, per-command timeout, shutdown drain |
+| unrestricted async runner | `AsyncCommandRunner` only; unbounded runner removed | explicit admission, per-command timeout, shutdown drain |
 | presentation context | + resolved `Locale` | views receive locale explicitly, without middleware imports |
-| `NewRuntime` | + `MustRuntime` | startup convenience |
+| `NewRuntime` | error-returning constructor only | explicit startup failures |
+| `ThemeResolver` | `Preference.Wrap` / `WithMode` → request context | resolve once; no hidden fallback |
+| decoder and resolver interfaces | function types; pass method values for custom structs | no redundant adapter types |
 | pagination always rendered | hidden when ≤ 1 page | no empty nav |
 | `POST /theme` only | + `Preference.ToggleHandler` | legacy two-state switches |
 | users cards via runtime | plain handler + `web.NewRequestContext` | demonstrates non-runtime use |

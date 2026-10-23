@@ -23,25 +23,13 @@ type RequestContext struct {
 	Locale string
 }
 
-// ThemeResolver reads and stores the visitor's color mode.
-// theme.Preference implements it.
-type ThemeResolver interface {
-	Resolve(*http.Request) (theme.Mode, error)
-	Persist(http.ResponseWriter, *http.Request, theme.Mode) error
-}
-
 // NewRequestContext builds view state. Nil theme → theme.DefaultTheme.
-// Nil resolver or resolver error → mode from request context (System default).
-func NewRequestContext(r *http.Request, active theme.Theme, resolver ThemeResolver) RequestContext {
+// Mode comes from theme.WithMode or theme.Preference.Wrap (System default).
+func NewRequestContext(r *http.Request, active theme.Theme) RequestContext {
 	if active == nil {
 		active = theme.DefaultTheme{}
 	}
 	mode := theme.ModeFromContext(r.Context())
-	if resolver != nil {
-		if resolved, err := resolver.Resolve(r); err == nil {
-			mode = resolved
-		}
-	}
 	request := htmx.FromRequest(r)
 	current := r.URL.RequestURI()
 	if request.IsHTMX && request.CurrentURL != "" {
@@ -81,37 +69,18 @@ func (f ViewFunctions[Model]) Fragment(
 	return f.FragmentFunc(ctx, name, model, request)
 }
 
-type Decoder[Msg mvu.Message] interface {
-	Decode(*http.Request) (Msg, error)
+// Decoder parses a request into an application message.
+type Decoder[Msg mvu.Message] func(*http.Request) (Msg, error)
+
+// StaticMessage returns a decoder for a request-independent message.
+// Messages containing mutable data must not be mutated by Update.
+func StaticMessage[Msg mvu.Message](message Msg) Decoder[Msg] {
+	return func(*http.Request) (Msg, error) { return message, nil }
 }
 
-type DecoderFunc[Msg mvu.Message] func(*http.Request) (Msg, error)
+type KeyResolver[K comparable] func(*http.Request) (K, error)
 
-func (fn DecoderFunc[Msg]) Decode(r *http.Request) (Msg, error) { return fn(r) }
-
-type StaticMessage[Msg mvu.Message] struct {
-	Message Msg
-}
-
-func (s StaticMessage[Msg]) Decode(*http.Request) (Msg, error) { return s.Message, nil }
-
-type KeyResolver[K comparable] interface {
-	Resolve(*http.Request) (K, error)
-}
-
-type KeyResolverFunc[K comparable] func(*http.Request) (K, error)
-
-func (fn KeyResolverFunc[K]) Resolve(r *http.Request) (K, error) { return fn(r) }
-
-type ExpectedVersionResolver interface {
-	ResolveVersion(*http.Request) (store.Version, error)
-}
-
-type ExpectedVersionFunc func(*http.Request) (store.Version, error)
-
-func (fn ExpectedVersionFunc) ResolveVersion(r *http.Request) (store.Version, error) {
-	return fn(r)
-}
+type ExpectedVersion func(*http.Request) (store.Version, error)
 
 type Route[Msg mvu.Message] struct {
 	Method  string
@@ -123,5 +92,5 @@ type Route[Msg mvu.Message] struct {
 	RequireModel bool
 	// ExpectedVersion is trusted application parsing of an intent version.
 	// A stale intent is rejected with 409, never retried against newer state.
-	ExpectedVersion ExpectedVersionResolver
+	ExpectedVersion ExpectedVersion
 }

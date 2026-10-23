@@ -26,20 +26,20 @@ var (
 	browseAction = web.Action[Message]{
 		Method: htmx.Get,
 		Path:   "/admin",
-		Decode: web.DecoderFunc[Message](decodeBrowse),
+		Decode: decodeBrowse,
 		Result: web.Result{Mode: web.RenderAuto, Fragment: string(workspaceRegion)},
 	}
 	editAction = web.Action[Message]{
 		Method: htmx.Get,
 		Path:   "/admin/edit",
-		Decode: web.DecoderFunc[Message](decodeEdit),
+		Decode: decodeEdit,
 		Result: web.Result{Mode: web.RenderAuto, Fragment: string(editorRegion)},
 		Swap:   htmx.InnerHTML,
 	}
 	saveAction = web.Action[Message]{
 		Method: htmx.Post,
 		Path:   "/admin/save",
-		Decode: web.DecoderFunc[Message](decodeSave),
+		Decode: decodeSave,
 		Result: web.Result{
 			Mode: web.RenderAuto, Fragment: string(workspaceRegion), Location: "/admin/view",
 		},
@@ -48,7 +48,7 @@ var (
 		web.Result{Mode: web.RenderAuto, Fragment: string(overviewRegion), Location: "/admin/view"})
 	cancelAction = web.Action[Message]{
 		Method: htmx.Get, Path: "/admin/cancel",
-		Decode: web.StaticMessage[Message]{Message: Cancel{}},
+		Decode: web.StaticMessage[Message](Cancel{}),
 		Result: web.Result{Mode: web.RenderAuto, Fragment: string(editorRegion)},
 		Swap:   htmx.InnerHTML,
 	}
@@ -76,7 +76,7 @@ func saveHandler(runtime *web.Runtime[string, Model, Message]) http.Handler {
 		}
 		runtime.Handle(web.Route[Message]{
 			Method: http.MethodPost, Pattern: saveAction.Path,
-			Decode: web.StaticMessage[Message]{Message: message}, Result: result,
+			Decode: web.StaticMessage[Message](message), Result: result,
 		}).ServeHTTP(w, request)
 	})
 }

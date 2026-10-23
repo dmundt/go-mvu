@@ -1,7 +1,12 @@
 // Package validation provides explicit, reflection-free form validation.
 package validation
 
-import "net/http"
+import (
+	"errors"
+	"net/http"
+)
+
+var ErrMissingDecoder = errors.New("validation: decoder is required")
 
 type Errors map[string][]string
 
@@ -36,18 +41,14 @@ type Form[T any] struct {
 
 // Decoder explicitly decodes and validates request input. Errors holds
 // field-level validation failures; error reports malformed requests.
-type Decoder[T any] interface {
-	Decode(*http.Request) (T, Errors, error)
-}
-
-// DecoderFunc adapts a function to Decoder.
-type DecoderFunc[T any] func(*http.Request) (T, Errors, error)
-
-func (fn DecoderFunc[T]) Decode(r *http.Request) (T, Errors, error) { return fn(r) }
+type Decoder[T any] func(*http.Request) (T, Errors, error)
 
 // Bind decodes r into a Form. Valid is true when no field errors exist.
 func Bind[T any](r *http.Request, decoder Decoder[T]) (Form[T], error) {
-	value, errs, err := decoder.Decode(r)
+	if decoder == nil {
+		return Form[T]{}, ErrMissingDecoder
+	}
+	value, errs, err := decoder(r)
 	if err != nil {
 		return Form[T]{}, err
 	}

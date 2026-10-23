@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 6
+version: 7
 ---
 
 # Web runtime
@@ -47,19 +47,19 @@ non-modal popover content, and coordinated page/fragment responses.
 runtime, err := web.NewRuntime(web.RuntimeConfig[string, Model, Message]{
 	App:    App{},                          // required
 	Store:  store.NewMemory[string, Model](), // required
-	Keys:   web.KeyResolverFunc[string](sessionKey), // required
+	Keys:   sessionKey,                     // required
 	View:   View{},                         // required
 	Theme:  theme.Default,                  // nil → theme.DefaultTheme
-	Themes: preference,                     // nil → theme.ModeFromContext
 	Commands: web.SyncCommands[Message]{},  // nil → SyncCommands
-	OnError:  web.InternalServerError,      // nil → generic 500
+	OnError:  httpx.RespondError,            // nil → shared HTTP error policy
 	Logger:   slog.Default(),               // nil → slog.Default
 	MaxRetries: 3,                          // ≤ 0 → 3
 })
 ```
 
-- Missing required field → `ErrInvalidRuntime`. `MustRuntime` panics instead
-  (startup only).
+- Missing required field → `ErrInvalidRuntime`. Handle startup errors explicitly.
+- `Keys`, route `Decode`, and `ExpectedVersion` accept functions directly.
+  To reuse a struct-based implementation, pass its method value.
 - `OnError` never receives partially written responses; errors after the
   first byte are logged.
 
@@ -84,7 +84,9 @@ type RequestContext struct {
 - Views get presentation state explicitly; no context lookups in view code.
 - `ViewFunctions` adapts plain functions. Unknown fragment →
   `ErrUnknownFragment`.
-- Outside the runtime: `web.NewRequestContext(r, theme, resolver)`.
+- Mode comes only from `theme.WithMode` or `theme.Preference.Wrap`; there is
+  no second cookie lookup or resolver fallback in the runtime.
+- Outside the runtime: `web.NewRequestContext(r, theme)`.
 
 ## Routes
 
@@ -95,7 +97,7 @@ and response once. Reuse the action in the view:
 var submit = web.Action[Message]{
 	Method: htmx.Post,
 	Path:   "/contact",
-	Decode: web.DecoderFunc[Message](decodeContact),
+	Decode: decodeContact,
 	Result: web.Result{Mode: web.RenderAuto, Fragment: "contact-form"},
 }
 
@@ -141,7 +143,7 @@ mux.Handle("GET /{$}", runtime.Page(web.Result{Mode: web.RenderPage}))
 mux.Handle("POST /counter/increment", runtime.Handle(web.Route[Message]{
 	Method:  http.MethodPost,
 	Pattern: "/counter/increment",
-	Decode:  web.StaticMessage[Message]{Message: Increment{}},
+	Decode:  web.StaticMessage[Message](Increment{}),
 	Result:  web.Result{Mode: web.RenderAuto, Fragment: "counter", Location: "/"},
 }))
 ```
@@ -149,7 +151,7 @@ mux.Handle("POST /counter/increment", runtime.Handle(web.Route[Message]{
 - `Page(Result)`: load or create model (runs Init commands), render, no
   Update. `PageFunc(func(*http.Request) Result)` for per-request results.
 - `Handle`: decode → Update → persist → commands → render.
-- `DecoderFunc` for request-dependent messages (users example: `?page=N`).
+- Supply a decoder function for request-dependent messages (users: `?page=N`).
   Parse HTTP in decoders, never in `Update`.
 - `Pattern` / `Method` mismatch → 404 / 405 with `Allow`.
 - `RequireModel: true` → missing model = 404, no `Init` (edit routes on
@@ -195,12 +197,12 @@ resolve key → decode message
 | Runner | Semantics |
 | --- | --- |
 | `SyncCommands` (default) | in order, before render; error → `OnError`; response reflects follow-ups |
-| `AsyncCommands{OnError}` | one goroutine per command, `context.WithoutCancel`; response renders immediately; errors → `OnError` or slog |
+| `AsyncCommandRunner` | bounded workers/queue; request values retained without cancellation; errors → callback or slog; explicit shutdown drain |
 
 Custom runner: implement `Run(ctx, commands, dispatch) error` (queues,
 worker pools, outbox).
 
-`AsyncCommands` is deprecated because it is unbounded. Prefer:
+For asynchronous work, create the bounded runner:
 
 ```go
 commands, err := web.NewAsyncCommandRunner[Message](
@@ -243,9 +245,9 @@ for rejection. Never use HX request metadata as proof of identity.
 `Page`/`PageFunc` initialization remains ungated by this transition hook:
 protect private page access at the HTTP boundary.
 
-`Route.ExpectedVersion` accepts `ExpectedVersionResolver`:
-`ResolveVersion(*http.Request) (store.Version, error)`.
-`web.ExpectedVersionFunc` adapts functions. A stale initial action returns
+`Route.ExpectedVersion` accepts a function:
+`func(*http.Request) (store.Version, error)`.
+A stale initial action returns
 409 without rebasing the user's intent. If CAS conflicts while this explicit
 precondition is active, reject rather than retry against a newer model.
 Without it, internal CAS conflicts retain bounded retries. Follow-ups do not
@@ -348,7 +350,7 @@ handler = diagnostics.Middleware(handler)                    // wrap around appl
 ## Examples
 
 - [counter](../../examples/counter/): `Page` + `Handle`, `RenderAuto`,
-  AppShell, three-mode switcher, local HTMX, diagnostics +
+  Shell, three-mode switcher, local HTMX, diagnostics +
   `GET /debug/diagnostics`.
-- [users](../../examples/users/): `DecoderFunc` from query, clamped page in
+- [users](../../examples/users/): decoder function from query, clamped page in
   `Update`, fragment/page by HTMX header, `EmptyState`.

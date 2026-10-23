@@ -60,16 +60,15 @@ func newService(dataDir string) (*service, error) {
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
 		App:   CounterApp{Wake: wakes},
 		Store: modelStore,
-		Keys: web.KeyResolverFunc[string](func(r *http.Request) (string, error) {
+		Keys: func(r *http.Request) (string, error) {
 			key, ok := session.ID(r)
 			if !ok {
 				return "", session.ErrNoSession
 			}
 			return key, nil
-		}),
-		View:   CounterView{},
-		Theme:  theme.Default,
-		Themes: preference,
+		},
+		View:  CounterView{},
+		Theme: theme.Default,
 	})
 	if err != nil {
 		return nil, closeStoreAfterError(modelStore, fmt.Errorf("create web runtime: %w", err))
@@ -80,13 +79,13 @@ func newService(dataDir string) (*service, error) {
 	mux.Handle("POST /increment", runtime.Handle(web.Route[CounterMessage]{
 		Method:  http.MethodPost,
 		Pattern: "/increment",
-		Decode: web.DecoderFunc[CounterMessage](func(r *http.Request) (CounterMessage, error) {
+		Decode: func(r *http.Request) (CounterMessage, error) {
 			key, ok := session.ID(r)
 			if !ok {
 				return nil, session.ErrNoSession
 			}
 			return Increment{Key: key}, nil
-		}),
+		},
 		Result: web.Result{
 			Mode: web.RenderAuto, Fragment: "counter", Location: "/",
 		},

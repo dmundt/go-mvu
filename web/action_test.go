@@ -16,7 +16,7 @@ func TestActionSharesRouteAndHTMXConfiguration(t *testing.T) {
 	action := Action[testMessage]{
 		Method: htmx.Post,
 		Path:   "/add",
-		Decode: StaticMessage[testMessage]{Message: 1},
+		Decode: StaticMessage[testMessage](1),
 		Result: Result{Mode: RenderAuto, Fragment: "count"},
 	}
 	browser := action.HTMX()
@@ -47,7 +47,7 @@ func TestActionRegisterRejectsInvalidConfiguration(t *testing.T) {
 	valid := Action[testMessage]{
 		Method: htmx.Post,
 		Path:   "/add",
-		Decode: StaticMessage[testMessage]{Message: 1},
+		Decode: StaticMessage[testMessage](1),
 		Result: Result{Mode: RenderAuto, Fragment: "count"},
 	}
 
@@ -73,7 +73,7 @@ func TestPostMessageAndBatchRegistration(t *testing.T) {
 	result := Result{Mode: RenderAuto, Fragment: "count", Location: "/"}
 	add := PostMessage[testMessage]("/add", 1, result)
 	reset := PostMessage[testMessage]("/reset", 2, result)
-	message, err := add.Decode.Decode(httptest.NewRequest(http.MethodPost, "/add", nil))
+	message, err := add.Decode(httptest.NewRequest(http.MethodPost, "/add", nil))
 	if err != nil || message != 1 {
 		t.Fatalf("decoded message = %v, error = %v", message, err)
 	}

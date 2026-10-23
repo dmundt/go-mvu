@@ -24,7 +24,7 @@ type Action[Msg mvu.Message] struct {
 	Target          string
 	Swap            htmx.Swap
 	RequireModel    bool
-	ExpectedVersion ExpectedVersionResolver
+	ExpectedVersion ExpectedVersion
 }
 
 // PostMessage defines a POST action for a static message. Result remains
@@ -33,7 +33,7 @@ func PostMessage[Msg mvu.Message](path string, message Msg, result Result) Actio
 	return Action[Msg]{
 		Method: htmx.Post,
 		Path:   path,
-		Decode: StaticMessage[Msg]{Message: message},
+		Decode: StaticMessage(message),
 		Result: result,
 	}
 }

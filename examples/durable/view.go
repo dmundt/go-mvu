@@ -49,7 +49,7 @@ func (CounterView) Page(
 	model CounterModel,
 	request web.RequestContext,
 ) (html.Page, error) {
-	page := components.AppShell{
+	page := components.Shell{
 		Header: components.Heading{Level: 1, Text: "Durable counter and outbox"},
 		Main: components.Card{
 			Header: components.Heading{Level: 2, Text: "Counter"},

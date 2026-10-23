@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 4
+version: 5
 ---
 
 # Architecture Decision Records
@@ -35,3 +35,4 @@ version: 4
 * [ADR-0023](0023-unified-components.md) - one reusable component package.
 * [ADR-0024](0024-ecosystem-owned-generic-middleware.md) - keep generic HTTP middleware in the ecosystem.
 * [ADR-0025](0025-application-owned-request-policy.md) - application-owned request limits and cache policy.
+* [ADR-0026](0026-prototype-api-simplification.md) - canonical prototype APIs without compatibility scaffolding.

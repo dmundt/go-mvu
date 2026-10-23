@@ -130,7 +130,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, Model, Message]{
 		App:                 App{},
 		Store:               models,
-		Keys:                web.KeyResolverFunc[string](accountKey),
+		Keys:                accountKey,
 		View:                View{},
 		Theme:               theme.Default,
 		AuthorizeTransition: auth.authorize,
@@ -151,7 +151,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	private.Handle("POST /increment", runtime.Handle(web.Route[Message]{
 		Method:  http.MethodPost,
 		Pattern: "/increment",
-		Decode:  web.StaticMessage[Message]{Message: Message{}},
+		Decode:  web.StaticMessage[Message](Message{}),
 		Result:  web.Result{Mode: web.RenderAuto, Fragment: "counter", Location: "/"},
 	}))
 	private.HandleFunc("POST /logout", auth.logout)

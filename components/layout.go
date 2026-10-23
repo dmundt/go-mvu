@@ -7,9 +7,6 @@ import (
 	"github.com/dmundt/go-mvu/html"
 )
 
-// AppShell is the spec name for Shell.
-type AppShell = Shell
-
 // Shell lays out header, optional sidebar, main and footer landmarks.
 type Shell struct {
 	Header  html.Component

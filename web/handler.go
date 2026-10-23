@@ -60,7 +60,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(ErrInvalidRuntime)
 			return
 		}
-		key, err := runtime.keys.Resolve(r)
+		key, err := runtime.keys(r)
 		if err != nil {
 			fail(err)
 			return
@@ -72,7 +72,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 		}
 		var expected *store.Version
 		if route.ExpectedVersion != nil {
-			version, err := route.ExpectedVersion.ResolveVersion(r)
+			version, err := route.ExpectedVersion(r)
 			if err != nil {
 				fail(err)
 				return
@@ -102,7 +102,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			return
 		}
 		done := trace.Start(timing.PhaseDecode)
-		message, err := route.Decode.Decode(r)
+		message, err := route.Decode(r)
 		done()
 		if err != nil {
 			fail(err)
@@ -161,7 +161,7 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 			fail(ErrInvalidRuntime)
 			return
 		}
-		key, err := runtime.keys.Resolve(r)
+		key, err := runtime.keys(r)
 		if err != nil {
 			fail(err)
 			return

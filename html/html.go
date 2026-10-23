@@ -42,9 +42,6 @@ func (FragmentMarker) IsFragment() {}
 // TrustedHTML is audited, server-controlled markup written without escaping.
 type TrustedHTML string
 
-// Trusted is the engineering-brief name for TrustedHTML.
-type Trusted = TrustedHTML
-
 // TrustStatic marks audited, server-controlled HTML as trusted. Never pass
 // request, form, database, URL, or other user-provided content.
 func TrustStatic(value string) TrustedHTML { return TrustedHTML(value) }

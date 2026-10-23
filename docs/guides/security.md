@@ -2,7 +2,7 @@
 type: Guide
 title: Security
 description: Security boundaries for HTML rendering, requests, and sessions.
-version: 3
+version: 4
 ---
 
 # Security
@@ -99,7 +99,7 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 - `middleware.Recover`: uncommitted panic → 500; committed panic aborts.
   Logged, no stack to client.
-- `web.InternalServerError`: generic body; details only in log.
+- `httpx.RespondError`: safe HTTP status/body policy; details only in log.
 - Errors after response start: logged, never appended to body.
 - go-mvu does not ship generic request-ID or access-log middleware. Use an
   existing `net/http` middleware. To include its ID in go-mvu error and

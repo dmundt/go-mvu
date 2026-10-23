@@ -47,37 +47,6 @@ func (SyncCommands[Msg]) Run(
 	return nil
 }
 
-// Deprecated: AsyncCommands creates unbounded goroutines. Use
-// AsyncCommandRunner for bounded concurrency, queueing, and shutdown.
-type AsyncCommands[Msg mvu.Message] struct {
-	OnError func(error)
-}
-
-func (runner AsyncCommands[Msg]) Run(
-	ctx context.Context, commands []mvu.Command[Msg], dispatch mvu.Dispatch[Msg],
-) error {
-	detached := context.WithoutCancel(ctx)
-	for _, command := range commands {
-		if command == nil {
-			continue
-		}
-		go func() {
-			if err := command.Execute(detached, dispatch); err != nil {
-				runner.report(err)
-			}
-		}()
-	}
-	return nil
-}
-
-func (runner AsyncCommands[Msg]) report(err error) {
-	if runner.OnError != nil {
-		runner.OnError(err)
-		return
-	}
-	slog.Error("mvu async command failed", "error", err)
-}
-
 type asyncTask[Msg mvu.Message] struct {
 	command  mvu.Command[Msg]
 	dispatch mvu.Dispatch[Msg]

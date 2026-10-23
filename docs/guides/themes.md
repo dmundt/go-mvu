@@ -2,7 +2,7 @@
 type: Guide
 title: Themes and CSS
 description: Theme modes, design tokens, CSS integration, and theme switching.
-version: 3
+version: 4
 ---
 
 # Themes and CSS
@@ -175,7 +175,7 @@ func (View) Page(_ context.Context, model Model, request web.RequestContext) (ht
 		Title: "Dashboard",
 		Theme: request.Theme,
 		Mode:  request.Mode,
-		Body: middleware.CSRFHTMX{Body: components.AppShell{
+		Body: middleware.CSRFHTMX{Body: components.Shell{
 			Header: ui.ThemeSwitcher{
 				Mode:   request.Mode,
 				Return: request.CurrentURL,
@@ -192,8 +192,9 @@ func (View) Page(_ context.Context, model Model, request web.RequestContext) (ht
 cookie, separate from session cookie. Secret ≥ 32 random bytes. `Secure: true`
 behind HTTPS. Tampered or missing cookie → `System`.
 
-`*theme.Preference` implements `web.ThemeResolver` (`Resolve`, `Persist`).
-Pass it as `RuntimeConfig.Themes`.
+Install `Preference.Wrap` around the application handler. It resolves the
+cookie once and supplies `web.RequestContext.Mode` through request context.
+There is no `RuntimeConfig.Themes` field or runtime resolver interface.
 
 ```go
 preference, err := theme.NewPreference(secret, theme.PreferenceOptions{Secure: true})

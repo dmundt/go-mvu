@@ -59,7 +59,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, ContactModel, ContactMessage]{
 		App:   ContactApp{},
 		Store: store.NewMemory[string, ContactModel](),
-		Keys:  web.KeyResolverFunc[string](sessionKey),
+		Keys:  sessionKey,
 		View:  contactView(document),
 		Theme: contactTheme{},
 	})

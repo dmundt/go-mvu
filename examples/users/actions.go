@@ -11,7 +11,7 @@ import (
 var usersPageAction = web.Action[UsersMessage]{
 	Method: htmx.Get,
 	Path:   "/users",
-	Decode: web.DecoderFunc[UsersMessage](decodeShowPage),
+	Decode: decodeShowPage,
 	Result: web.Result{Mode: web.RenderAuto, Fragment: string(usersRegion)},
 }
 

@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 11
+version: 12
 ---
 
 # Architecture
@@ -93,6 +93,12 @@ opt in explicitly and still own middleware and asset routing. See
 [ADR-0021](adr/0021-concise-ui-composition.md).
 
 ## Source organization
+
+Prototype API policy: canonical names, function-based decoders/resolvers,
+explicit startup errors, and bounded asynchronous execution. Theme mode comes
+from preference/application middleware through request context; the runtime
+does not resolve cookies again. See
+[ADR-0026](adr/0026-prototype-api-simplification.md).
 
 Responsibilities stay within existing packages; file boundaries do not add
 dependency layers or change public APIs.

@@ -54,7 +54,7 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		tracked = &httpx.Writer{ResponseWriter: w}
 		w = tracked
 	}
-	request := NewRequestContext(r, runtime.theme, runtime.themes)
+	request := NewRequestContext(r, runtime.theme)
 	mode := result.Mode
 	cacheControl := result.CacheControl
 	if cacheControl == "" {

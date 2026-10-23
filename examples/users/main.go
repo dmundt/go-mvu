@@ -73,12 +73,11 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	view := UsersView{Document: document}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, UsersModel, UsersMessage]{
-		App:    UsersApp{Directory: directory},
-		Store:  store.NewMemory[string, UsersModel](),
-		Keys:   web.KeyResolverFunc[string](sessionKey),
-		View:   view,
-		Theme:  theme.Default,
-		Themes: preference,
+		App:   UsersApp{Directory: directory},
+		Store: store.NewMemory[string, UsersModel](),
+		Keys:  sessionKey,
+		View:  view,
+		Theme: theme.Default,
 	})
 	if err != nil {
 		return nil, err
@@ -89,7 +88,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	mux.HandleFunc("GET /users/cards", func(w http.ResponseWriter, r *http.Request) {
-		request := web.NewRequestContext(r, theme.Default, preference)
+		request := web.NewRequestContext(r, theme.Default)
 		page := view.cardsPage(request, directory[:6])
 		if err := web.WritePage(r.Context(), w, http.StatusOK, page); err != nil {
 			log.Printf("render user cards: %v", err)

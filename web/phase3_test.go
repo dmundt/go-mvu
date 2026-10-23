@@ -19,12 +19,10 @@ import (
 
 type principalContextKey struct{}
 
-func TestErrorHandlerAliasCompatibility(t *testing.T) {
+func TestRuntimeUsesSharedErrorHandler(t *testing.T) {
 	var shared httpx.ErrorHandler = func(http.ResponseWriter, *http.Request, error) {}
-	var webHandler ErrorHandler = shared
-	var middlewareHandler httpx.ErrorHandler = webHandler
 	config := RuntimeConfig[string, testModel, testMessage]{OnError: shared}
-	if config.OnError == nil || middlewareHandler == nil {
+	if config.OnError == nil {
 		t.Fatal("shared ErrorHandler assignment failed")
 	}
 }
@@ -41,9 +39,9 @@ func TestDefaultErrorResponderClassifiesClientAndBodyErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			runtime := newTestRuntime(t, nil)
 			route := addRoute(Result{Mode: RenderNothing})
-			route.Decode = DecoderFunc[testMessage](func(*http.Request) (testMessage, error) {
+			route.Decode = func(*http.Request) (testMessage, error) {
 				return 0, test.err
-			})
+			}
 			response := serve(runtime.Handle(route), httptest.NewRequest(http.MethodPost, "/add", nil))
 			if response.Code != test.want {
 				t.Fatalf("status = %d, want %d: %s", response.Code, test.want, response.Body)
@@ -87,9 +85,9 @@ func TestExpectedVersionRejectsStaleIntentWithoutRetry(t *testing.T) {
 		c.Store = memory
 	})
 	route := addRoute(Result{Mode: RenderNothing})
-	route.ExpectedVersion = ExpectedVersionFunc(func(*http.Request) (store.Version, error) {
+	route.ExpectedVersion = func(*http.Request) (store.Version, error) {
 		return 0, nil
-	})
+	}
 	response := serve(runtime.Handle(route), httptest.NewRequest(http.MethodPost, "/add", nil))
 	if response.Code != http.StatusConflict {
 		t.Fatalf("status = %d, want 409", response.Code)
@@ -107,9 +105,9 @@ func TestExpectedVersionAppliesOnlyToDirectTransition(t *testing.T) {
 		c.App = commandApp{probe: probe}
 	})
 	route := addRoute(Result{Mode: RenderFragment, Fragment: "count"})
-	route.ExpectedVersion = ExpectedVersionFunc(func(*http.Request) (store.Version, error) {
+	route.ExpectedVersion = func(*http.Request) (store.Version, error) {
 		return 1, nil
-	})
+	}
 	response := serve(runtime.Handle(route), httptest.NewRequest(http.MethodPost, "/add", nil))
 	if response.Code != http.StatusOK || response.Body.String() != "<output>6</output>" {
 		t.Fatalf("got %d %q", response.Code, response.Body)
@@ -532,7 +530,7 @@ func TestEffectCancellationRespondsInternalErrorButRetainsCommit(t *testing.T) {
 		c.ObserveOutcome = func(_ *http.Request, got RequestOutcome) { outcome = got }
 	})
 	route := addRoute(Result{Mode: RenderNothing})
-	route.Decode = StaticMessage[testMessage]{Message: 1}
+	route.Decode = StaticMessage[testMessage](1)
 	// Use an effect failure that wraps context cancellation; it must not be
 	// reclassified as a pre-commit request timeout.
 	cancelApp := cancellationEffectApp{}
@@ -562,7 +560,7 @@ func (cancellationEffectApp) Update(
 func TestRequestContextReceivesExplicitLocale(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	request = request.WithContext(httpx.WithLocale(request.Context(), "fr-CA"))
-	if got := NewRequestContext(request, nil, nil).Locale; got != "fr-CA" {
+	if got := NewRequestContext(request, nil).Locale; got != "fr-CA" {
 		t.Fatalf("Locale = %q", got)
 	}
 }

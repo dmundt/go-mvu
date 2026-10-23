@@ -54,7 +54,7 @@ func (view UsersView) document(
 			Return: request.CurrentURL,
 		},
 	)
-	shell := components.AppShell{
+	shell := components.Shell{
 		Header: header,
 		Main:   components.Column(body...),
 	}

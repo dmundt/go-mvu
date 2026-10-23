@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/http"
 
 	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
@@ -26,8 +25,6 @@ var (
 	ErrInvalidCommandRunnerConfig = errors.New("invalid async command runner configuration")
 )
 
-type ErrorHandler = httpx.ErrorHandler
-
 // TransitionAuthorizer authorizes each transition attempt using current
 // stored model state. Page/PageFunc initialization remains governed by Init
 // and is not gated here; a missing model created during Handle is gated.
@@ -42,12 +39,10 @@ type RuntimeConfig[K comparable, Model any, Msg mvu.Message] struct {
 	View  View[Model]
 	// Theme is the active visual theme. Nil → theme.DefaultTheme.
 	Theme theme.Theme
-	// Themes resolves color mode. Nil → theme.ModeFromContext.
-	Themes ThemeResolver
 	// Commands runs effects. Nil → SyncCommands.
 	Commands CommandRunner[Msg]
 	// OnError handles errors before the response starts. Nil → 500 text.
-	OnError ErrorHandler
+	OnError httpx.ErrorHandler
 	// AuthorizeTransition runs before every Update/CAS attempt and before
 	// Handle creates a missing model for that intent. Page initialization
 	// remains ungated. HX headers are never authorization evidence.
@@ -65,9 +60,8 @@ type Runtime[K comparable, Model any, Msg mvu.Message] struct {
 	keys       KeyResolver[K]
 	view       View[Model]
 	theme      theme.Theme
-	themes     ThemeResolver
 	commands   CommandRunner[Msg]
-	onError    ErrorHandler
+	onError    httpx.ErrorHandler
 	authorize  TransitionAuthorizer[K, Model, Msg]
 	observe    OutcomeObserver
 	logger     *slog.Logger
@@ -83,7 +77,7 @@ func NewRuntime[K comparable, Model any, Msg mvu.Message](
 	}
 	runtime := &Runtime[K, Model, Msg]{
 		app: config.App, store: config.Store, keys: config.Keys, view: config.View,
-		theme: config.Theme, themes: config.Themes, commands: config.Commands,
+		theme: config.Theme, commands: config.Commands,
 		onError: config.OnError, authorize: config.AuthorizeTransition,
 		observe: config.ObserveOutcome, logger: config.Logger, maxRetries: config.MaxRetries,
 	}
@@ -94,7 +88,7 @@ func NewRuntime[K comparable, Model any, Msg mvu.Message](
 		runtime.commands = SyncCommands[Msg]{}
 	}
 	if runtime.onError == nil {
-		runtime.onError = InternalServerError
+		runtime.onError = httpx.RespondError
 	}
 	if runtime.logger == nil {
 		runtime.logger = slog.Default()
@@ -103,20 +97,4 @@ func NewRuntime[K comparable, Model any, Msg mvu.Message](
 		runtime.maxRetries = 3
 	}
 	return runtime, nil
-}
-
-// MustRuntime panics on invalid config. For main and tests.
-func MustRuntime[K comparable, Model any, Msg mvu.Message](
-	config RuntimeConfig[K, Model, Msg],
-) *Runtime[K, Model, Msg] {
-	runtime, err := NewRuntime(config)
-	if err != nil {
-		panic(err)
-	}
-	return runtime
-}
-
-// InternalServerError writes a generic 500 without leaking err.
-func InternalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	httpx.RespondError(w, r, err)
 }
