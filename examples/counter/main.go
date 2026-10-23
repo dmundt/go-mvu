@@ -17,6 +17,7 @@ import (
 	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
+	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -50,16 +51,6 @@ func run() error {
 	return err
 }
 
-// counterRoutes maps POST paths to messages.
-var counterRoutes = []struct {
-	path string
-	msg  CounterMessage
-}{
-	{path: "/counter/increment", msg: Increment{}},
-	{path: "/counter/decrement", msg: Decrement{}},
-	{path: "/counter/reset", msg: Reset{}},
-}
-
 func newHandler(secret []byte) (http.Handler, error) {
 	sessions, err := session.New(secret, session.Options{Secure: false})
 	if err != nil {
@@ -73,11 +64,20 @@ func newHandler(secret []byte) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
+	if err := document.Validate(); err != nil {
+		return nil, err
+	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
-		App:    CounterApp{},
-		Store:  store.NewMemory[string, CounterModel](),
-		Keys:   web.KeyResolverFunc[string](sessionKey),
-		View:   CounterView{},
+		App:   CounterApp{},
+		Store: store.NewMemory[string, CounterModel](),
+		Keys:  web.KeyResolverFunc[string](sessionKey),
+		View: CounterView{
+			Document: document,
+			RegionView: ui.RegionView[CounterModel]{
+				Region: counterRegion, Content: counterContent,
+			},
+		},
 		Theme:  theme.Default,
 		Themes: preference,
 	})
@@ -96,14 +96,8 @@ func newHandler(secret []byte) (http.Handler, error) {
 	mux.Handle("GET /debug/diagnostics", diagnostics.Handler())
 	mux.Handle("GET /{$}", runtime.Page(web.Result{Mode: web.RenderPage}))
 	mux.Handle("POST /theme", preference.Handler("/"))
-	for _, route := range counterRoutes {
-		mux.Handle("POST "+route.path, runtime.Handle(web.Route[CounterMessage]{
-			Method:  http.MethodPost,
-			Pattern: route.path,
-			Decode:  web.StaticMessage[CounterMessage]{Message: route.msg},
-			// HTMX → fragment; plain form post → redirect home.
-			Result: web.Result{Mode: web.RenderAuto, Fragment: "counter", Location: "/"},
-		}))
+	if err := runtime.RegisterAll(mux, counterIncrement, counterDecrement, counterReset); err != nil {
+		return nil, err
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))

@@ -21,12 +21,18 @@ Open <http://localhost:8080> and try the counter.
 
 ## Learn more
 
+- [Start with Hello World](examples/hello/)
+- [Explore an admin dashboard](examples/admin/)
 - [Build your first app](docs/guides/first-app.md)
-- [Browse examples](examples/)
+- [Try a form with validation](docs/guides/forms.md)
+- [See a small function-based view](examples/contact/view.go)
+- [Build shorter views and lists](docs/guides/components.md#shorter-composition)
+- [Design interactive apps without application JavaScript](docs/guides/interactions.md)
+- [Browse examples](examples/README.md)
 - [Prepare for launch](docs/guides/production.md)
 - [Security guide](docs/guides/security.md)
 - [All guides](docs/guides/index.md)
 - [What’s new](CHANGELOG.md)
 
-The counter is for learning, not for public deployment. See the
+The counter is for learning, not for public deployment. Read the
 [production guide](docs/guides/production.md) before putting an app online.

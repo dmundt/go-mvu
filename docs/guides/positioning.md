@@ -2,7 +2,7 @@
 type: Guide
 title: Framework positioning
 description: Scope, strengths, tradeoffs, and adjacent framework choices.
-version: 1
+version: 2
 ---
 
 # Framework positioning
@@ -13,8 +13,12 @@ rendering. HTMX is an optional browser request/swap layer, not the state owner.
 
 This scope fits server-owned forms, workflows, dashboards, and business
 interfaces where HTML responses and Go application logic are priorities. It is
-not a goal to match native UI frameworks, offline-first apps, or rich
-client-side interaction.
+not a goal to match native UI frameworks, offline-first apps, or high-frequency
+client-local interaction. Server rendering does not imply static pages:
+inline editing, search, filtering, multi-step workflows, and polling can use
+HTML fragments without application JavaScript. See
+[interactive applications](interactions.md) for supported building blocks,
+application-owned compositions, and extension limits.
 
 ## Adjacent frameworks
 

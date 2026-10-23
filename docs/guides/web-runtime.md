@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 1
+version: 4
 ---
 
 # Web runtime
@@ -10,6 +10,36 @@ version: 1
 `web` binds an `mvu.Application` to `net/http`: key resolution, message
 decoding, versioned persistence, commands, rendering. `mvu` stays free of
 HTTP, HTML, storage.
+
+## Ownership and guarantees
+
+The runtime owns the request-driven server loop, not a desktop event loop:
+
+```text
+HTTP request -> key + decoder -> typed message -> pure Update
+             -> versioned save -> commands -> latest model -> View -> HTML
+```
+
+Applications configure routes, decoding, storage, views, and response policy
+once. `Runtime.Handle` orchestrates each action; application handlers do not
+need to repeat load/update/save/render logic. State lives in a keyed
+`store.Store`, not a single mutable runtime field. There is no public
+`Runtime.Dispatch` or `Runtime.Model` API.
+
+| Boundary | Contract |
+| --- | --- |
+| Session and access | Middleware supplies session identity and protects HTTP access; `Keys` resolves the model key. Runtime does not install cookie, authentication, CSRF, or asset middleware. |
+| Update | May run again after a CAS conflict. Keep it pure and preserve previous snapshots; no database writes, HTTP calls, timers, or mutation of shared slices/maps. |
+| Commands | Run after persistence. Model commit, command admission, and external effects are not one transaction and are not automatically exactly-once. Use application-owned outbox/inbox or idempotency where required. |
+| Rendering | Happens according to `Result`, not automatically after every background state change. Page reads can render without `Update`; redirects and `RenderNothing` skip the view. |
+| Browser | HTMX requests and swaps HTML; runtime neither patches DOM nor manages focus, popover visibility, or client-local state. Plain links/forms retain full-page behavior. |
+| Async completion | Follow-up messages re-enter state transitions, but do not rewrite an already-delivered response or refresh open pages. Use another request, polling, or a separately designed push integration. |
+| Subscriptions | No built-in desktop-style subscription or SSE lifecycle. Commands are not an implicit streaming transport. |
+| Failures | A command/render/HTTP failure after model persistence does not roll back the commit. Report failure explicitly; do not blindly replay consequential mutations. |
+
+The [counter tutorial](first-app.md#what-runs-after-a-click) shows the smallest
+wiring. The [admin example](../../examples/admin/) adds validated editing,
+non-modal popover content, and coordinated page/fragment responses.
 
 ## Configuration
 
@@ -57,6 +87,53 @@ type RequestContext struct {
 - Outside the runtime: `web.NewRequestContext(r, theme, resolver)`.
 
 ## Routes
+
+For endpoints that appear in a form or button, define method, path, decoder,
+and response once. Reuse the action in the view:
+
+```go
+var submit = web.Action[Message]{
+	Method: htmx.Post,
+	Path:   "/contact",
+	Decode: web.DecoderFunc[Message](decodeContact),
+	Result: web.Result{Mode: web.RenderAuto, Fragment: "contact-form"},
+}
+
+if err := runtime.Register(mux, submit); err != nil {
+	return nil, err
+}
+
+ui.ActionButton{Action: submit.HTMX(), Label: "Send"}
+```
+
+`HTMX()` uses `#contact-form` and `outerHTML` by default. Plain POSTs redirect
+to `/contact`; set `Result.Location` to choose another destination. Set
+`Target` or `Swap` to override the browser behavior. `Register` checks the
+action and mounts its exact path and method.
+
+For multi-field forms, put `submit.HTMX()` on `ui.Form`, not only on its
+submit button. This keeps keyboard and button submissions consistent.
+See [forms](forms.md) and [shared page policy](components.md#shared-page-policy).
+
+Static-message actions can omit the method and decoder wrapper:
+
+```go
+result := web.Result{Mode: web.RenderAuto, Fragment: "counter", Location: "/"}
+increment := web.PostMessage[Message]("/counter/increment", Increment{}, result)
+reset := web.PostMessage[Message]("/counter/reset", Reset{}, result)
+if err := runtime.RegisterAll(mux, increment, reset); err != nil {
+	return nil, err
+}
+```
+
+`PostMessage` returns a normal configurable `Action`; its response policy
+remains explicit. `RegisterAll` registers in order and stops at the first
+error without undoing earlier registrations. Use it during initialization,
+not to reconfigure a running mux. Like `Register`, overlapping ServeMux
+patterns follow the standard library's panic behavior.
+
+Use `Route` directly when an endpoint has different routing needs or must not
+share its definition with a UI action:
 
 ```go
 mux.Handle("GET /{$}", runtime.Page(web.Result{Mode: web.RenderPage}))

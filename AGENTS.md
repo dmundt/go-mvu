@@ -10,6 +10,10 @@
   hidden persistence.
 - Render HTML directly; do not add templates, reflection-based binding,
   virtual DOM, or application JavaScript. HTMX is the browser behavior layer.
+- Design interactions as native HTML or server-rendered fragment transitions;
+  keep domain/workflow state server-owned. Follow the
+  [interaction guide](docs/guides/interactions.md) for fallback, accessibility,
+  request ordering, and extension limits. No inline HTMX JavaScript expressions.
 - Application views compose semantic components. Isolate generic HTML and
   direct streaming inside named low-level components or explicit demos;
   framework component implementations may stream directly. See ADR-0018.

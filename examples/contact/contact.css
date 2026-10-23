@@ -1,0 +1,4 @@
+:where(html[data-theme-name="default"]) form.contact-form {
+	display: block;
+	max-width: 40rem;
+}

@@ -54,6 +54,17 @@ html {
 	gap: var(--shared-space-3);
 }
 
+.stack.form-fields {
+	align-items: stretch;
+	width: 100%;
+	min-width: 0;
+}
+
+.form-fields > .input {
+	width: 100%;
+	min-width: 0;
+}
+
 /* Accordion */
 
 .accordion {
