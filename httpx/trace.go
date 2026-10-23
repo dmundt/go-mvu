@@ -1,7 +1,4 @@
-// Package timing records named request phases. A Trace travels in the
-// request context; every method is nil-safe, so instrumented code costs one
-// context lookup when no trace is attached.
-package timing
+package httpx
 
 import (
 	"context"
@@ -24,15 +21,16 @@ type Phase struct {
 	Duration time.Duration
 }
 
-// Trace collects phases for one request. Safe for concurrent use.
+// Trace collects phases for one request. Safe for concurrent use; methods are
+// nil-safe so instrumentation requires no collector checks.
 type Trace struct {
 	mu      sync.Mutex
 	started time.Time
 	phases  []Phase
 }
 
-// New returns a trace starting now.
-func New() *Trace { return &Trace{started: time.Now(), phases: make([]Phase, 0, 6)} }
+// NewTrace returns a trace starting now.
+func NewTrace() *Trace { return &Trace{started: time.Now(), phases: make([]Phase, 0, 6)} }
 
 type traceKey struct{}
 
@@ -41,8 +39,8 @@ func WithTrace(ctx context.Context, trace *Trace) context.Context {
 	return context.WithValue(ctx, traceKey{}, trace)
 }
 
-// FromContext returns the attached trace or nil.
-func FromContext(ctx context.Context) *Trace {
+// TraceFromContext returns the attached trace or nil.
+func TraceFromContext(ctx context.Context) *Trace {
 	trace, _ := ctx.Value(traceKey{}).(*Trace)
 	return trace
 }

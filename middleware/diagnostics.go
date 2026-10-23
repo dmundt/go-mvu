@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/httpx"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 // Pseudo-phases added by Diagnostics next to runtime phases.
@@ -60,7 +59,7 @@ type phaseTotals struct {
 }
 
 // Diagnostics measures request phases (decode, dispatch, load, view,
-// render, recorded by the web runtime through package timing), time to
+// render, recorded by the web runtime through package httpx), time to
 // first byte, and total time. It logs per-request records and keeps
 // in-memory aggregates. Safe for concurrent use.
 type Diagnostics struct {
@@ -92,10 +91,10 @@ func NewDiagnostics(options DiagnosticsOptions) *Diagnostics {
 	}
 }
 
-// Middleware attaches a timing.Trace to each request and records results.
+// Middleware attaches a httpx.Trace to each request and records results.
 func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		trace := timing.New()
+		trace := httpx.NewTrace()
 		writer := &timingWriter{ResponseWriter: w, trace: trace, serverTiming: d.serverTiming}
 		completed := false
 		defer func() {
@@ -106,7 +105,7 @@ func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 			phases := trace.Phases()
 			if d.serverTiming && writer.started {
 				w.Header().Set(http.TrailerPrefix+"Server-Timing",
-					serverTiming(after(phases, writer.sent), timing.Phase{Name: PhaseTotal, Duration: total}))
+					serverTiming(after(phases, writer.sent), httpx.Phase{Name: PhaseTotal, Duration: total}))
 			}
 			status := writer.status
 			if status == 0 {
@@ -117,7 +116,7 @@ func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 			}
 			d.record(r, status, writer.bytes, writer.ttfb, total, phases, !completed)
 		}()
-		ctx := httpx.WithEventObserver(timing.WithTrace(r.Context(), trace), func(event httpx.Event) {
+		ctx := httpx.WithEventObserver(httpx.WithTrace(r.Context(), trace), func(event httpx.Event) {
 			d.RecordEvent(event)
 		})
 		next.ServeHTTP(writer, r.WithContext(ctx))
@@ -126,7 +125,7 @@ func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 }
 
 func (d *Diagnostics) record(
-	r *http.Request, status, bytes int, ttfb, total time.Duration, phases []timing.Phase, aborted bool,
+	r *http.Request, status, bytes int, ttfb, total time.Duration, phases []httpx.Phase, aborted bool,
 ) {
 	slow := d.slow > 0 && total > d.slow
 	d.mu.Lock()
@@ -254,7 +253,7 @@ func (d *Diagnostics) Handler() http.Handler {
 // byte and records status, bytes, and time to first byte.
 type timingWriter struct {
 	http.ResponseWriter
-	trace        *timing.Trace
+	trace        *httpx.Trace
 	serverTiming bool
 	started      bool
 	sent         int
@@ -274,7 +273,7 @@ func (w *timingWriter) begin(status int) {
 		phases := w.trace.Phases()
 		w.sent = len(phases)
 		w.Header().Set("Server-Timing",
-			serverTiming(phases, timing.Phase{Name: PhaseTTFB, Duration: w.ttfb}))
+			serverTiming(phases, httpx.Phase{Name: PhaseTTFB, Duration: w.ttfb}))
 	}
 }
 
@@ -321,15 +320,15 @@ func (w *timingWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // after returns phases first recorded after the first sent ones. Phases
 // already in the header and extended later are not repeated.
-func after(phases []timing.Phase, sent int) []timing.Phase {
+func after(phases []httpx.Phase, sent int) []httpx.Phase {
 	if sent >= len(phases) {
 		return nil
 	}
 	return phases[sent:]
 }
 
-func serverTiming(phases []timing.Phase, extra timing.Phase) string {
-	all := append(append([]timing.Phase(nil), phases...), extra)
+func serverTiming(phases []httpx.Phase, extra httpx.Phase) string {
+	all := append(append([]httpx.Phase(nil), phases...), extra)
 	parts := make([]string, 0, len(all))
 	for _, phase := range all {
 		parts = append(parts, metricName(phase.Name)+";dur="+

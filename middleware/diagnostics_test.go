@@ -11,15 +11,14 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/httpx"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 func diagnosticsHandler(status int) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		trace := timing.FromContext(r.Context())
-		trace.Add(timing.PhaseDecode, time.Millisecond)
-		trace.Add(timing.PhaseView, 2*time.Millisecond)
-		done := trace.Start(timing.PhaseRender)
+		trace := httpx.TraceFromContext(r.Context())
+		trace.Add(httpx.PhaseDecode, time.Millisecond)
+		trace.Add(httpx.PhaseView, 2*time.Millisecond)
+		done := trace.Start(httpx.PhaseRender)
 		w.WriteHeader(status)
 		_, _ = w.Write([]byte("<p>ok</p>"))
 		done()
@@ -79,11 +78,11 @@ func TestDiagnosticsAggregatesAndLogsSlowRequests(t *testing.T) {
 	if snapshot.Requests != 2 || snapshot.Slow != 2 || snapshot.Errors != 2 {
 		t.Fatalf("snapshot = %+v", snapshot)
 	}
-	decode := snapshot.Phases[timing.PhaseDecode]
+	decode := snapshot.Phases[httpx.PhaseDecode]
 	if decode.Count != 2 || decode.TotalMS != 2 || decode.MeanMS != 1 || decode.MaxMS != 1 {
 		t.Fatalf("decode stats = %+v", decode)
 	}
-	for _, name := range []string{timing.PhaseRender, PhaseTTFB, PhaseTotal} {
+	for _, name := range []string{httpx.PhaseRender, PhaseTTFB, PhaseTotal} {
 		if snapshot.Phases[name].Count != 2 {
 			t.Fatalf("%s count = %d", name, snapshot.Phases[name].Count)
 		}
@@ -118,7 +117,7 @@ func TestDiagnosticsHandlerServesJSON(t *testing.T) {
 	if err := json.Unmarshal(recorder.Body.Bytes(), &snapshot); err != nil {
 		t.Fatal(err)
 	}
-	if snapshot.Requests != 1 || snapshot.Phases[timing.PhaseView].Count != 1 {
+	if snapshot.Requests != 1 || snapshot.Phases[httpx.PhaseView].Count != 1 {
 		t.Fatalf("snapshot = %+v", snapshot)
 	}
 	recorder = httptest.NewRecorder()

@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 7
+version: 8
 ---
 
 # Web runtime
@@ -344,7 +344,10 @@ handler = diagnostics.Middleware(handler)                    // wrap around appl
   `render` + `total` (streaming → render ends after headers). Browser
   devtools show the header; trailers need chunked HTTP/1.1 or HTTP/2 and
   client support.
-- Custom phases: `defer timing.FromContext(ctx).Start("db")()`.
+- Custom phases: `defer httpx.TraceFromContext(ctx).Start("db")()`.
+  `httpx.Trace` is nil-safe when diagnostics are absent. For a manually owned
+  trace, use `httpx.NewTrace` and `httpx.WithTrace`; there is no separate
+  `timing` package.
 - No trace in context → no-op, zero allocations.
 
 ## Examples

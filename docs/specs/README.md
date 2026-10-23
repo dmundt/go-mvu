@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 14
+version: 15
 ---
 
 # Specs
@@ -37,7 +37,7 @@ version: 14
 | 16 | Users example | [examples/users](../../examples/users/) | — |
 | 17 | Validation | [validation](../../validation/), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
-| 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
+| 18.1 | Render timing, diagnostics | [httpx trace](../../httpx/trace.go), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md), [0027](../adr/0027-consolidated-http-observability.md) |
 | 18 extensions | HTTP policy and lifecycle; generic deployment middleware and mutation replay remain application-owned | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md), [0024](../adr/0024-ecosystem-owned-generic-middleware.md) |
 | 19 | CSS | [theme/*.css](../../theme/), [scripts](../../scripts/) | [themes](../guides/themes.md) |
 | 20 | Testing | `*_test.go`, `scripts/themes.test.mjs` | [README](../../README.md#validation) |
@@ -46,6 +46,12 @@ version: 14
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+The standalone `timing` package is merged into stdlib-only `httpx`.
+Use `httpx.NewTrace`, `httpx.TraceFromContext`, `httpx.WithTrace`, `httpx.Trace`,
+`httpx.Phase`, and `httpx.Phase*` constants. Runtime and middleware share this
+HTTP support package without a dependency cycle or compatibility shim.
+See [ADR-0027](../adr/0027-consolidated-http-observability.md).
 
 Prototype APIs use one canonical name and function-based request contracts.
 `web.Decoder`, `web.KeyResolver`, `web.ExpectedVersion`, and
@@ -114,7 +120,7 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | `AppShell`, `NavigationItem`, `BreadcrumbItem` | `Shell`, `NavItem`, `Breadcrumb`; no aliases | one canonical name |
 | `html.TrustedHTML` | retained; no `html.Trusted` alias | one explicit trusted-markup type |
 | packages per §2 | + `static`, `internal/arch`, `benchmarks`, optional `ui` | assets, enforcement, and application-level composition without widening core dependencies; widgets live in `components` |
-| middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
+| middleware deps: html only | middleware → `html`, `session`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
 | web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
 | session dependencies | + stdlib-only `httpx` | bounded revocation-capacity event without middleware dependency |
 | diagnostics aggregates | + fixed operational event counters | saturation, stale actions, authorization, effect and stream failures |

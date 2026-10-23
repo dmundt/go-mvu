@@ -17,7 +17,6 @@ import (
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 type testModel struct{ Count int }
@@ -482,7 +481,7 @@ func TestHandleCanceledRequestDoesNotRender(t *testing.T) {
 	}
 }
 
-func phaseNames(trace *timing.Trace) []string {
+func phaseNames(trace *httpx.Trace) []string {
 	var names []string
 	for _, phase := range trace.Phases() {
 		names = append(names, phase.Name)
@@ -492,21 +491,21 @@ func phaseNames(trace *timing.Trace) []string {
 
 func TestRuntimeRecordsTimingPhases(t *testing.T) {
 	runtime := newTestRuntime(t, nil)
-	trace := timing.New()
+	trace := httpx.NewTrace()
 	request := httptest.NewRequest(http.MethodPost, "/add", nil)
 	serve(runtime.Handle(addRoute(Result{Mode: RenderFragment, Fragment: "count"})),
-		request.WithContext(timing.WithTrace(request.Context(), trace)))
-	want := []string{timing.PhaseDecode, timing.PhaseDispatch, timing.PhaseLoad,
-		timing.PhaseView, timing.PhaseRender}
+		request.WithContext(httpx.WithTrace(request.Context(), trace)))
+	want := []string{httpx.PhaseDecode, httpx.PhaseDispatch, httpx.PhaseLoad,
+		httpx.PhaseView, httpx.PhaseRender}
 	if got := phaseNames(trace); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("Handle phases = %v, want %v", got, want)
 	}
 
-	trace = timing.New()
+	trace = httpx.NewTrace()
 	request = httptest.NewRequest(http.MethodGet, "/", nil)
 	serve(runtime.Page(Result{Mode: RenderPage}),
-		request.WithContext(timing.WithTrace(request.Context(), trace)))
-	want = []string{timing.PhaseLoad, timing.PhaseView, timing.PhaseRender}
+		request.WithContext(httpx.WithTrace(request.Context(), trace)))
+	want = []string{httpx.PhaseLoad, httpx.PhaseView, httpx.PhaseRender}
 	if got := phaseNames(trace); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("Page phases = %v, want %v", got, want)
 	}

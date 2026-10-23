@@ -11,6 +11,12 @@ Notable changes to go-mvu are documented here.
 
 ### Changed
 
+- **Breaking:** merge `timing` into `httpx`; remove the old package without
+  forwarding aliases. Replace `timing.New()` with `httpx.NewTrace()` and
+  `timing.FromContext(ctx)` with `httpx.TraceFromContext(ctx)`. Move `Trace`,
+  `Phase`, `WithTrace`, and `Phase*` constant qualifiers to `httpx`.
+  Trace collection and diagnostics output are unchanged.
+
 - **Breaking:** request contracts are functions:
   - `web.DecoderFunc` becomes `web.Decoder`; `KeyResolverFunc` becomes
     `KeyResolver`; `ExpectedVersionFunc` becomes `ExpectedVersion`.

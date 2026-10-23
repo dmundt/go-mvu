@@ -8,7 +8,6 @@ import (
 
 	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/store"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 type OutcomeState uint8
@@ -79,13 +78,13 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			}
 			expected = &version
 		}
-		trace := timing.FromContext(ctx)
+		trace := httpx.TraceFromContext(ctx)
 		if route.RequireModel {
 			if err := ctx.Err(); err != nil {
 				fail(err)
 				return
 			}
-			done := trace.Start(timing.PhaseLoad)
+			done := trace.Start(httpx.PhaseLoad)
 			_, err := runtime.store.Load(ctx, key)
 			done()
 			if err != nil {
@@ -101,7 +100,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		done := trace.Start(timing.PhaseDecode)
+		done := trace.Start(httpx.PhaseDecode)
 		message, err := route.Decode(r)
 		done()
 		if err != nil {
@@ -112,7 +111,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		done = trace.Start(timing.PhaseDispatch)
+		done = trace.Start(httpx.PhaseDispatch)
 		err = runtime.dispatcher(key, expected, func() { committed.Store(true) })(ctx, message)
 		done()
 		if err != nil {
@@ -123,7 +122,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		done = trace.Start(timing.PhaseLoad)
+		done = trace.Start(httpx.PhaseLoad)
 		snapshot, err := runtime.store.Load(ctx, key)
 		done()
 		if err != nil {
@@ -170,8 +169,8 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 			fail(err)
 			return
 		}
-		trace := timing.FromContext(r.Context())
-		done := trace.Start(timing.PhaseLoad)
+		trace := httpx.TraceFromContext(r.Context())
+		done := trace.Start(httpx.PhaseLoad)
 		snapshot, commands, created, err := runtime.loadOrCreate(r.Context(), key)
 		done()
 		if err != nil {
@@ -180,7 +179,7 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 		}
 		committed.Store(created)
 		if len(commands) > 0 {
-			done = trace.Start(timing.PhaseDispatch)
+			done = trace.Start(httpx.PhaseDispatch)
 			err = runtime.commands.Run(r.Context(), commands,
 				runtime.dispatcher(key, nil, func() { committed.Store(true) }))
 			done()
@@ -191,7 +190,7 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 				fail(err)
 				return
 			}
-			done = trace.Start(timing.PhaseLoad)
+			done = trace.Start(httpx.PhaseLoad)
 			snapshot, err = runtime.store.Load(r.Context(), key)
 			done()
 			if err != nil {

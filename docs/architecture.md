@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 12
+version: 13
 ---
 
 # Architecture
@@ -26,8 +26,7 @@ CSS inlined in `<style>`. Source of truth:
 | `components` | optional layout, controls, forms, tables, pagination, switcher, and native-HTML widgets |
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
 | `middleware` | security headers/CSP, CSRF, stream-safe recovery, runtime diagnostics |
-| `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
-| `httpx` | stdlib-only HTTP error policy, request IDs, Vary merging, response commitment |
+| `httpx` | stdlib-only HTTP error policy, request metadata, events, nil-safe phase traces, Vary merging, response commitment |
 | `web` | runtime: `Action`/route → message → Update → store → commands → view |
 | `ui` | optional app composition: document policy, secure action forms, rooted regions, typed region views, field errors |
 | `internal/arch` | boundary enforcement test |
@@ -57,12 +56,12 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ([ADR-0014](adr/0014-enforced-package-boundaries.md)).
 
 ```text
-mvu, html, store, theme, static, validation, timing, httpx → stdlib only
+mvu, html, store, theme, static, validation, httpx → stdlib only
 htmx       → html
 session    → store, httpx
-middleware → html, session, timing, httpx
+middleware → html, session, httpx
 components → html, htmx, theme
-web        → mvu, html, htmx, store, theme, timing, httpx
+web        → mvu, html, htmx, store, theme, httpx
 ui         → components, html, htmx, middleware, static, theme, validation, web
 internal/example/jsonstore → store
 internal/example/server    → httpx
@@ -71,12 +70,12 @@ examples   → framework packages and internal/example; never other examples
 
 ```mermaid
 flowchart BT
-  html; mvu; store; theme; static; validation; timing; httpx
+  html; mvu; store; theme; static; validation; httpx
   htmx --> html
   session --> store & httpx
-  middleware --> html & session & timing & httpx
+  middleware --> html & session & httpx
   components --> html & htmx & theme
-  web --> mvu & html & htmx & store & theme & timing & httpx
+  web --> mvu & html & htmx & store & theme & httpx
   ui --> components & html & htmx & middleware & static & theme & validation & web
   app[application] --> web & components & middleware & session & static
 ```
@@ -93,6 +92,11 @@ opt in explicitly and still own middleware and asset routing. See
 [ADR-0021](adr/0021-concise-ui-composition.md).
 
 ## Source organization
+
+Request timing lives in [httpx/trace.go](../httpx/trace.go), alongside request
+metadata, events, and response tracking. There is no separate `timing` package.
+Both runtime and diagnostics depend on this stdlib-only leaf; neither needs
+to import the other. See [ADR-0027](adr/0027-consolidated-http-observability.md).
 
 Prototype API policy: canonical names, function-based decoders/resolvers,
 explicit startup errors, and bounded asynchronous execution. Theme mode comes

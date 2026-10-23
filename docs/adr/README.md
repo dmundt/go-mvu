@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 7
+version: 8
 ---
 
 # Architecture Decision Records
@@ -34,7 +34,7 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0013](0013-runtime-request-context.md) | Explicit request context, command runners, auto rendering | Accepted; API simplification in 0026 |
 | [0014](0014-enforced-package-boundaries.md) | Enforce package boundaries by test | Accepted |
 | [0015](0015-open-props-default-design-system.md) | Open Props default design system | Accepted |
-| [0016](0016-render-timing-diagnostics.md) | Render timing and diagnostics via `timing` trace | Accepted |
+| [0016](0016-render-timing-diagnostics.md) | Render timing and diagnostics | Accepted; package placement superseded by 0027 |
 | [0017](0017-element-builder-and-attrs.md) | Element builder and attribute passthrough | Accepted |
 | [0018](0018-ui-authoring-boundaries.md) | Semantic composition with scoped authoring boundaries | Accepted |
 | [0019](0019-http-policy-and-runtime-reliability.md) | Explicit HTTP policy, streaming lifecycle, reliable transitions | Accepted |
@@ -45,3 +45,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0024](0024-ecosystem-owned-generic-middleware.md) | Keep generic HTTP middleware in the ecosystem | Accepted; request/cache wrapper scope superseded by 0025 |
 | [0025](0025-application-owned-request-policy.md) | Keep request and cache policy in applications | Accepted |
 | [0026](0026-prototype-api-simplification.md) | Canonical names, function contracts, single theme-resolution path | Accepted |
+| [0027](0027-consolidated-http-observability.md) | Request tracing in shared HTTP support; remove standalone timing package | Accepted |

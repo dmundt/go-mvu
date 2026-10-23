@@ -10,7 +10,6 @@ import (
 	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/store"
-	"github.com/dmundt/go-mvu/timing"
 )
 
 type RenderMode uint8
@@ -86,7 +85,7 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 	if result.ReplaceURL != "" {
 		htmx.ReplaceURL(w, result.ReplaceURL)
 	}
-	trace := timing.FromContext(r.Context())
+	trace := httpx.TraceFromContext(r.Context())
 	var err error
 	switch mode {
 	case RenderNothing:
@@ -94,27 +93,27 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		return nil
 	case RenderPage:
 		var page html.Page
-		done := trace.Start(timing.PhaseView)
+		done := trace.Start(httpx.PhaseView)
 		page, err = runtime.view.Page(r.Context(), model, request)
 		done()
 		if err == nil {
 			err = r.Context().Err()
 		}
 		if err == nil {
-			done = trace.Start(timing.PhaseRender)
+			done = trace.Start(httpx.PhaseRender)
 			err = WritePage(r.Context(), tracked, result.StatusOr(http.StatusOK), page)
 			done()
 		}
 	case RenderFragment:
 		var fragment html.Fragment
-		done := trace.Start(timing.PhaseView)
+		done := trace.Start(httpx.PhaseView)
 		fragment, err = runtime.view.Fragment(r.Context(), result.Fragment, model, request)
 		done()
 		if err == nil {
 			err = r.Context().Err()
 		}
 		if err == nil {
-			done = trace.Start(timing.PhaseRender)
+			done = trace.Start(httpx.PhaseRender)
 			err = WriteFragment(r.Context(), tracked, result.StatusOr(http.StatusOK), fragment)
 			done()
 		}

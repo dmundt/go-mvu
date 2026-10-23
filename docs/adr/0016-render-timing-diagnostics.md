@@ -2,12 +2,13 @@
 type: Architecture Decision Record
 title: "ADR-0016: Render timing and diagnostics"
 description: Expose render timing and diagnostic information.
-version: 1
+version: 2
 ---
 
 # ADR-0016: Render timing and diagnostics
 
-- Status: Accepted
+- Status: Accepted; standalone package placement superseded by
+  [ADR-0027](0027-consolidated-http-observability.md).
 - Extends: [ADR-0013](0013-runtime-request-context.md),
   [ADR-0014](0014-enforced-package-boundaries.md)
 
