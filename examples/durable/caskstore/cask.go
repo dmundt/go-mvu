@@ -124,8 +124,9 @@ func (s *Store[M]) Keys() ([]string, error) {
 		if !strings.HasPrefix(ref.Name, "models/") {
 			continue
 		}
-		key, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(ref.Name, "models/"))
-		if err != nil || base64.RawURLEncoding.EncodeToString(key) != strings.TrimPrefix(ref.Name, "models/") {
+		encoded := strings.TrimPrefix(ref.Name, "models/")
+		key, err := base64.RawURLEncoding.DecodeString(encoded)
+		if err != nil || base64.RawURLEncoding.EncodeToString(key) != encoded {
 			return nil, fmt.Errorf("invalid CASK model ref name %q", ref.Name)
 		}
 		keys = append(keys, string(key))

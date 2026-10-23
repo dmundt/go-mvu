@@ -20,7 +20,9 @@ func TestContactFunctionsShareSubmittedContentAndRoot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fragment, err := view.Fragment(context.Background(), string(contactRegion), model, web.RequestContext{})
+	fragment, err := view.Fragment(
+		context.Background(), string(contactRegion), model, web.RequestContext{},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +38,9 @@ func TestContactFunctionsShareSubmittedContentAndRoot(t *testing.T) {
 		strings.Count(pageOutput.String(), `id="contact-form"`) != 1 {
 		t.Fatalf("page/fragment roots differ: %s", fragmentOutput.String())
 	}
-	if _, err := view.Fragment(context.Background(), "unknown", model, web.RequestContext{}); !errors.Is(err, web.ErrUnknownFragment) {
+	if _, err := view.Fragment(
+		context.Background(), "unknown", model, web.RequestContext{},
+	); !errors.Is(err, web.ErrUnknownFragment) {
 		t.Fatalf("unknown fragment error = %v", err)
 	}
 }

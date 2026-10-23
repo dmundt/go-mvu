@@ -58,7 +58,9 @@ func TestCaskStorePersistsCompareAndSwapAcrossRestart(t *testing.T) {
 	if created.Version != 1 {
 		t.Fatalf("create version = %d, want 1", created.Version)
 	}
-	if _, err := first.CompareAndSwap(context.Background(), "session/key", 0, CounterModel{}); !errors.Is(err, store.ErrConflict) {
+	if _, err := first.CompareAndSwap(
+		context.Background(), "session/key", 0, CounterModel{},
+	); !errors.Is(err, store.ErrConflict) {
 		t.Fatalf("stale CAS error = %v, want conflict", err)
 	}
 
@@ -196,7 +198,8 @@ func TestDurableExamplePersistsSessionAndPendingOutbox(t *testing.T) {
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
-	if response.StatusCode != http.StatusOK || !strings.Contains(string(body), "Pending durable deliveries: 1") {
+	if response.StatusCode != http.StatusOK ||
+		!strings.Contains(string(body), "Pending durable deliveries: 1") {
 		t.Fatalf("increment response = %d %s", response.StatusCode, body)
 	}
 

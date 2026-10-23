@@ -58,7 +58,8 @@ func (CounterView) Page(
 			},
 		},
 		Footer: components.Paragraph(
-			"State and pending events survive process restarts. Delivery is at least once; event IDs make this sink idempotent.",
+			"State and pending events survive process restarts. Delivery is at least once; " +
+				"event IDs make this sink idempotent.",
 		),
 	}
 	return components.Document{
