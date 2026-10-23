@@ -46,7 +46,7 @@ func (view CounterView) Page(
 	model CounterModel,
 	request web.RequestContext,
 ) (html.Page, error) {
-	shell := components.AppShell{
+	shell := components.Shell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Go MVU counter"},
 			ui.ThemeSwitcher{

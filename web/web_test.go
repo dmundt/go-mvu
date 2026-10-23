@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/html"
+	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
@@ -105,7 +106,7 @@ func newTestRuntime(t *testing.T, mutate func(*RuntimeConfig[string, testModel, 
 	config := RuntimeConfig[string, testModel, testMessage]{
 		App:    testApp{},
 		Store:  store.NewMemory[string, testModel](),
-		Keys:   KeyResolverFunc[string](fixedKey),
+		Keys:   fixedKey,
 		View:   testView{},
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 	}
@@ -122,7 +123,7 @@ func newTestRuntime(t *testing.T, mutate func(*RuntimeConfig[string, testModel, 
 func addRoute(result Result) Route[testMessage] {
 	return Route[testMessage]{
 		Method: http.MethodPost, Pattern: "/add",
-		Decode: StaticMessage[testMessage]{Message: 1},
+		Decode: StaticMessage[testMessage](1),
 		Result: result,
 	}
 }
@@ -134,8 +135,22 @@ func serve(handler http.Handler, request *http.Request) *httptest.ResponseRecord
 }
 
 func TestNewRuntimeRejectsIncompleteConfig(t *testing.T) {
-	if _, err := NewRuntime(RuntimeConfig[string, testModel, testMessage]{}); !errors.Is(err, ErrInvalidRuntime) {
-		t.Fatalf("err = %v, want ErrInvalidRuntime", err)
+	for name, clear := range map[string]func(*RuntimeConfig[string, testModel, testMessage]){
+		"app":   func(config *RuntimeConfig[string, testModel, testMessage]) { config.App = nil },
+		"store": func(config *RuntimeConfig[string, testModel, testMessage]) { config.Store = nil },
+		"keys":  func(config *RuntimeConfig[string, testModel, testMessage]) { config.Keys = nil },
+		"view":  func(config *RuntimeConfig[string, testModel, testMessage]) { config.View = nil },
+	} {
+		t.Run(name, func(t *testing.T) {
+			config := RuntimeConfig[string, testModel, testMessage]{
+				App: testApp{}, Store: store.NewMemory[string, testModel](),
+				Keys: fixedKey, View: testView{},
+			}
+			clear(&config)
+			if _, err := NewRuntime(config); !errors.Is(err, ErrInvalidRuntime) {
+				t.Fatalf("err = %v, want ErrInvalidRuntime", err)
+			}
+		})
 	}
 }
 
@@ -167,19 +182,19 @@ func TestPageRendersFullDocumentWithRequestContext(t *testing.T) {
 	}
 }
 
-type fixedResolver struct{ mode theme.Mode }
-
-func (r fixedResolver) Resolve(*http.Request) (theme.Mode, error) { return r.mode, nil }
-func (fixedResolver) Persist(http.ResponseWriter, *http.Request, theme.Mode) error {
-	return nil
-}
-
-func TestThemeResolverOverridesContextMode(t *testing.T) {
-	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
-		c.Themes = fixedResolver{mode: theme.Light}
-	})
-	response := serve(runtime.Page(Result{Mode: RenderPage}),
-		httptest.NewRequest(http.MethodGet, "/", nil))
+func TestThemePreferenceSuppliesRequestMode(t *testing.T) {
+	preference, err := theme.NewPreference([]byte(strings.Repeat("t", 32)), theme.PreferenceOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cookies := httptest.NewRecorder()
+	preference.Set(cookies, theme.Light)
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	for _, cookie := range cookies.Result().Cookies() {
+		request.AddCookie(cookie)
+	}
+	runtime := newTestRuntime(t, nil)
+	response := serve(preference.Wrap(runtime.Page(Result{Mode: RenderPage})), request)
 	if !strings.Contains(response.Body.String(), `data-mode="light"`) {
 		t.Fatalf("body = %q", response.Body)
 	}
@@ -248,7 +263,7 @@ func TestErrorsUseErrorHandlerWithoutLeakingDetails(t *testing.T) {
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.OnError = func(w http.ResponseWriter, r *http.Request, err error) {
 			captured = err
-			InternalServerError(w, r, err)
+			httpx.RespondError(w, r, err)
 		}
 	})
 	response := serve(runtime.Handle(addRoute(Result{Mode: RenderFragment, Fragment: "missing"})),
@@ -260,7 +275,7 @@ func TestErrorsUseErrorHandlerWithoutLeakingDetails(t *testing.T) {
 		t.Fatalf("error leaked: %q", response.Body)
 	}
 
-	update := Route[testMessage]{Decode: StaticMessage[testMessage]{Message: -1}, Result: Result{Mode: RenderNothing}}
+	update := Route[testMessage]{Decode: StaticMessage[testMessage](-1), Result: Result{Mode: RenderNothing}}
 	if got := serve(runtime.Handle(update), httptest.NewRequest(http.MethodPost, "/", nil)); got.Code != http.StatusInternalServerError {
 		t.Fatalf("update error status = %d", got.Code)
 	}
@@ -372,12 +387,23 @@ func TestCommandsRunOutsideStoreAndDispatchFollowups(t *testing.T) {
 	}
 }
 
-func TestAsyncCommandsCompleteAfterResponse(t *testing.T) {
+func TestAsyncCommandRunnerDispatchesFollowup(t *testing.T) {
 	probe := &lockProbeStore{Memory: store.NewMemory[string, testModel]()}
+	runner, err := NewAsyncCommandRunner[testMessage](1, 8, time.Second, func(err error) { t.Error(err) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if err := runner.Close(ctx); err != nil {
+			t.Error(err)
+		}
+	})
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.Store = probe
 		c.App = commandApp{probe: probe}
-		c.Commands = AsyncCommands[testMessage]{OnError: func(err error) { t.Error(err) }}
+		c.Commands = runner
 	})
 	serve(runtime.Handle(addRoute(Result{Mode: RenderNothing})), httptest.NewRequest(http.MethodPost, "/add", nil))
 	deadline := time.Now().Add(2 * time.Second)
@@ -395,7 +421,7 @@ func TestNewRequestContextPrefersHTMXCurrentURL(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/add", nil)
 	request.Header.Set("HX-Request", "true")
 	request.Header.Set("HX-Current-URL", "http://example.test/users?page=3")
-	got := NewRequestContext(request, nil, nil)
+	got := NewRequestContext(request, nil)
 	if !got.IsHTMX || got.CurrentURL != "http://example.test/users?page=3" || got.Theme == nil || got.Mode != theme.System {
 		t.Fatalf("request context = %+v", got)
 	}

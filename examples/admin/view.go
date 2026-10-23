@@ -17,7 +17,7 @@ type View struct{ Document ui.Document }
 func (view View) Page(
 	_ context.Context, model Model, request web.RequestContext,
 ) (html.Page, error) {
-	return view.Document.Page(request, "Operations dashboard", components.AppShell{
+	return view.Document.Page(request, "Operations dashboard", components.Shell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Northstar / Operations"},
 			ui.ThemeSwitcher{

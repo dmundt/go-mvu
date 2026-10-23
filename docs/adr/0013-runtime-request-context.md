@@ -2,12 +2,13 @@
 type: Architecture Decision Record
 title: "ADR-0013: Explicit runtime request context, command runners, auto rendering"
 description: Make request state explicit and standardize command execution and rendering.
-version: 1
+version: 2
 ---
 
 # ADR-0013: Explicit runtime request context, command runners, auto rendering
 
-- Status: Accepted
+- Status: Accepted; resolver, unbounded runner, and panic constructor superseded
+  by [ADR-0026](0026-prototype-api-simplification.md).
 - Extends: [ADR-0003](0003-mvu-runtime-boundaries.md),
   [ADR-0005](0005-pages-and-fragments.md)
 

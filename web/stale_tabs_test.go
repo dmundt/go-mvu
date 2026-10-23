@@ -27,9 +27,9 @@ func TestTwoTabsCannotCommitSameExpectedVersion(t *testing.T) {
 		}
 	})
 	route := addRoute(Result{Mode: RenderNothing})
-	route.ExpectedVersion = ExpectedVersionFunc(func(*http.Request) (store.Version, error) {
+	route.ExpectedVersion = func(*http.Request) (store.Version, error) {
 		return snapshot.Version, nil
-	})
+	}
 	handler := runtime.Handle(route)
 	statuses := make(chan int, 2)
 	var group sync.WaitGroup

@@ -2,7 +2,7 @@
 type: Guide
 title: Forms
 description: Build typed forms with explicit decoding, validation, and errors.
-version: 5
+version: 6
 ---
 
 # Forms
@@ -21,7 +21,7 @@ JavaScript.
 ## Four small steps
 
 1. **Describe fields** with a Go struct.
-2. **Read and check input** in a `validation.Decoder`; no reflection or
+2. **Read and check input** in a decoder function; no reflection or
    automatic field binding.
 3. **Pass the result** into a typed app message with `validation.Bind`.
 4. **Show values and errors** using `components.Input`, `Select`, `Textarea`,
@@ -41,6 +41,13 @@ type SubmitContact struct {
 `validation.Form` carries submitted values, field errors, and a `Valid` flag.
 Keep validation in the decoder, then let `Update` decide what a valid form
 does. Do not read requests or render HTML in `Update`.
+
+`validation.Decoder[T]` is `func(*http.Request) (T, validation.Errors, error)`.
+Pass a function directly to `validation.Bind`; field errors are ordinary
+validation results, while malformed requests return an error. A nil decoder
+returns `validation.ErrMissingDecoder`. No interface adapter is needed.
+The contact example keeps request parsing and validation in
+[actions.go](../../examples/contact/actions.go), separate from pure MVU updates.
 
 ## Keep route and form together
 

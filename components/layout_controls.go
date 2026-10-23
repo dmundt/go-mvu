@@ -9,12 +9,6 @@ import (
 	"github.com/dmundt/go-mvu/html"
 )
 
-// NavigationItem is the spec name for NavItem.
-type NavigationItem = NavItem
-
-// BreadcrumbItem is the spec name for Breadcrumb.
-type BreadcrumbItem = Breadcrumb
-
 // Section groups related content. Include a heading or an accessible name
 // when the section should be exposed as a landmark.
 type Section struct {

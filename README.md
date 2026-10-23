@@ -5,7 +5,9 @@ without JavaScript.
 
 ## Stability
 
-go-mvu is not stable yet. Its API may change at any time.
+go-mvu is not stable yet. Its API may change at any time. Prototype cleanup
+removes compatibility aliases rather than retaining deprecated alternatives;
+see [migration notes](CHANGELOG.md#unreleased).
 
 Reusable controls and widgets share one `components` package.
 Upgrading from `shared`? See the [migration notes](CHANGELOG.md#unreleased).

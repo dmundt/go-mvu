@@ -8,6 +8,14 @@ limiting is intentionally left to application middleware or deployment policy.
 No framework package imports OIDC. This example's separate module needs
 Go 1.25 or newer.
 
+## Code layout
+
+- [main.go](main.go): process lifecycle and HTTP shutdown.
+- [config.go](config.go): environment settings, key decoding, and origin checks.
+- [handler.go](handler.go): OIDC discovery, storage, routes, and middleware.
+- [auth.go](auth.go): login, callback, authorization, and logout.
+- [app.go](app.go) and [view.go](view.go): MVU updates and HTML composition.
+
 ## Configure and run
 
 Register a confidential OIDC client with your provider:

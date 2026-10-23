@@ -68,7 +68,7 @@ func dashboard(rows int) html.Component {
 			components.TableCell{Body: components.Text(hostile)},
 		}}
 	}
-	return components.AppShell{
+	return components.Shell{
 		Header:  components.Heading{Level: 1, Text: "Dashboard"},
 		Sidebar: components.Navigation{Items: []components.NavItem{{Label: "Home", URL: "/", Current: true}, {Label: "Users", URL: "/users"}}},
 		Main: components.Card{

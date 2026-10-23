@@ -42,7 +42,7 @@ func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
 			runtime := newTestRuntime(t, test.configure)
 			route := addRoute(Result{Mode: RenderNothing})
 			if test.expected {
-				route.ExpectedVersion = ExpectedVersionFunc(func(*http.Request) (store.Version, error) { return 999, nil })
+				route.ExpectedVersion = func(*http.Request) (store.Version, error) { return 999, nil }
 			}
 			runtime.Handle(route).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/add", nil).WithContext(ctx))
 			if events[test.event] != 1 {

@@ -18,7 +18,7 @@ func contactView(document ui.Document) web.ViewFunctions[ContactModel] {
 		PageFunc: func(
 			_ context.Context, model ContactModel, request web.RequestContext,
 		) (html.Page, error) {
-			return document.Page(request, "Contact", components.AppShell{
+			return document.Page(request, "Contact", components.Shell{
 				Header: components.Heading{Level: 1, Text: "Contact us"},
 				Main: components.Card{
 					Header: components.Heading{Level: 2, Text: "Send a request"},

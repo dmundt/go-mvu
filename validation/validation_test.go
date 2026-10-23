@@ -11,7 +11,7 @@ import (
 
 type signup struct{ Email string }
 
-var signupDecoder = DecoderFunc[signup](func(r *http.Request) (signup, Errors, error) {
+var signupDecoder = func(r *http.Request) (signup, Errors, error) {
 	if err := r.ParseForm(); err != nil {
 		return signup{}, nil, err
 	}
@@ -21,7 +21,7 @@ var signupDecoder = DecoderFunc[signup](func(r *http.Request) (signup, Errors, e
 		errs.Add("email", "Enter an email address.")
 	}
 	return value, errs, nil
-})
+}
 
 func post(body url.Values) *http.Request {
 	r := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(body.Encode()))
@@ -46,9 +46,16 @@ func TestBindReportsFieldErrors(t *testing.T) {
 func TestBindPropagatesDecodeError(t *testing.T) {
 	failure := errors.New("bad")
 	_, err := Bind(httptest.NewRequest(http.MethodGet, "/", nil),
-		DecoderFunc[int](func(*http.Request) (int, Errors, error) { return 0, nil, failure }))
+		func(*http.Request) (int, Errors, error) { return 0, nil, failure })
 	if !errors.Is(err, failure) {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestBindRejectsMissingDecoder(t *testing.T) {
+	form, err := Bind[int](httptest.NewRequest(http.MethodGet, "/", nil), nil)
+	if !errors.Is(err, ErrMissingDecoder) || form.Valid || form.Dirty {
+		t.Fatalf("form = %+v, err = %v", form, err)
 	}
 }
 

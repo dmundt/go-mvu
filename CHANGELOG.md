@@ -11,6 +11,34 @@ Notable changes to go-mvu are documented here.
 
 ### Changed
 
+- **Breaking:** request contracts are functions:
+  - `web.DecoderFunc` becomes `web.Decoder`; `KeyResolverFunc` becomes
+    `KeyResolver`; `ExpectedVersionFunc` becomes `ExpectedVersion`.
+  - Assign functions directly to `Decode`, `Keys`, and `ExpectedVersion`.
+    Existing struct implementations pass `decoder.Decode`,
+    `resolver.Resolve`, or `resolver.ResolveVersion` method values.
+  - Replace `web.StaticMessage[Msg]{Message: value}` with
+    `web.StaticMessage[Msg](value)`; invoke decoders as functions.
+  - `validation.DecoderFunc` becomes function type `validation.Decoder`.
+    `Bind` accepts functions directly and rejects nil with `ErrMissingDecoder`.
+- **Breaking:** theme mode comes only from `theme.Preference.Wrap` or
+  `theme.WithMode`. Remove `RuntimeConfig.Themes`; `web.ThemeResolver` is gone.
+  `web.NewRequestContext` takes only request and active theme. Install preference
+  middleware to retain cookie-driven appearance; custom mode resolution belongs
+  in application middleware. Without it, mode defaults to System.
+- **Breaking:** remove `web.MustRuntime`, `web.ErrorHandler`, and
+  `web.InternalServerError`. Use error-returning `web.NewRuntime`,
+  `httpx.ErrorHandler`, and `httpx.RespondError`.
+- **Breaking:** remove deprecated unbounded `web.AsyncCommands`. Use
+  `NewAsyncCommandRunner`, configure queue/concurrency/timeout explicitly, and
+  drain it with `Close` during shutdown.
+- **Breaking:** remove compatibility aliases. Replace `components.AppShell`
+  with `components.Shell`, `NavigationItem` with `NavItem`, `BreadcrumbItem`
+  with `Breadcrumb`, and `html.Trusted` with `html.TrustedHTML`.
+
+- Separate runtime, rendering, controls, and example startup responsibilities
+  into focused source files without changing package paths or public APIs.
+
 - **Breaking:** consolidate `shared` widgets into `components`. Replace
   `github.com/dmundt/go-mvu/shared` imports and `shared.` qualifiers with
   `github.com/dmundt/go-mvu/components` and `components.`. Remove duplicate

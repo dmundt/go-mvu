@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 6
+version: 7
 ---
 
 # Architecture Decision Records
@@ -31,7 +31,7 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0010](0010-shared-ui-components.md) | Separate shared UI components from core components | Package separation superseded by 0023 |
 | [0011](0011-system-theme-mode.md) | System theme mode as default | Accepted |
 | [0012](0012-csp-and-local-htmx.md) | Strict CSP with locally served HTMX | Accepted |
-| [0013](0013-runtime-request-context.md) | Explicit request context, command runners, auto rendering | Accepted |
+| [0013](0013-runtime-request-context.md) | Explicit request context, command runners, auto rendering | Accepted; API simplification in 0026 |
 | [0014](0014-enforced-package-boundaries.md) | Enforce package boundaries by test | Accepted |
 | [0015](0015-open-props-default-design-system.md) | Open Props default design system | Accepted |
 | [0016](0016-render-timing-diagnostics.md) | Render timing and diagnostics via `timing` trace | Accepted |
@@ -44,3 +44,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0023](0023-unified-components.md) | One reusable component package | Accepted |
 | [0024](0024-ecosystem-owned-generic-middleware.md) | Keep generic HTTP middleware in the ecosystem | Accepted; request/cache wrapper scope superseded by 0025 |
 | [0025](0025-application-owned-request-policy.md) | Keep request and cache policy in applications | Accepted |
+| [0026](0026-prototype-api-simplification.md) | Canonical names, function contracts, single theme-resolution path | Accepted |

@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 6
+version: 7
 ---
 
 # Components and pagination
@@ -504,7 +504,7 @@ card fields are escaped.
 The `components` package currently includes:
 
 - Composition and layout: `Empty`, `Text`, `Sequence`, `Document`, `Shell`
-  (alias `AppShell`: `Header`, `Sidebar`, `Main`, `Footer` landmarks),
+  (`Header`, `Sidebar`, `Main`, `Footer` landmarks),
   `Section` (`ID`, `Children`, `Attrs`), `Stack`, `Grid`, `Inline`.
   Standalone landmarks: `Header`, `Sidebar{AriaLabel}`,
   `Main`, `Footer`. `Document.HTMXSource` (`static.HTMXPath`) + `HTMXIntegrity` → local HTMX
@@ -519,7 +519,7 @@ The `components` package currently includes:
   `Checkbox`, `Textarea` (hint + error via `aria-describedby`).
 - Data and navigation: `Table`, `TableRow`, `TableCell` (`Header`,
   `Scope`), `HeaderRow`, `TableHeader`, `TableBody`, `Pagination`,
-  `Breadcrumbs` (`BreadcrumbItem`), `Navigation` (`NavigationItem`).
+  `Breadcrumbs` (`Breadcrumb`), `Navigation` (`NavItem`).
 
 Prefer primitives over hand-written `Static` tags. Example:
 

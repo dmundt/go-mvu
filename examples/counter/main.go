@@ -91,12 +91,11 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
-		App:    CounterApp{},
-		Store:  store.NewMemory[string, CounterModel](),
-		Keys:   web.KeyResolverFunc[string](sessionKey),
-		View:   CounterView{Document: document},
-		Theme:  theme.Default,
-		Themes: preference,
+		App:   CounterApp{},
+		Store: store.NewMemory[string, CounterModel](),
+		Keys:  sessionKey,
+		View:  CounterView{Document: document},
+		Theme: theme.Default,
 	})
 	if err != nil {
 		return nil, err

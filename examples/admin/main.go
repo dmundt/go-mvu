@@ -64,16 +64,15 @@ func newHandler(secret []byte) (http.Handler, error) {
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, Model, Message]{
 		App:   App{},
 		Store: store.NewMemory[string, Model](),
-		Keys: web.KeyResolverFunc[string](func(request *http.Request) (string, error) {
+		Keys: func(request *http.Request) (string, error) {
 			id, ok := session.ID(request)
 			if !ok {
 				return "", http.ErrNoCookie
 			}
 			return id, nil
-		}),
-		View:   View{Document: document},
-		Theme:  theme.Default,
-		Themes: preference,
+		},
+		View:  View{Document: document},
+		Theme: theme.Default,
 	})
 	if err != nil {
 		return nil, err

@@ -80,7 +80,7 @@ func document(
 		HTMXIntegrity: static.HTMXIntegrity,
 		Theme:         selected,
 		Mode:          mode,
-		Body: middleware.CSRFHTMX{Body: components.AppShell{
+		Body: middleware.CSRFHTMX{Body: components.Shell{
 			Main: components.Card{Body: body},
 		}},
 	}

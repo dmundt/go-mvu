@@ -8,6 +8,181 @@ import (
 	"github.com/dmundt/go-mvu/htmx"
 )
 
+type InputType string
+
+type Input struct {
+	ID           string
+	Name         string
+	Type         InputType
+	Value        string
+	Label        string
+	Placeholder  string
+	Required     bool
+	Disabled     bool
+	AutoComplete string
+	Error        string
+	// Attrs apply to the <input> element (not the label).
+	Attrs html.Attrs
+}
+
+func (input Input) RenderHTML(_ context.Context, out *html.Context) error {
+	id := input.ID
+	if id == "" {
+		id = input.Name
+	}
+	inputType := input.Type
+	if inputType == "" {
+		inputType = "text"
+	}
+	if input.Label != "" {
+		out.Static("<label for=\"")
+		out.Attribute(id)
+		out.Static("\">")
+		out.Text(input.Label)
+		out.Static("</label>")
+	}
+	out.Static("<input class=\"input")
+	out.ExtraClass(input.Attrs)
+	out.Static("\" id=\"")
+	out.Attribute(id)
+	out.Static("\" name=\"")
+	out.Attribute(input.Name)
+	out.Static("\" type=\"")
+	out.Attribute(string(inputType))
+	out.Static("\" value=\"")
+	out.Attribute(input.Value)
+	out.Static("\"")
+	if input.Placeholder != "" {
+		out.Static(" placeholder=\"")
+		out.Attribute(input.Placeholder)
+		out.Static("\"")
+	}
+	if input.AutoComplete != "" {
+		out.Static(" autocomplete=\"")
+		out.Attribute(input.AutoComplete)
+		out.Static("\"")
+	}
+	if input.Required {
+		out.Static(" required")
+	}
+	if input.Disabled {
+		out.Static(" disabled")
+	}
+	if input.Error != "" {
+		out.Static(" aria-invalid=\"true\" aria-describedby=\"")
+		out.Attribute(id + "-error")
+		out.Static("\"")
+	}
+	out.PassAttrs(input.Attrs, "id", "name", "type", "value",
+		when(input.Placeholder, "placeholder"), when(input.AutoComplete, "autocomplete"),
+		whenSet(input.Required, "required"), whenSet(input.Disabled, "disabled"),
+		when(input.Error, "aria-invalid"), when(input.Error, "aria-describedby"))
+	out.Static(">")
+	if input.Error != "" {
+		out.Static("<span id=\"")
+		out.Attribute(id + "-error")
+		out.Static("\" class=\"field-error\" role=\"alert\">")
+		out.Text(input.Error)
+		out.Static("</span>")
+	}
+	return out.Err()
+}
+
+type Option struct {
+	Value    string
+	Label    string
+	Disabled bool
+}
+
+type Select struct {
+	ID    string
+	Name  string
+	Label string
+	Value string
+	// Placeholder adds an empty-value option before Options. Do not combine
+	// it with another empty-value option.
+	Placeholder string
+	Options     []Option
+	Required    bool
+	Error       string
+	// Attrs apply to the <select> element.
+	Attrs html.Attrs
+}
+
+func (selectInput Select) RenderHTML(_ context.Context, out *html.Context) error {
+	if selectInput.Placeholder != "" {
+		for _, option := range selectInput.Options {
+			if option.Value == "" {
+				return fmt.Errorf("select placeholder conflicts with empty-value option")
+			}
+		}
+	}
+	id := selectInput.ID
+	if id == "" {
+		id = selectInput.Name
+	}
+	if selectInput.Error != "" && id == "" {
+		return fmt.Errorf("select validation error requires ID or Name")
+	}
+	if selectInput.Label != "" {
+		out.Static("<label for=\"")
+		out.Attribute(id)
+		out.Static("\">")
+		out.Text(selectInput.Label)
+		out.Static("</label>")
+	}
+	out.Static("<select class=\"input")
+	out.ExtraClass(selectInput.Attrs)
+	out.Static("\" id=\"")
+	out.Attribute(id)
+	out.Static("\" name=\"")
+	out.Attribute(selectInput.Name)
+	out.Static(`"`)
+	if selectInput.Error != "" {
+		out.Static(` aria-invalid="true" aria-describedby="`)
+		out.Attribute(id + "-error")
+		out.Static(`"`)
+	}
+	if selectInput.Required {
+		out.Static(" required")
+	}
+	out.PassAttrs(selectInput.Attrs, "id", "name", whenSet(selectInput.Required, "required"),
+		when(selectInput.Error, "aria-invalid"), when(selectInput.Error, "aria-describedby"))
+	out.Static(">")
+	if selectInput.Placeholder != "" {
+		out.Static(`<option value=""`)
+		if selectInput.Value == "" {
+			out.Static(" selected")
+		}
+		out.Static(">")
+		out.Text(selectInput.Placeholder)
+		out.Static("</option>")
+	}
+	for _, option := range selectInput.Options {
+		out.Static("<option value=\"")
+		out.Attribute(option.Value)
+		out.Static("\"")
+		if option.Value == selectInput.Value {
+			out.Static(" selected")
+		}
+		if option.Disabled {
+			out.Static(" disabled")
+		}
+		out.Static(">")
+		out.Text(option.Label)
+		out.Static("</option>")
+	}
+	out.Static("</select>")
+	if selectInput.Error != "" {
+		out.Static("<span class=\"field-error\" id=\"")
+		out.Attribute(id + "-error")
+		out.Static("\" role=\"alert\">")
+		out.Text(selectInput.Error)
+		out.Static("</span>")
+	}
+	return out.Err()
+}
+
 // FormMethod is GET or POST; HTML forms support no others.
 type FormMethod string
 
@@ -101,85 +276,5 @@ func (fieldError FieldError) RenderHTML(_ context.Context, out *html.Context) er
 	out.Static(">")
 	out.Text(fieldError.Message)
 	out.Static("</span>")
-	return out.Err()
-}
-
-// TableRow renders <tr> around cells.
-type TableRow struct {
-	ID    string
-	Cells []html.Component
-	Attrs html.Attrs
-}
-
-func (row TableRow) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static("<tr")
-	optionalAttribute(out, "id", row.ID)
-	if len(row.Attrs) != 0 {
-		out.Class("", row.Attrs)
-		out.PassAttrs(row.Attrs, when(row.ID, "id"))
-	}
-	out.Static(">")
-	for _, cell := range row.Cells {
-		out.Component(ctx, cell)
-	}
-	out.Static("</tr>")
-	return out.Err()
-}
-
-// CellScope sets <th scope>.
-type CellScope string
-
-const (
-	ScopeColumn CellScope = "col"
-	ScopeRow    CellScope = "row"
-)
-
-// TableCell renders <td>, or <th> when Header is true.
-type TableCell struct {
-	Header bool
-	Scope  CellScope
-	Body   html.Component
-	Attrs  html.Attrs
-}
-
-func (cell TableCell) RenderHTML(ctx context.Context, out *html.Context) error {
-	if cell.Scope != "" && cell.Scope != ScopeColumn && cell.Scope != ScopeRow {
-		return fmt.Errorf("invalid table cell scope %q", cell.Scope)
-	}
-	// open ends with ">" so the common no-Attrs path is a single write.
-	open, closing := "<td>", "</td>"
-	if cell.Header {
-		open, closing = "<th>", "</th>"
-		switch cell.Scope {
-		case ScopeColumn:
-			open = `<th scope="col">`
-		case ScopeRow:
-			open = `<th scope="row">`
-		}
-	}
-	if len(cell.Attrs) == 0 {
-		out.Static(open)
-	} else {
-		out.Static(open[:len(open)-1])
-		out.Class("", cell.Attrs)
-		out.PassAttrs(cell.Attrs, whenSet(cell.Header && cell.Scope != "", "scope"))
-		out.Static(">")
-	}
-	out.Component(ctx, cell.Body)
-	out.Static(closing)
-	return out.Err()
-}
-
-// HeaderRow renders a <tr> of <th scope="col"> labels.
-type HeaderRow []string
-
-func (labels HeaderRow) RenderHTML(_ context.Context, out *html.Context) error {
-	out.Static("<tr>")
-	for _, label := range labels {
-		out.Static(`<th scope="col">`)
-		out.Text(label)
-		out.Static("</th>")
-	}
-	out.Static("</tr>")
 	return out.Err()
 }
