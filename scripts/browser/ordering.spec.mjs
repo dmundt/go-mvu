@@ -10,6 +10,21 @@ test('newer pagination response wins after slower response is released', async (
   const settled = new Promise(resolve => { signalSettled = resolve; });
   let failure;
   let oldRequest;
+  let signalCanceled;
+  const canceled = new Promise(resolve => { signalCanceled = resolve; });
+  page.on('requestfailed', request => {
+    if (request === oldRequest) signalCanceled(request.failure()?.errorText);
+  });
+  const swaps = [];
+  await page.exposeFunction('recordOrderingSwap', detail => swaps.push(detail));
+  await page.addInitScript(() => {
+    document.addEventListener('htmx:afterSettle', event => {
+      window.recordOrderingSwap({
+        page: document.querySelector('.pagination [aria-current="page"]')?.textContent,
+        path: event.detail.pathInfo?.requestPath,
+      });
+    });
+  });
   await page.route(`${base}/users?page=2`, async route => {
     oldRequest = route.request();
     try {
@@ -33,6 +48,7 @@ test('newer pagination response wins after slower response is released', async (
     if (failure) throw failure;
     await page.locator('a[href="/users?page=9"]').first().click();
     await expect(page.locator('.pagination [aria-current="page"]')).toHaveText('9');
+    expect(await canceled).toBe('net::ERR_ABORTED');
     releaseOld();
     await settled;
     if (failure) {
@@ -40,7 +56,8 @@ test('newer pagination response wins after slower response is released', async (
       // Do not suppress unrelated interception or fixture errors.
       expect(oldRequest.failure()?.errorText, failure.message).toBe('net::ERR_ABORTED');
     }
-    await page.waitForLoadState('networkidle');
+    await expect.poll(() => swaps.some(swap => swap.path === '/users?page=9' && swap.page === '9')).toBe(true);
+    expect(swaps.some(swap => swap.path === '/users?page=2')).toBe(false);
     await expect(page.locator('.pagination [aria-current="page"]')).toHaveText('9');
     await expect(page).toHaveURL(`${base}/users?page=9`);
     await page.reload();

@@ -1,9 +1,12 @@
-// Package server runs example HTTP servers with graceful, bounded shutdown.
+// Package server runs example HTTP servers with graceful shutdown and
+// cooperative cleanup deadlines.
 //
 // Shutdown order: stop HTTP admission and drain active requests
 // (http.Server.Shutdown), stop and drain command runners (Drain hooks, e.g.
 // web.AsyncCommandRunner.Close), then close dependencies in reverse order.
-// One ShutdownTimeout budget bounds the whole sequence. Dependencies close
+// One ShutdownTimeout budget is shared by HTTP shutdown and cooperative drains.
+// Drain hooks must honor their context; dependency Close calls are synchronous
+// and have no enforced deadline. Dependencies close
 // only when every request and accepted command is known to be finished.
 package server
 
@@ -40,7 +43,8 @@ type Config struct {
 	// Listener is served when set; otherwise Run listens on Server.Addr.
 	// Run owns and closes it.
 	Listener net.Listener
-	// ShutdownTimeout bounds HTTP shutdown, drains, and closers together.
+	// ShutdownTimeout bounds HTTP shutdown and supplies the drain deadline.
+	// Hooks must cooperate; dependency Close calls cannot be time-bounded here.
 	ShutdownTimeout time.Duration
 	// Drain stops admission and waits for accepted background work, in
 	// order, after HTTP requests finish. A non-nil error means work may
@@ -72,6 +76,8 @@ func New(addr string, handler http.Handler) *http.Server {
 // returning ErrDependenciesOpen joined with the causes. Drain timeouts only
 // bound waiting; accepted commands keep running to completion. Run joins its
 // serve goroutine before returning and starts no other goroutines.
+// Uncooperative drain hooks or blocking dependency closers can delay return
+// beyond ShutdownTimeout; Run never abandons cleanup in a detached goroutine.
 func Run(ctx context.Context, config Config) error {
 	if config.Server == nil || config.ShutdownTimeout <= 0 {
 		return ErrInvalidConfig
