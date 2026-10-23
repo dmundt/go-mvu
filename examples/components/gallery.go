@@ -59,6 +59,7 @@ func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
 			formCard(),
 			stepsCard(),
 			emptyCard(),
+			mixedCard(),
 		}},
 	}})
 	out.Static(`</main>`)
@@ -227,6 +228,28 @@ func emptyCard() html.Component {
 		Description: "Create a project to start tracking work.",
 		Action:      components.Button{Label: "New project", Variant: components.ButtonPrimary},
 	})
+}
+
+// mixedCard combines high-level components with the html.El builder and
+// passes extra attributes to components through Attrs.
+func mixedCard() html.Component {
+	release := html.El("p", nil,
+		html.Text("Released "),
+		html.El("time", html.Attrs{html.A("datetime", "2025-01-15")}, html.Text("Jan 15")),
+		html.Text(" after "),
+		html.El("abbr", html.Attrs{html.A("title", "Continuous integration")}, html.Text("CI")),
+		html.Text(" passed."),
+	)
+	badge := components.Badge{
+		Kind:  "success",
+		Label: "Stable",
+		Attrs: html.Attrs{html.A("title", "No open incidents"), html.A("data-channel", "stable")},
+	}
+	return card("Mixing levels", release, inline(badge, components.Button{
+		Label:   "Release notes",
+		Variant: components.ButtonGhost,
+		Attrs:   html.Attrs{html.A("aria-describedby", "save-tip")},
+	}))
 }
 
 func card(title string, body ...html.Component) html.Component {

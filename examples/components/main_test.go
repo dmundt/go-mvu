@@ -19,14 +19,15 @@ var componentMarkers = []string{
 	".tabset__tab", ".dialog::backdrop",
 	`class="accordion"`, `class="tabset"`, `class="dialog" popover`, `class="dropdown"`,
 	`class="tip"`, `class="avatar`, `class="progress-field"`, `class="spinner"`,
+	`<time datetime="2025-01-15">`, `data-channel="stable"`,
 	`class="skeleton"`, `role="switch"`, `class="radio-group"`, `class="input textarea"`,
 	`class="separator separator--labelled"`, `class="kbd"`, `class="empty-state"`,
 	`class="stat"`, `class="steps"`,
 }
 
-func TestGalleryRendersSharedComponentsInEveryTheme(t *testing.T) {
+func TestGalleryRendersSharedComponentsInEveryThemeAndMode(t *testing.T) {
 	for _, name := range themepicker.Names {
-		for _, mode := range []string{"light", "dark"} {
+		for _, mode := range []string{"system", "light", "dark"} {
 			t.Run(name+"/"+mode, func(t *testing.T) {
 				response := get("/?theme=" + name + "&mode=" + mode)
 				if response.Code != http.StatusOK {

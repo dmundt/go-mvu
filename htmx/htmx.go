@@ -109,6 +109,29 @@ func (a Action) RenderAttributes(out *html.Context) error {
 	return out.Err()
 }
 
+// Attrs returns the validated hx-* attributes as html.Attrs, for html.El or
+// a component's Attrs field. Order matches RenderAttributes.
+func (a Action) Attrs() (html.Attrs, error) {
+	if err := a.Validate(); err != nil {
+		return nil, err
+	}
+	attrs := html.Attrs{html.A(methodAttributes[a.Method], a.URL)}
+	for _, pair := range [...][2]string{
+		{"hx-target", a.Target}, {"hx-swap", string(a.Swap)}, {"hx-trigger", a.Trigger},
+		{"hx-select", a.Select}, {"hx-include", a.Include}, {"hx-indicator", a.Indicator},
+		{"hx-confirm", a.Confirm}, {"hx-push-url", a.PushURL}, {"hx-replace-url", a.ReplaceURL},
+		{"hx-disabled-elt", a.DisabledElt},
+	} {
+		if pair[1] != "" {
+			attrs = append(attrs, html.A(pair[0], pair[1]))
+		}
+	}
+	if a.Boost {
+		attrs = append(attrs, html.A("hx-boost", "true"))
+	}
+	return attrs, nil
+}
+
 func writeOptional(out *html.Context, name, value string) {
 	if value != "" {
 		writeAttr(out, name, value)

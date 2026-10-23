@@ -43,6 +43,65 @@ components.Card{
 Nil slots are optional. A component owns semantic HTML and accessibility;
 theme classes should describe roles and variants, not a CSS framework.
 
+## Low-level element builder
+
+`html.El` builds any element without hand-written tag strings. Attributes
+are an ordered `html.Attrs` list; text goes through `html.Text`. Elements and
+components nest both ways:
+
+```go
+html.El("section", html.Attrs{html.A("class", "panel"), html.A("id", "release")},
+	html.El("h2", nil, html.Text("Release")),
+	html.El("time", html.Attrs{html.A("datetime", "2025-01-15")}, html.Text("Jan 15")),
+	html.El("input", html.Attrs{html.A("name", "q"), html.Flag("required")}),
+	components.Button{Label: "Save", Type: components.ButtonSubmit},
+)
+```
+
+- Values escaped; boolean attributes via `html.Flag`.
+- Void elements (`br`, `img`, `input`, …) get no end tag; children → error.
+- `script`, `style`, `link`, `iframe` and other active tags →
+  `html.ErrInvalidElement`.
+- Unsafe attributes → `html.ErrUnsafeAttribute` (see
+  [security](security.md#attribute-allowlist)).
+- `htmx.Action{...}.Attrs()` returns the `hx-*` list for `El`.
+
+## Attribute passthrough
+
+Every `components` and `shared` component has `Attrs html.Attrs`:
+
+```go
+components.Card{
+	Body: stats,
+	Attrs: html.Attrs{
+		html.A("class", "card--wide"),
+		html.A("data-row", "7"),
+		html.A("hx-get", "/stats"),
+		html.A("hx-trigger", "every 30s"),
+	},
+}
+// <article class="card card--default card--wide" data-row="7" hx-get="/stats" …>
+```
+
+- Root element gets Attrs. Exceptions: form controls (`Input`, `Select`,
+  `Checkbox`, `Textarea`, `Switch`) → the control; `Dialog` → popover panel;
+  `Table` → `<table>`; `Shell` → `div.shell`.
+- `class` merges into component classes.
+- Component-owned names win and are skipped: e.g. `type` on `Button`,
+  `href` on `Link`, `role` on `Alert`, `id` when `ID` is set, all `hx-*`
+  when `Action` is set.
+- Same allowlist as `html.El`.
+
+Inside a custom component, use the same helpers:
+
+```go
+out.Static(`<div class="panel`)
+out.ExtraClass(panel.Attrs)
+out.Static(`"`)
+out.PassAttrs(panel.Attrs, "role")
+out.Static(` role="region">`)
+```
+
 ## Shared UI widgets
 
 Optional package `shared` holds React-style widgets with native HTML, no JS.

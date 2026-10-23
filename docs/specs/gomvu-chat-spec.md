@@ -197,6 +197,70 @@ func (c *Context) Trusted(TrustedHTML)
 
 Document that TrustStatic accepts only audited, server-controlled HTML. It must never receive request, form, database, URL, or user-provided content.
 
+## 4.1 Element builder and attribute allowlist
+
+Low-level code must not need hand-written tag strings. Provide a typed,
+escaping element builder:
+
+type Attr struct {
+    Name  string
+    Value string
+    Flag  bool // boolean attribute: name only
+}
+
+type Attrs []Attr // ordered; output order is deterministic
+
+func A(name, value string) Attr
+func Flag(name string) Attr
+
+type Text string // escaped text component
+
+type Element struct {
+    Tag      string
+    Attrs    Attrs
+    Children []Component
+}
+
+func El(tag string, attrs Attrs, children ...Component) Element
+
+func (c *Context) Attrs(Attrs)                    // all attributes
+func (c *Context) Class(base string, attrs Attrs) // merged class attribute
+func (c *Context) ExtraClass(attrs Attrs)         // inside an open class
+func (c *Context) PassAttrs(attrs Attrs, owned ...string)
+
+func ValidateTag(string) error
+func ValidateAttr(Attr) error
+func ValidateURL(string) error
+
+Usage:
+
+html.El("section", html.Attrs{html.A("class", "panel")},
+    html.El("h2", nil, html.Text("Title")),
+    components.Button{Label: "Save"},
+)
+
+Requirements:
+
+- Values are escaped with the attribute escaper; text with the text escaper.
+- Tags match `[a-z][a-z0-9-]*`. Reject `script`, `style`, `link`, `meta`,
+  `base`, `iframe`, `frame`, `frameset`, `object`, `embed`, `applet`,
+  `noscript`, `template`, `html`, `head`, `body` with `ErrInvalidElement`.
+- Void elements (`area`, `br`, `col`, `hr`, `img`, `input`, `source`,
+  `track`, `wbr`) render no end tag; children are an `ErrInvalidElement`.
+- Attribute names match `[A-Za-z_:][A-Za-z0-9_.:-]*`.
+- Reject with `ErrUnsafeAttribute` (sticky, nothing of the attribute is
+  written): `on*` handlers, `style`, `srcdoc`, `hx-on*`, `hx-vars` (and their
+  `data-hx-*` forms), `js:`/`javascript:` values in `hx-vals`/`hx-headers`,
+  and `[...]` filters in `hx-trigger`.
+- URL attributes (`href`, `src`, `action`, `formaction`, `poster`, `cite`,
+  `data`, `background`, `longdesc`, `manifest`, `ping`, `xlink:href`,
+  `hx-get|post|put|patch|delete`, `hx-push-url`, `hx-replace-url` other than
+  `true`/`false`) pass `ValidateURL`: relative, `http`, `https`, `mailto` or
+  `tel`; no control characters or backslashes.
+- `htmx.Action.Attrs() (html.Attrs, error)` returns the same attributes as
+  `RenderAttributes` for use with `El`.
+- No maps, no reflection; no allocation for the attribute path itself.
+
 # 5. Component composition
 
 Components compose through ordinary Go structs and explicit slots.
@@ -260,6 +324,10 @@ type Optional struct {
 }
 
 Document that `Sequence` and interface-valued slots prioritize flexibility. Performance-critical components may use concrete child types and direct method calls.
+
+High-level components and low-level constructs mix freely: an `html.El`
+element accepts components as children, and every component slot accepts
+an `html.El` element or an `html.ComponentFunc`.
 
 # 6. MVU package
 
@@ -801,6 +869,33 @@ Each component must:
 - Avoid database access
 - Avoid mutating models
 - Avoid arbitrary custom markup arguments where typed fields suffice
+- Expose `Attrs html.Attrs` for attribute passthrough (see §13.1)
+
+## 13.1 Attribute passthrough
+
+Every high-level component in `components` and `shared` has an
+`Attrs html.Attrs` field. It adds `id`, `class`, `aria-*`, `data-*`,
+`hx-*` and other allowlisted attributes (§4.1) without dropping to the
+low level:
+
+components.Card{
+    Body:  body,
+    Attrs: html.Attrs{html.A("class", "wide"), html.A("hx-get", "/stats")},
+}
+
+Rules:
+
+- Attrs apply to the component root element. Form controls (`Input`,
+  `Select`, `Checkbox`, `Textarea`, `Switch`) apply them to the control
+  itself; `Dialog` to the popover panel; `Table` to `<table>`.
+- `class` values merge into the component class list; they never replace
+  component classes.
+- Component-owned attributes win. Names the component writes (for example
+  `type` on `Button`, `href` on `Link`, `role` on `Alert`, `id` when the `ID`
+  field is set) are skipped from passthrough. When an `htmx.Action` is set,
+  the component owns every `hx-*` name.
+- Unsafe attributes fail rendering with `html.ErrUnsafeAttribute`.
+- Empty Attrs cost nothing measurable on the render hot path.
 
 # 14. Pagination component
 

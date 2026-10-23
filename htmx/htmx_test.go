@@ -1,6 +1,7 @@
 package htmx
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -97,5 +98,29 @@ func TestRequestHeadersAndResponseHelpers(t *testing.T) {
 		if w.Header().Get(name) != value {
 			t.Errorf("%s = %q, want %q", name, w.Header().Get(name), value)
 		}
+	}
+}
+
+func TestActionAttrsMatchRenderAttributes(t *testing.T) {
+	action := Action{Method: Patch, URL: "/x?a=1", Target: "#t", Swap: InnerHTML, PushURL: "true", Boost: true}
+	attrs, err := action.Attrs()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var viaAttrs, viaRender strings.Builder
+	if err := html.Render(context.Background(), &viaAttrs, html.El("a", attrs)); err != nil {
+		t.Fatal(err)
+	}
+	out := html.NewContext(&viaRender)
+	out.Static("<a")
+	if err := action.RenderAttributes(out); err != nil {
+		t.Fatal(err)
+	}
+	out.Static("></a>")
+	if viaAttrs.String() != viaRender.String() {
+		t.Fatalf("attrs %s\nrender %s", viaAttrs.String(), viaRender.String())
+	}
+	if _, err := (Action{Method: Get, URL: "javascript:x"}).Attrs(); err == nil {
+		t.Fatal("unsafe action accepted")
 	}
 }

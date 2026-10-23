@@ -16,42 +16,55 @@ type NavigationItem = NavItem
 type BreadcrumbItem = Breadcrumb
 
 // Header renders a <header> landmark. Use inside Shell slots or standalone.
-type Header struct{ Children []html.Component }
+type Header struct {
+	Children []html.Component
+	Attrs    html.Attrs
+}
 
 func (header Header) RenderHTML(ctx context.Context, out *html.Context) error {
-	return landmark(ctx, out, "header", "", header.Children)
+	return landmark(ctx, out, "header", "", header.Attrs, header.Children)
 }
 
 // Sidebar renders an <aside> landmark with an optional accessible label.
 type Sidebar struct {
 	AriaLabel string
 	Children  []html.Component
+	Attrs     html.Attrs
 }
 
 func (sidebar Sidebar) RenderHTML(ctx context.Context, out *html.Context) error {
-	return landmark(ctx, out, "aside", sidebar.AriaLabel, sidebar.Children)
+	return landmark(ctx, out, "aside", sidebar.AriaLabel, sidebar.Attrs, sidebar.Children)
 }
 
 // Main renders the <main> landmark.
-type Main struct{ Children []html.Component }
+type Main struct {
+	Children []html.Component
+	Attrs    html.Attrs
+}
 
 func (main Main) RenderHTML(ctx context.Context, out *html.Context) error {
-	return landmark(ctx, out, "main", "", main.Children)
+	return landmark(ctx, out, "main", "", main.Attrs, main.Children)
 }
 
 // Footer renders a <footer> landmark.
-type Footer struct{ Children []html.Component }
+type Footer struct {
+	Children []html.Component
+	Attrs    html.Attrs
+}
 
 func (footer Footer) RenderHTML(ctx context.Context, out *html.Context) error {
-	return landmark(ctx, out, "footer", "", footer.Children)
+	return landmark(ctx, out, "footer", "", footer.Attrs, footer.Children)
 }
 
 func landmark(
-	ctx context.Context, out *html.Context, tag, label string, children []html.Component,
+	ctx context.Context, out *html.Context, tag, label string,
+	attrs html.Attrs, children []html.Component,
 ) error {
 	out.Static("<")
 	out.Static(tag)
 	optionalAttribute(out, "aria-label", label)
+	out.Class("", attrs)
+	out.PassAttrs(attrs, when(label, "aria-label"))
 	out.Static(">")
 	out.Components(ctx, children)
 	out.Static("</")
@@ -63,10 +76,15 @@ func landmark(
 // Inline arranges children horizontally and wraps them on narrow screens.
 type Inline struct {
 	Children []html.Component
+	Attrs    html.Attrs
 }
 
 func (inline Inline) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<div class="inline">`)
+	out.Static(`<div class="inline`)
+	out.ExtraClass(inline.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(inline.Attrs)
+	out.Static(">")
 	out.Components(ctx, inline.Children)
 	out.Static("</div>")
 	return out.Err()
@@ -77,13 +95,18 @@ type EmptyState struct {
 	Title       string
 	Description string
 	Action      html.Component
+	Attrs       html.Attrs
 }
 
 func (empty EmptyState) RenderHTML(ctx context.Context, out *html.Context) error {
 	if empty.Title == "" {
 		return errors.New("components: empty state requires title")
 	}
-	out.Static(`<div class="empty-state"><p class="empty-state__title">`)
+	out.Static(`<div class="empty-state`)
+	out.ExtraClass(empty.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(empty.Attrs)
+	out.Static(`><p class="empty-state__title">`)
 	out.Text(empty.Title)
 	out.Static("</p>")
 	if empty.Description != "" {
@@ -110,6 +133,8 @@ type Checkbox struct {
 	Disabled bool
 	Required bool
 	Error    string
+	// Attrs apply to the <input type="checkbox"> element.
+	Attrs html.Attrs
 }
 
 func (checkbox Checkbox) RenderHTML(_ context.Context, out *html.Context) error {
@@ -122,6 +147,7 @@ func (checkbox Checkbox) RenderHTML(_ context.Context, out *html.Context) error 
 		value = "on"
 	}
 	out.Static(`<div class="choice"><label class="checkbox"><input type="checkbox"`)
+	out.Class("", checkbox.Attrs)
 	attribute(out, "id", id)
 	attribute(out, "name", checkbox.Name)
 	attribute(out, "value", value)
@@ -132,6 +158,10 @@ func (checkbox Checkbox) RenderHTML(_ context.Context, out *html.Context) error 
 		out.Static(` aria-invalid="true"`)
 		attribute(out, "aria-describedby", id+"-error")
 	}
+	out.PassAttrs(checkbox.Attrs, "type", "id", "name", "value",
+		whenSet(checkbox.Checked, "checked"), whenSet(checkbox.Disabled, "disabled"),
+		whenSet(checkbox.Required, "required"),
+		when(checkbox.Error, "aria-invalid"), when(checkbox.Error, "aria-describedby"))
 	out.Static("><span>")
 	out.Text(checkbox.Label)
 	out.Static("</span></label>")
@@ -152,6 +182,8 @@ type Textarea struct {
 	Required    bool
 	Disabled    bool
 	Error       string
+	// Attrs apply to the <textarea> element.
+	Attrs html.Attrs
 }
 
 func (textarea Textarea) RenderHTML(_ context.Context, out *html.Context) error {
@@ -177,7 +209,9 @@ func (textarea Textarea) RenderHTML(_ context.Context, out *html.Context) error 
 	attribute(out, "for", id)
 	out.Static(">")
 	out.Text(textarea.Label)
-	out.Static(`</label><textarea class="input textarea"`)
+	out.Static(`</label><textarea class="input textarea`)
+	out.ExtraClass(textarea.Attrs)
+	out.Static(`"`)
 	attribute(out, "id", id)
 	attribute(out, "name", textarea.Name)
 	out.Static(` rows="`)
@@ -189,7 +223,12 @@ func (textarea Textarea) RenderHTML(_ context.Context, out *html.Context) error 
 	if errorID != "" {
 		out.Static(` aria-invalid="true"`)
 	}
-	optionalAttribute(out, "aria-describedby", joinIDs(hintID, errorID))
+	describedBy := joinIDs(hintID, errorID)
+	optionalAttribute(out, "aria-describedby", describedBy)
+	out.PassAttrs(textarea.Attrs, "id", "name", "rows",
+		when(textarea.Placeholder, "placeholder"),
+		whenSet(textarea.Required, "required"), whenSet(textarea.Disabled, "disabled"),
+		when(errorID, "aria-invalid"), when(describedBy, "aria-describedby"))
 	// The newline preserves a leading newline in Value, which parsers strip.
 	out.Static(">\n")
 	out.Text(textarea.Value)
@@ -207,20 +246,32 @@ func (textarea Textarea) RenderHTML(_ context.Context, out *html.Context) error 
 }
 
 // TableHeader renders <thead> around rows. Use in Table.Sections.
-type TableHeader struct{ Rows []html.Component }
+type TableHeader struct {
+	Rows  []html.Component
+	Attrs html.Attrs
+}
 
 func (header TableHeader) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static("<thead>")
+	out.Static("<thead")
+	out.Class("", header.Attrs)
+	out.PassAttrs(header.Attrs)
+	out.Static(">")
 	out.Components(ctx, header.Rows)
 	out.Static("</thead>")
 	return out.Err()
 }
 
 // TableBody renders <tbody> around rows. Use in Table.Sections.
-type TableBody struct{ Rows []html.Component }
+type TableBody struct {
+	Rows  []html.Component
+	Attrs html.Attrs
+}
 
 func (body TableBody) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static("<tbody>")
+	out.Static("<tbody")
+	out.Class("", body.Attrs)
+	out.PassAttrs(body.Attrs)
+	out.Static(">")
 	out.Components(ctx, body.Rows)
 	out.Static("</tbody>")
 	return out.Err()

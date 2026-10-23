@@ -5,6 +5,8 @@
   no style attributes, no vendor class names.
 - Validate IDs, URLs, variants, numeric ranges; return errors, never partial
   unsafe markup. Escape via `Text`/`Attribute`.
+- Expose `Attrs html.Attrs` like `components` (ExtraClass + PassAttrs with
+  owned names). See ADR-0017.
 - Styles live in `theme/default/shared.css`. Vendor conflicts: fix in
   `theme/<adapter>/adapter.css`, then `npm run build:themes`.
 - New widget: add tests in `shared_test.go`, entry in `examples/components`,

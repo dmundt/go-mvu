@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
@@ -45,6 +44,8 @@ type Heading struct {
 	Level int
 	ID    string
 	Text  string
+	// Attrs adds passthrough attributes (class, data-*, aria-*, hx-*, ...).
+	Attrs html.Attrs
 }
 
 func (heading Heading) RenderHTML(_ context.Context, out *html.Context) error {
@@ -54,6 +55,8 @@ func (heading Heading) RenderHTML(_ context.Context, out *html.Context) error {
 	tag := "h" + strconv.Itoa(heading.Level)
 	out.Static("<" + tag)
 	optionalAttribute(out, "id", heading.ID)
+	out.Class("", heading.Attrs)
+	out.PassAttrs(heading.Attrs, when(heading.ID, "id"))
 	out.Static(">")
 	out.Text(heading.Text)
 	out.Static("</" + tag + ">")
@@ -66,6 +69,7 @@ type Output struct {
 	ID    string
 	Value string
 	Live  bool
+	Attrs html.Attrs
 }
 
 func (output Output) RenderHTML(_ context.Context, out *html.Context) error {
@@ -74,10 +78,28 @@ func (output Output) RenderHTML(_ context.Context, out *html.Context) error {
 	if output.Live {
 		out.Static(` aria-live="polite"`)
 	}
+	out.Class("", output.Attrs)
+	out.PassAttrs(output.Attrs, when(output.ID, "id"), whenSet(output.Live, "aria-live"))
 	out.Static(">")
 	out.Text(output.Value)
 	out.Static("</output>")
 	return out.Err()
+}
+
+// when returns name when value is set, else "" (which owns nothing).
+func when(value, name string) string {
+	if value == "" {
+		return ""
+	}
+	return name
+}
+
+// whenSet returns name when set is true, else "".
+func whenSet(set bool, name string) string {
+	if !set {
+		return ""
+	}
+	return name
 }
 
 func optionalAttribute(out *html.Context, name, value string) {
@@ -160,6 +182,8 @@ type Shell struct {
 	Sidebar html.Component
 	Main    html.Component
 	Footer  html.Component
+	// Attrs apply to the div.shell wrapper.
+	Attrs html.Attrs
 }
 
 func (shell Shell) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -168,7 +192,11 @@ func (shell Shell) RenderHTML(ctx context.Context, out *html.Context) error {
 		out.Component(ctx, shell.Header)
 		out.Static("</header>")
 	}
-	out.Static("<div class=\"shell\">")
+	out.Static(`<div class="shell`)
+	out.ExtraClass(shell.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(shell.Attrs)
+	out.Static(">")
 	if shell.Sidebar != nil {
 		out.Static("<aside>")
 		out.Component(ctx, shell.Sidebar)
@@ -188,6 +216,7 @@ func (shell Shell) RenderHTML(ctx context.Context, out *html.Context) error {
 type Stack struct {
 	Gap      string
 	Children []html.Component
+	Attrs    html.Attrs
 }
 
 func (stack Stack) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -201,7 +230,10 @@ func (stack Stack) RenderHTML(ctx context.Context, out *html.Context) error {
 	}
 	out.Static(`<div class="`)
 	out.Static(class)
-	out.Static(`">`)
+	out.ExtraClass(stack.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(stack.Attrs)
+	out.Static(">")
 	out.Components(ctx, stack.Children)
 	out.Static("</div>")
 	return out.Err()
@@ -211,6 +243,7 @@ type Grid struct {
 	Columns  int
 	Gap      string
 	Children []html.Component
+	Attrs    html.Attrs
 }
 
 func (grid Grid) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -233,7 +266,10 @@ func (grid Grid) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Int(columns)
 	out.Static(" grid--gap-")
 	out.Static(gap)
-	out.Static(`">`)
+	out.ExtraClass(grid.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(grid.Attrs)
+	out.Static(">")
 	out.Components(ctx, grid.Children)
 	out.Static("</div>")
 	return out.Err()
@@ -255,6 +291,7 @@ type Card struct {
 	Body    html.Component
 	Footer  html.Component
 	Variant CardVariant
+	Attrs   html.Attrs
 }
 
 func (card Card) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -267,12 +304,10 @@ func (card Card) RenderHTML(ctx context.Context, out *html.Context) error {
 	}
 	out.Static("<article class=\"card card--")
 	out.Attribute(string(variant))
+	out.ExtraClass(card.Attrs)
 	out.Static("\"")
-	if card.ID != "" {
-		out.Static(" id=\"")
-		out.Attribute(card.ID)
-		out.Static("\"")
-	}
+	optionalAttribute(out, "id", card.ID)
+	out.PassAttrs(card.Attrs, when(card.ID, "id"))
 	out.Static(">")
 	if card.Header != nil {
 		out.Static("<header class=\"card__header\">")
@@ -305,6 +340,7 @@ type Alert struct {
 	Kind    AlertKind
 	Title   string
 	Message string
+	Attrs   html.Attrs
 }
 
 func (alert Alert) RenderHTML(_ context.Context, out *html.Context) error {
@@ -317,12 +353,10 @@ func (alert Alert) RenderHTML(_ context.Context, out *html.Context) error {
 	}
 	out.Static("<div class=\"alert alert--")
 	out.Attribute(string(kind))
+	out.ExtraClass(alert.Attrs)
 	out.Static("\" role=\"status\"")
-	if alert.ID != "" {
-		out.Static(" id=\"")
-		out.Attribute(alert.ID)
-		out.Static("\"")
-	}
+	optionalAttribute(out, "id", alert.ID)
+	out.PassAttrs(alert.Attrs, "role", when(alert.ID, "id"))
 	out.Static(">")
 	if alert.Title != "" {
 		out.Static("<strong>")
@@ -339,6 +373,7 @@ type BadgeKind string
 type Badge struct {
 	Kind  BadgeKind
 	Label string
+	Attrs html.Attrs
 }
 
 func (badge Badge) RenderHTML(_ context.Context, out *html.Context) error {
@@ -350,7 +385,10 @@ func (badge Badge) RenderHTML(_ context.Context, out *html.Context) error {
 		out.Static(" badge--")
 		out.Attribute(string(badge.Kind))
 	}
-	out.Static("\">")
+	out.ExtraClass(badge.Attrs)
+	out.Static("\"")
+	out.PassAttrs(badge.Attrs)
+	out.Static(">")
 	out.Text(badge.Label)
 	out.Static("</span>")
 	return out.Err()
@@ -379,6 +417,9 @@ type Button struct {
 	Action   htmx.Action
 	// AriaLabel names icon-only or symbol buttons such as "+" or "×".
 	AriaLabel string
+	// Attrs adds passthrough attributes. With Action set, hx-* names are
+	// owned by Action and skipped.
+	Attrs html.Attrs
 }
 
 func validButtonVariant(variant ButtonVariant) bool {
@@ -390,13 +431,22 @@ func validButtonVariant(variant ButtonVariant) bool {
 	}
 }
 
-func buttonClass(out *html.Context, variant ButtonVariant) {
+func buttonClass(out *html.Context, variant ButtonVariant, attrs html.Attrs) {
 	out.Static(`class="button`)
 	if variant != "" {
 		out.Static(" button--")
 		out.Attribute(string(variant))
 	}
+	out.ExtraClass(attrs)
 	out.Static(`"`)
+}
+
+// actionOwned returns "hx-*" when action renders htmx attributes.
+func actionOwned(action htmx.Action) string {
+	if action.Method == 0 {
+		return ""
+	}
+	return "hx-*"
 }
 
 // ThemeSwitcher posts mode=system|light|dark to Action (default "/theme").
@@ -411,6 +461,7 @@ type ThemeSwitcher struct {
 	// Return is the same-origin path to come back to after a non-HTMX post.
 	Return    string
 	CSRFField html.Component
+	Attrs     html.Attrs
 }
 
 func (switcher ThemeSwitcher) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -421,9 +472,12 @@ func (switcher ThemeSwitcher) RenderHTML(ctx context.Context, out *html.Context)
 	if err := validateURL(path); err != nil {
 		return fmt.Errorf("invalid theme switcher path: %w", err)
 	}
-	out.Static(`<form class="theme-switcher" method="post" action="`)
+	out.Static(`<form class="theme-switcher`)
+	out.ExtraClass(switcher.Attrs)
+	out.Static(`" method="post" action="`)
 	out.Attribute(path)
 	out.Static(`" aria-label="Color theme"`)
+	out.PassAttrs(switcher.Attrs, "method", "action", "aria-label", "hx-*")
 	action := htmx.Action{Method: htmx.Post, URL: path, Swap: htmx.NoSwap}
 	if switcher.Target != "" {
 		action.Target = switcher.Target
@@ -470,7 +524,7 @@ func (button Button) RenderHTML(_ context.Context, out *html.Context) error {
 	out.Static(` type="`)
 	out.Attribute(string(buttonType))
 	out.Static(`" `)
-	buttonClass(out, button.Variant)
+	buttonClass(out, button.Variant, button.Attrs)
 	optionalAttribute(out, "aria-label", button.AriaLabel)
 	if button.Disabled {
 		out.Static(" disabled")
@@ -480,6 +534,9 @@ func (button Button) RenderHTML(_ context.Context, out *html.Context) error {
 			return err
 		}
 	}
+	out.PassAttrs(button.Attrs, "type", when(button.ID, "id"),
+		when(button.AriaLabel, "aria-label"), whenSet(button.Disabled, "disabled"),
+		actionOwned(button.Action))
 	out.Static(">")
 	out.Text(button.Label)
 	out.Static("</button>")
@@ -492,6 +549,7 @@ type Link struct {
 	Action htmx.Action
 	// Variant renders the link as a button (class "button button--<variant>").
 	Variant ButtonVariant
+	Attrs   html.Attrs
 }
 
 func (link Link) RenderHTML(_ context.Context, out *html.Context) error {
@@ -506,13 +564,16 @@ func (link Link) RenderHTML(_ context.Context, out *html.Context) error {
 	out.Static("\"")
 	if link.Variant != "" {
 		out.Static(" ")
-		buttonClass(out, link.Variant)
+		buttonClass(out, link.Variant, link.Attrs)
+	} else {
+		out.Class("", link.Attrs)
 	}
 	if link.Action.Method != 0 {
 		if err := link.Action.RenderAttributes(out); err != nil {
 			return err
 		}
 	}
+	out.PassAttrs(link.Attrs, "href", actionOwned(link.Action))
 	out.Static(">")
 	out.Text(link.Label)
 	out.Static("</a>")
@@ -532,6 +593,8 @@ type Input struct {
 	Disabled     bool
 	AutoComplete string
 	Error        string
+	// Attrs apply to the <input> element (not the label).
+	Attrs html.Attrs
 }
 
 func (input Input) RenderHTML(_ context.Context, out *html.Context) error {
@@ -550,7 +613,9 @@ func (input Input) RenderHTML(_ context.Context, out *html.Context) error {
 		out.Text(input.Label)
 		out.Static("</label>")
 	}
-	out.Static("<input class=\"input\" id=\"")
+	out.Static("<input class=\"input")
+	out.ExtraClass(input.Attrs)
+	out.Static("\" id=\"")
 	out.Attribute(id)
 	out.Static("\" name=\"")
 	out.Attribute(input.Name)
@@ -580,6 +645,10 @@ func (input Input) RenderHTML(_ context.Context, out *html.Context) error {
 		out.Attribute(id + "-error")
 		out.Static("\"")
 	}
+	out.PassAttrs(input.Attrs, "id", "name", "type", "value",
+		when(input.Placeholder, "placeholder"), when(input.AutoComplete, "autocomplete"),
+		whenSet(input.Required, "required"), whenSet(input.Disabled, "disabled"),
+		when(input.Error, "aria-invalid"), when(input.Error, "aria-describedby"))
 	out.Static(">")
 	if input.Error != "" {
 		out.Static("<span id=\"")
@@ -605,6 +674,8 @@ type Select struct {
 	Options  []Option
 	Required bool
 	Error    string
+	// Attrs apply to the <select> element.
+	Attrs html.Attrs
 }
 
 func (selectInput Select) RenderHTML(_ context.Context, out *html.Context) error {
@@ -622,7 +693,9 @@ func (selectInput Select) RenderHTML(_ context.Context, out *html.Context) error
 		out.Text(selectInput.Label)
 		out.Static("</label>")
 	}
-	out.Static("<select class=\"input\" id=\"")
+	out.Static("<select class=\"input")
+	out.ExtraClass(selectInput.Attrs)
+	out.Static("\" id=\"")
 	out.Attribute(id)
 	out.Static("\" name=\"")
 	out.Attribute(selectInput.Name)
@@ -635,6 +708,8 @@ func (selectInput Select) RenderHTML(_ context.Context, out *html.Context) error
 	if selectInput.Required {
 		out.Static(" required")
 	}
+	out.PassAttrs(selectInput.Attrs, "id", "name", whenSet(selectInput.Required, "required"),
+		when(selectInput.Error, "aria-invalid"), when(selectInput.Error, "aria-describedby"))
 	out.Static(">")
 	for _, option := range selectInput.Options {
 		out.Static("<option value=\"")
@@ -671,15 +746,15 @@ type Table struct {
 	Body     html.Component
 	Footer   html.Component
 	Sections []html.Component
+	// Attrs apply to the <table> element.
+	Attrs html.Attrs
 }
 
 func (table Table) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Static("<div class=\"table-scroll\"><table")
-	if table.ID != "" {
-		out.Static(" id=\"")
-		out.Attribute(table.ID)
-		out.Static("\"")
-	}
+	optionalAttribute(out, "id", table.ID)
+	out.Class("", table.Attrs)
+	out.PassAttrs(table.Attrs, when(table.ID, "id"))
 	out.Static(">")
 	if table.Caption != "" {
 		out.Static("<caption>")
@@ -724,6 +799,8 @@ type Pagination struct {
 	PreviousLabel string
 	NextLabel     string
 	AriaLabel     string
+	// Attrs apply to the <nav> element.
+	Attrs html.Attrs
 }
 
 // Pages returns the page count; 0 when PageSize or TotalItems ≤ 0.
@@ -755,9 +832,13 @@ func (pagination Pagination) RenderHTML(_ context.Context, out *html.Context) er
 	if label == "" {
 		label = "Pagination"
 	}
-	out.Static("<nav class=\"pagination\" aria-label=\"")
+	out.Static("<nav class=\"pagination")
+	out.ExtraClass(pagination.Attrs)
+	out.Static("\" aria-label=\"")
 	out.Attribute(label)
-	out.Static("\">")
+	out.Static("\"")
+	out.PassAttrs(pagination.Attrs, "aria-label")
+	out.Static(">")
 	if page > 1 {
 		if err := pagination.link(out, page-1, defaultString(pagination.PreviousLabel, "Previous"), "prev"); err != nil {
 			return err
@@ -867,10 +948,15 @@ type Breadcrumb struct {
 
 type Breadcrumbs struct {
 	Items []Breadcrumb
+	// Attrs apply to the <nav> element.
+	Attrs html.Attrs
 }
 
 func (breadcrumbs Breadcrumbs) RenderHTML(_ context.Context, out *html.Context) error {
-	out.Static("<nav aria-label=\"Breadcrumb\"><ol>")
+	out.Static("<nav aria-label=\"Breadcrumb\"")
+	out.Class("", breadcrumbs.Attrs)
+	out.PassAttrs(breadcrumbs.Attrs, "aria-label")
+	out.Static("><ol>")
 	for index, item := range breadcrumbs.Items {
 		if item.URL != "" {
 			if err := validateURL(item.URL); err != nil {
@@ -906,6 +992,8 @@ type NavItem struct {
 type Navigation struct {
 	Label string
 	Items []NavItem
+	// Attrs apply to the <nav> element.
+	Attrs html.Attrs
 }
 
 func (navigation Navigation) RenderHTML(_ context.Context, out *html.Context) error {
@@ -915,7 +1003,10 @@ func (navigation Navigation) RenderHTML(_ context.Context, out *html.Context) er
 	}
 	out.Static("<nav aria-label=\"")
 	out.Attribute(label)
-	out.Static("\"><ul>")
+	out.Static("\"")
+	out.Class("", navigation.Attrs)
+	out.PassAttrs(navigation.Attrs, "aria-label")
+	out.Static("><ul>")
 	for _, item := range navigation.Items {
 		if item.URL != "" {
 			if err := validateURL(item.URL); err != nil {
@@ -981,19 +1072,4 @@ func gapToken(value string) (string, bool) {
 	}
 }
 
-func validateURL(value string) error {
-	if strings.TrimSpace(value) == "" || value != strings.TrimSpace(value) ||
-		strings.ContainsAny(value, "\x00\r\n\t\f\v\\") {
-		return fmt.Errorf("invalid URL %q", value)
-	}
-	parsedURL, err := url.Parse(value)
-	if err != nil {
-		return fmt.Errorf("invalid URL %q: %w", value, err)
-	}
-	switch strings.ToLower(parsedURL.Scheme) {
-	case "", "http", "https", "mailto", "tel":
-		return nil
-	default:
-		return fmt.Errorf("unsupported URL scheme %q", parsedURL.Scheme)
-	}
-}
+func validateURL(value string) error { return html.ValidateURL(value) }

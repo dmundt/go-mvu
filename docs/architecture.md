@@ -10,7 +10,7 @@ CSS inlined in `<style>`. Source of truth:
 | Package | Responsibility |
 | --- | --- |
 | `mvu` | `Application[Model, Msg]`: `Init`, `Update`, `Command`; no HTTP/HTML/storage |
-| `html` | `Component`, `Page`, `Fragment`, `Context` (escaping, sticky error, streaming) |
+| `html` | `Component`, `Page`, `Fragment`, `Context` (escaping, sticky error, streaming), `El` builder, `Attrs` allowlist |
 | `htmx` | typed `Action` attrs, `Request` metadata, response headers |
 | `store` | `Snapshot[M]` (`Version`), `Load`/`Create`/`CompareAndSwap`, memory store |
 | `session` | signed opaque session ID → model key |

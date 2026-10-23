@@ -19,6 +19,8 @@ type Switch struct {
 	Value    string
 	Checked  bool
 	Disabled bool
+	// Attrs apply to the <input> element.
+	Attrs html.Attrs
 }
 
 func (toggle Switch) RenderHTML(_ context.Context, out *html.Context) error {
@@ -26,8 +28,12 @@ func (toggle Switch) RenderHTML(_ context.Context, out *html.Context) error {
 	if err != nil {
 		return err
 	}
-	out.Static(`<label class="switch"><input class="switch__input" type="checkbox" role="switch"`)
+	out.Static(`<label class="switch"><input class="switch__input`)
+	out.ExtraClass(toggle.Attrs)
+	out.Static(`" type="checkbox" role="switch"`)
 	writeChoice(out, id, toggle.Name, toggle.Value, toggle.Checked, toggle.Disabled)
+	out.PassAttrs(toggle.Attrs, "type", "role", "id", "name", "value",
+		whenSet(toggle.Checked, "checked"), whenSet(toggle.Disabled, "disabled"))
 	out.Static(`><span>`)
 	out.Text(toggle.Label)
 	out.Static("</span></label>")
@@ -43,6 +49,8 @@ type RadioGroup struct {
 	Required bool
 	Disabled bool
 	Error    string
+	// Attrs apply to the <fieldset> element.
+	Attrs html.Attrs
 }
 
 func (group RadioGroup) RenderHTML(_ context.Context, out *html.Context) error {
@@ -58,11 +66,14 @@ func (group RadioGroup) RenderHTML(_ context.Context, out *html.Context) error {
 		}
 	}
 	errorID := group.Name + "-error"
-	out.Static(`<fieldset class="radio-group"`)
+	out.Static(`<fieldset class="radio-group`)
+	out.ExtraClass(group.Attrs)
+	out.Static(`"`)
 	if group.Error != "" {
 		attr(out, "aria-describedby", errorID)
 	}
 	flag(out, "disabled", group.Disabled)
+	out.PassAttrs(group.Attrs, when(group.Error, "aria-describedby"), whenSet(group.Disabled, "disabled"))
 	out.Static("><legend>")
 	out.Text(group.Legend)
 	out.Static("</legend>")

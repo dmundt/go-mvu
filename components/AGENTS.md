@@ -7,6 +7,10 @@
   components. Keep errors sticky.
 - Compose from primitives (`Heading`, `Paragraph`, `Button`, `Link`, `Output`)
   before writing tags via `Static`. Validate enum fields; return errors.
+- Every component exposes `Attrs html.Attrs` on its root (controls: on the
+  control). Merge class via `out.ExtraClass`/`out.Class`; write the rest
+  with `out.PassAttrs(attrs, owned...)` listing every name the component
+  writes (`when(field, "id")` for optional ones). See ADR-0017.
 - Test page and fragment output, escaping, labels, validation associations,
   and component variants. Styling tests must include real computed styles
   when changing layout or CSS behavior.

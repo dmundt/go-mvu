@@ -13,6 +13,7 @@
 | 2 | Architecture, dependency direction | package layout, [internal/arch](../../internal/arch/) | [architecture](../architecture.md), ADR [0002](../adr/0002-package-boundaries.md), [0014](../adr/0014-enforced-package-boundaries.md) |
 | 3 | Rendering model, markers | [html](../../html/) | ADR [0004](../adr/0004-direct-safe-html-rendering.md), [0005](../adr/0005-pages-and-fragments.md) |
 | 4 | HTML context, escaping | [html](../../html/) | [security](../guides/security.md) |
+| 4.1 | Element builder, attribute allowlist | `html.El`, `html.Attrs`, `htmx.Action.Attrs` | [components](../guides/components.md#low-level-element-builder), [security](../guides/security.md), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
 | 5 | Composition, slots | [components](../../components/) | [components](../guides/components.md) |
 | 6 | MVU contracts | [mvu](../../mvu/) | ADR [0003](../adr/0003-mvu-runtime-boundaries.md) |
 | 7 | Versioned store | [store](../../store/), [session](../../session/) | ADR [0006](../adr/0006-versioned-session-models.md) |
@@ -22,6 +23,7 @@
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |
 | 13 | Component library | [components](../../components/), [shared](../../shared/) | [components](../guides/components.md), ADR [0009](../adr/0009-reusable-components.md), [0010](../adr/0010-shared-ui-components.md) |
+| 13.1 | Attribute passthrough | `Attrs` field on `components`, `shared` | [components](../guides/components.md#attribute-passthrough), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
 | 14 | Pagination | `components.Pagination` | [components](../guides/components.md) |
 | 15 | Counter example | [examples/counter](../../examples/counter/) | — |
 | 16 | Users example | [examples/users](../../examples/users/) | — |
@@ -59,4 +61,5 @@
 | `Runtime.Page(Result)` | + `PageFunc(func(*http.Request) Result)` | per-request result |
 | missing model → always Init | default Init; `Route.RequireModel` → 404 | explicit init policy per route |
 | `Inline`, `EmptyState`, `Checkbox`, `Textarea` in components | in `components`; `shared` keeps type aliases | backward compatibility |
-| `Table` plain | `Table` wrapped in `div.table-scroll` | narrow-screen overflow |
+| `Table` plain | `Table` wrapped in `div.table-scroll` | narrow-screen overflow || no generic element API | + `html.El`, `html.Attrs`, `html.Text` (§4.1) | typed low-level markup with escaping and allowlist |
+| typed fields only | + `Attrs html.Attrs` passthrough on `components` and `shared` (§13.1) | extra id/class/aria/data/hx attributes without dropping to low level |
