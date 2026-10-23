@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 5
+version: 6
 ---
 
 # Specs
@@ -46,6 +46,11 @@ version: 5
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+UI conveniences: `Select.Placeholder` owns an optional empty-value choice;
+`ui.Document.Validate` rejects HTMX-only flags without HTMX. Form field
+helpers replace supplied errors explicitly. See [forms](../guides/forms.md)
+and [page policy](../guides/components.md#shared-page-policy).
 
 Production integrations: optional nested modules `adapters/caskstore` and
 `examples/production` add CASK persistence and generic OIDC without importing

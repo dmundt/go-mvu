@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 3
+version: 4
 ---
 
 # Components and pagination
@@ -120,6 +120,12 @@ must still mount `static.Handler`, session middleware, and CSRF middleware;
 the helper never installs routes or protection. A zero `ui.Document` emits
 plain pages without HTMX or the header wrapper.
 
+Call `document.Validate()` at startup and propagate its error. Enabling
+`CSRF` or `SwapValidationErrors` without `HTMX` returns
+`ui.ErrInvalidDocument` instead of silently ignoring the setting. `Page`
+also rejects that configuration at render time before writing any bytes.
+`CSRF` means HTMX headers only; it does not protect server endpoints.
+
 ### Lists and text tables
 
 `Map` converts typed items into a `Sequence` in input order. It allocates
@@ -156,10 +162,10 @@ const contactRegion ui.Region = "contact-form"
 result := web.Result{Mode: web.RenderAuto, Fragment: string(contactRegion)}
 
 // On the full page:
-body := contactRegion.Wrap(ContactForm{Form: model.Form})
+body := contactRegion.Wrap(contactBody(model))
 
 // In View.Fragment:
-return contactRegion.Select(name, ContactForm{Form: model.Form})
+return contactRegion.Select(name, contactBody(model))
 ```
 
 `Wrap` and `Select` render the same section ID for `outerHTML` replacement.
@@ -175,19 +181,19 @@ errors and escape child content.
 in an application view to provide its `Fragment` method automatically:
 
 ```go
-type ContactView struct {
-	ui.RegionView[ContactModel]
+type View struct {
+	ui.RegionView[Model]
 	Document ui.Document
 }
 
-view := ContactView{
+view := View{
 	Document: ui.Document{HTMX: true, CSRF: true},
-	RegionView: ui.RegionView[ContactModel]{
+	RegionView: ui.RegionView[Model]{
 		Region: contactRegion,
 		Content: func(
-			ctx context.Context, model ContactModel, request web.RequestContext,
+			ctx context.Context, model Model, request web.RequestContext,
 		) (html.Component, error) {
-			return ContactForm{Form: model.Form}, nil
+			return content(model), nil
 		},
 	},
 }
@@ -200,6 +206,13 @@ state are passed explicitly on every call; no model or request is retained.
 Unknown names are rejected before calling the content function. Missing
 content reports `ui.ErrMissingContent`; content errors propagate before
 rendering begins. Use explicit dispatch when a page has multiple regions.
+
+For small screens, ordinary component-returning functions with
+`web.ViewFunctions` can be simpler than an embedded `RegionView`.
+The [contact example](../../examples/contact/view.go) uses `contactBody`
+for both page and fragment, without defining a component type or render
+method. Its view factory captures document policy only, not request state.
+Use whichever approach leaves fewer concepts in the application.
 
 See [forms](forms.md) for secure action forms and explicit field helpers.
 Existing `Document`, `Form`, control structs, and custom fragment types

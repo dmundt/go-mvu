@@ -676,18 +676,28 @@ type Option struct {
 }
 
 type Select struct {
-	ID       string
-	Name     string
-	Label    string
-	Value    string
-	Options  []Option
-	Required bool
-	Error    string
+	ID    string
+	Name  string
+	Label string
+	Value string
+	// Placeholder adds an empty-value option before Options. Do not combine
+	// it with another empty-value option.
+	Placeholder string
+	Options     []Option
+	Required    bool
+	Error       string
 	// Attrs apply to the <select> element.
 	Attrs html.Attrs
 }
 
 func (selectInput Select) RenderHTML(_ context.Context, out *html.Context) error {
+	if selectInput.Placeholder != "" {
+		for _, option := range selectInput.Options {
+			if option.Value == "" {
+				return fmt.Errorf("select placeholder conflicts with empty-value option")
+			}
+		}
+	}
 	id := selectInput.ID
 	if id == "" {
 		id = selectInput.Name
@@ -720,6 +730,15 @@ func (selectInput Select) RenderHTML(_ context.Context, out *html.Context) error
 	out.PassAttrs(selectInput.Attrs, "id", "name", whenSet(selectInput.Required, "required"),
 		when(selectInput.Error, "aria-invalid"), when(selectInput.Error, "aria-describedby"))
 	out.Static(">")
+	if selectInput.Placeholder != "" {
+		out.Static(`<option value=""`)
+		if selectInput.Value == "" {
+			out.Static(" selected")
+		}
+		out.Static(">")
+		out.Text(selectInput.Placeholder)
+		out.Static("</option>")
+	}
 	for _, option := range selectInput.Options {
 		out.Static("<option value=\"")
 		out.Attribute(option.Value)

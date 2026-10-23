@@ -81,7 +81,7 @@ func (ContactDecoder) Decode(
 
 func validateContact(details ContactDetails, errs validation.Errors) {
 	if utf8.RuneCountInString(details.Name) < nameMinLength {
-		errs.Add(nameField, "Enter at least two characters.")
+		errs.Add(nameField, fmt.Sprintf("Enter at least %d characters.", nameMinLength))
 	}
 	if !validEmail(details.Email) {
 		errs.Add(emailField, "Enter a valid email address.")
