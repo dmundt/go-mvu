@@ -23,6 +23,8 @@
 - Cross-example helpers live in `examples/internal/` (`modepicker`); Go
   `internal` rule keeps them out of framework API. Reuse them; do not duplicate
   mode-picker forms. Single-example code stays in that example.
+  Examples must not import other example applications or their subpackages,
+  including in tests and nested modules; share code through `examples/internal/`.
 - Layout: `main.go` = server wiring + `newHandler`; view/components in
   separate files. Lines ≤100 cols; one field per line for multi-field
   literals that would wrap.

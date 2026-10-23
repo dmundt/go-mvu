@@ -2,7 +2,7 @@
 type: Guide
 title: Benchmarks
 description: Benchmarking rules, measured results, and interpretation.
-version: 2
+version: 3
 ---
 
 # Benchmarks
@@ -35,10 +35,13 @@ Single run, observed output of the command above; not averaged.
 
 ## HTTP end-to-end
 
-Run loopback HTTP benchmarks separately:
+Run loopback HTTP benchmarks separately from
+[`examples/internal/httpbench`](../../examples/internal/httpbench/). This
+example-only harness can share [`jsonstore`](../../examples/internal/jsonstore/)
+without exposing storage as a framework API:
 
 ```powershell
-go test '-run=^$' '-bench=HTTP' -benchmem -benchtime=2s ./benchmarks
+go test '-run=^$' '-bench=HTTP' -benchmem -benchtime=2s ./examples/internal/httpbench
 ```
 
 These use `httptest.Server` over loopback TCP and an HTTP client. Timed work
@@ -69,7 +72,7 @@ JSON-file-backed CAS transitions, and an explicitly delayed client transport.
 Run controlled cases with:
 
 ```powershell
-go test '-run=^$' '-bench=HTTP' -benchmem -benchtime=5s -cpu=1,4,8 ./benchmarks
+go test '-run=^$' '-bench=HTTP' -benchmem -benchtime=5s -cpu=1,4,8 ./examples/internal/httpbench
 ```
 
 Benchmark names distinguish memory and JSON file stores. Parallel cases report

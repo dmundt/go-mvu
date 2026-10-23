@@ -1,4 +1,4 @@
-package benchmarks
+package httpbench
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
+	"github.com/dmundt/go-mvu/examples/internal/jsonstore"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/mvu"

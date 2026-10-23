@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
+	"github.com/dmundt/go-mvu/examples/internal/jsonstore"
 	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"

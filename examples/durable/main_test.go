@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
+	"github.com/dmundt/go-mvu/examples/internal/jsonstore"
 	"github.com/dmundt/go-mvu/store"
 )
 

@@ -6,7 +6,9 @@ key are stored under `data/` by default; set `GOMVU_DATA_DIR` to change that
 directory.
 
 Each MVU update appends an outbox event to the model. The app stores a new
-JSON file through the example-only `jsonstore` package. Each model and pending
+JSON file through the example-only
+[`internal/jsonstore`](../internal/jsonstore/) package, shared with the production
+example. Each model and pending
 event share one record, published using a temporary file and rename. A command
 only wakes the worker; periodic scans recover missed wake-ups. The worker
 delivers events at least once, then publishes an updated record without the
