@@ -12,11 +12,17 @@ import (
 )
 
 const (
-	pageSize    = 5
-	memberCount = 18
+	pageSize      = 5
+	memberCount   = 18
+	nameMinLength = 2
+	nameMaxLength = 80
+	roleAdmin     = "Admin"
+	roleEditor    = "Editor"
+	roleViewer    = "Viewer"
 )
 
 var errUnknownMember = errors.New("unknown dashboard member")
+var roles = [...]string{roleAdmin, roleEditor, roleViewer}
 
 type Member struct {
 	ID     int
@@ -42,7 +48,13 @@ type Model struct {
 	Changes int
 }
 
-func (model Model) Filtered() []Member {
+type directoryPage struct {
+	Members []Member
+	Total   int
+	Page    int
+}
+
+func (model Model) directory() directoryPage {
 	var members []Member
 	query := strings.ToLower(model.Query)
 	for _, member := range model.Members {
@@ -51,13 +63,43 @@ func (model Model) Filtered() []Member {
 			members = append(members, member)
 		}
 	}
-	return members
+	page := min(max(model.Page, 1), max(1, (len(members)+pageSize-1)/pageSize))
+	start := min((page-1)*pageSize, len(members))
+	return directoryPage{
+		Members: members[start:min(start+pageSize, len(members))],
+		Total:   len(members),
+		Page:    page,
+	}
 }
 
-func (model Model) Visible() []Member {
-	members := model.Filtered()
-	start := min(max((model.Page-1)*pageSize, 0), len(members))
-	return members[start:min(start+pageSize, len(members))]
+func (model Model) memberIndex(id int) (int, error) {
+	index := slices.IndexFunc(model.Members, func(member Member) bool {
+		return member.ID == id
+	})
+	if index < 0 {
+		return 0, errUnknownMember
+	}
+	return index, nil
+}
+
+func (model Model) saveMember(form validation.Form[Editor]) (Model, error) {
+	index, err := model.memberIndex(form.Value.ID)
+	if err != nil {
+		return model, err
+	}
+	model.Form = form
+	if !form.Valid {
+		return model, nil
+	}
+	// Store snapshots share slices; never mutate the previous snapshot.
+	model.Members = slices.Clone(model.Members)
+	model.Members[index].Name = form.Value.Name
+	model.Members[index].Role = form.Value.Role
+	model.Changes++
+	model.Notice = "Member saved. Refresh overview to update its snapshot."
+	model.Form = validation.Form[Editor]{}
+	model.Page = model.directory().Page
+	return model, nil
 }
 
 type Message interface{ mvu.Message }
@@ -92,7 +134,7 @@ func (App) Init(context.Context) (Model, []mvu.Command[Message], error) {
 			ID:     index + 1,
 			Name:   fmt.Sprintf("%s Example %02d", names[index%len(names)], index+1),
 			Email:  fmt.Sprintf("member%02d@example.test", index+1),
-			Role:   []string{"Admin", "Editor", "Viewer"}[index%3],
+			Role:   roles[index%len(roles)],
 			Active: index%4 != 0,
 		}
 	}
@@ -105,15 +147,13 @@ func (App) Update(
 	switch message := message.(type) {
 	case Browse:
 		model.Query, model.Role = message.Query, message.Role
-		pages := max(1, (len(model.Filtered())+pageSize-1)/pageSize)
-		model.Page = min(max(message.Page, 1), pages)
+		model.Page = message.Page
+		model.Page = model.directory().Page
 		model.Form, model.Notice = validation.Form[Editor]{}, ""
 	case Edit:
-		index := slices.IndexFunc(model.Members, func(member Member) bool {
-			return member.ID == message.ID
-		})
-		if index < 0 {
-			return model, nil, errUnknownMember
+		index, err := model.memberIndex(message.ID)
+		if err != nil {
+			return model, nil, err
 		}
 		member := model.Members[index]
 		model.Form = validation.Form[Editor]{
@@ -121,24 +161,8 @@ func (App) Update(
 		}
 		model.Notice = ""
 	case Save:
-		index := slices.IndexFunc(model.Members, func(member Member) bool {
-			return member.ID == message.Form.Value.ID
-		})
-		if index < 0 {
-			return model, nil, errUnknownMember
-		}
-		model.Form = message.Form
-		if message.Form.Valid {
-			// Store snapshots share slices; never mutate the previous snapshot.
-			model.Members = slices.Clone(model.Members)
-			model.Members[index].Name = message.Form.Value.Name
-			model.Members[index].Role = message.Form.Value.Role
-			model.Changes++
-			model.Notice = "Member saved. Refresh overview to update its snapshot."
-			model.Form = validation.Form[Editor]{}
-			pages := max(1, (len(model.Filtered())+pageSize-1)/pageSize)
-			model.Page = min(model.Page, pages)
-		}
+		next, err := model.saveMember(message.Form)
+		return next, nil, err
 	case Refresh:
 	default:
 		return model, nil, errors.New("unsupported dashboard message")

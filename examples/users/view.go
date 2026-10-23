@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
@@ -92,13 +91,11 @@ func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error
 		PageSize:   view.Model.PageSize,
 		TotalItems: view.Model.TotalItems,
 		Window:     1,
-		URL: func(page int) string {
-			return fmt.Sprintf("%s?page=%d", usersPageAction.Path, page)
-		},
-		Target:  usersPageAction.HTMX().Target,
-		Swap:    usersPageAction.HTMX().Swap,
-		PushURL: true,
-		Attrs:   html.Attrs{html.A("hx-sync", "closest main:replace")},
+		BaseURL:    usersPageAction.Path,
+		Target:     usersPageAction.HTMX().Target,
+		Swap:       usersPageAction.HTMX().Swap,
+		PushURL:    true,
+		Attrs:      html.Attrs{html.A("hx-sync", "closest main:replace")},
 	}
 	out.Component(ctx, components.Column(content, pagination))
 	return out.Err()
