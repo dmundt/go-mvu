@@ -36,9 +36,6 @@ func TestCounterShellStaticThemeAndNoJavaScriptFallback(t *testing.T) {
 	if !strings.Contains(csp, "script-src 'self'") {
 		t.Fatalf("CSP = %q", csp)
 	}
-	if response.Header.Get("X-Request-ID") == "" {
-		t.Fatal("missing X-Request-ID")
-	}
 	for _, want := range []string{
 		`data-theme="system"`, `<header>`, `<aside>`, `<main>`, `<footer>`,
 		`src="/static/htmx.min.js" integrity="sha384-`,

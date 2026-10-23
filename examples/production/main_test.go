@@ -439,7 +439,7 @@ func TestCallbackBindingExpiryAndReplay(t *testing.T) {
 	}
 }
 
-func TestCSRFStaticAndRateLimit(t *testing.T) {
+func TestCSRFAndStaticAssets(t *testing.T) {
 	f := newFixture(t, newProvider(t))
 	response, _ := f.request(t, "POST", "/login", nil, false)
 	if response.StatusCode != 403 {
@@ -449,13 +449,6 @@ func TestCSRFStaticAndRateLimit(t *testing.T) {
 	response, _ = f.request(t, "GET", staticPath, nil, false)
 	if response.StatusCode != 200 || len(response.Cookies()) != 0 {
 		t.Fatal("static asset created session")
-	}
-	for range 19 {
-		response, _ = f.request(t, "GET", "/login", nil, false)
-	}
-	response, _ = f.request(t, "GET", "/login", nil, false)
-	if response.StatusCode != 429 || response.Header.Get("Retry-After") == "" {
-		t.Fatalf("rate-limit: %d", response.StatusCode)
 	}
 }
 
@@ -483,22 +476,6 @@ func TestPrivateCSRFAndAuthorizationFailure(t *testing.T) {
 	response, _ = f.request(t, "GET", "/", nil, false)
 	if response.StatusCode != 500 {
 		t.Fatalf("storage failure must not masquerade as logged out: %d", response.StatusCode)
-	}
-}
-
-func TestAccountLimiterExactThreshold(t *testing.T) {
-	f := newFixture(t, newProvider(t))
-	f.login(t)
-	var response *http.Response
-	for range 120 {
-		response, _ = f.request(t, "GET", "/", nil, false)
-		if response.StatusCode != 200 {
-			t.Fatalf("premature account limit: %d", response.StatusCode)
-		}
-	}
-	response, _ = f.request(t, "GET", "/", nil, false)
-	if response.StatusCode != 429 || response.Header.Get("Retry-After") == "" {
-		t.Fatalf("account limit: %d", response.StatusCode)
 	}
 }
 

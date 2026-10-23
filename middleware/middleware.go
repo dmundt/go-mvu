@@ -1,13 +1,9 @@
 package middleware
 
 import (
-	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/dmundt/go-mvu/httpx"
 )
@@ -36,14 +32,6 @@ func SecurityHeaders(next http.Handler) http.Handler {
 	})
 }
 
-// Chain applies middleware in request order: first listed is outermost.
-func Chain(handler http.Handler, wrappers ...func(http.Handler) http.Handler) http.Handler {
-	for i := len(wrappers) - 1; i >= 0; i-- {
-		handler = wrappers[i](handler)
-	}
-	return handler
-}
-
 // Recover converts uncommitted panics into 500 responses. Committed responses
 // are aborted, never replaced or appended to.
 func Recover(next http.Handler) http.Handler {
@@ -63,7 +51,7 @@ func RecoverWith(onError httpx.ErrorHandler) func(http.Handler) http.Handler {
 						panic(value)
 					}
 					slog.ErrorContext(r.Context(), "panic", "method", r.Method,
-						"path", r.URL.Path, "request_id", RequestIDFromContext(r.Context()),
+						"path", r.URL.Path, "request_id", httpx.RequestID(r.Context()),
 						"panic", value)
 					if tracked.Started {
 						panic(http.ErrAbortHandler)
@@ -72,66 +60,6 @@ func RecoverWith(onError httpx.ErrorHandler) func(http.Handler) http.Handler {
 				}
 			}()
 			next.ServeHTTP(tracked, r)
-		})
-	}
-}
-
-// RequestIDHeader carries the per-request identifier in responses.
-const RequestIDHeader = "X-Request-ID"
-
-// RequestID assigns a random identifier to each request, stores it in the
-// request context, and echoes it in the X-Request-ID response header.
-// Incoming IDs are ignored so clients cannot inject log content.
-func RequestID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var raw [16]byte
-		if _, err := rand.Read(raw[:]); err != nil {
-			httpx.RespondError(w, r, err)
-			return
-		}
-		id := hex.EncodeToString(raw[:])
-		w.Header().Set(RequestIDHeader, id)
-		next.ServeHTTP(w, r.WithContext(httpx.WithRequestID(r.Context(), id)))
-	})
-}
-
-// RequestIDFromContext returns the ID assigned by RequestID, or "".
-func RequestIDFromContext(ctx context.Context) string {
-	return httpx.RequestID(ctx)
-}
-
-// RequestLogger logs one structured record per request. nil uses
-// slog.Default().
-func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
-	if logger == nil {
-		logger = slog.Default()
-	}
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			started := time.Now()
-			recorder := &httpx.Writer{ResponseWriter: w}
-			completed := false
-			defer func() {
-				status := recorder.Status
-				if status == 0 {
-					status = http.StatusOK
-					if !completed {
-						status = http.StatusInternalServerError
-					}
-				}
-				logger.LogAttrs(r.Context(), slog.LevelInfo, "request",
-					slog.String("method", r.Method),
-					slog.String("path", r.URL.Path),
-					slog.Int("status", status),
-					slog.Int("bytes", recorder.Bytes),
-					slog.Bool("aborted", !completed),
-					slog.Duration("duration", time.Since(started)),
-					slog.String("request_id", RequestIDFromContext(r.Context())),
-					slog.Bool("htmx", r.Header.Get("HX-Request") == "true"),
-				)
-			}()
-			next.ServeHTTP(recorder, r)
-			completed = true
 		})
 	}
 }

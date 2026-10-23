@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"bytes"
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -31,28 +29,6 @@ func TestSecurityHeadersSetStrictCSP(t *testing.T) {
 	} {
 		if got := w.Header().Get(name); got != want {
 			t.Errorf("%s = %q, want %q", name, got, want)
-		}
-	}
-}
-
-func TestRequestIDAndLoggerRecordRequest(t *testing.T) {
-	var logs bytes.Buffer
-	logger := slog.New(slog.NewTextHandler(&logs, nil))
-	var seen string
-	handler := RequestID(RequestLogger(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		seen = RequestIDFromContext(r.Context())
-		w.WriteHeader(http.StatusTeapot)
-	})))
-	request := httptest.NewRequest(http.MethodGet, "/brew", nil)
-	request.Header.Set(RequestIDHeader, "injected\nline")
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, request)
-	if len(seen) != 32 || w.Header().Get(RequestIDHeader) != seen {
-		t.Fatalf("request id %q, header %q", seen, w.Header().Get(RequestIDHeader))
-	}
-	for _, want := range []string{"path=/brew", "status=418", "request_id=" + seen} {
-		if !strings.Contains(logs.String(), want) {
-			t.Errorf("log missing %q: %s", want, logs.String())
 		}
 	}
 }

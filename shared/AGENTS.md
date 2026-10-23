@@ -11,4 +11,4 @@
 - New widget: add tests in `shared_test.go`, entry in `examples/components`,
   browser check in light/dark modes at 390px.
 - Spec components (`Inline`, `EmptyState`, `Checkbox`, `Textarea`) live in
-  `components`; `shared/aliases.go` keeps type aliases. Never redefine them here.
+  `components`. Never redefine them here.

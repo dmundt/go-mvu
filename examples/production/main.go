@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/netip"
 	"net/url"
@@ -251,24 +250,6 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	if err != nil {
 		return nil, err
 	}
-	loginLimit, err := middleware.RateLimit(middleware.RateLimitOptions{
-		MaxEntries: 10000,
-		Requests:   20,
-		Window:     time.Minute,
-		Key:        peerKey,
-	})
-	if err != nil {
-		return nil, err
-	}
-	accountLimit, err := middleware.RateLimit(middleware.RateLimitOptions{
-		MaxEntries: 10000,
-		Requests:   120,
-		Window:     time.Minute,
-		Key:        accountKey,
-	})
-	if err != nil {
-		return nil, err
-	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) {
 		if err := web.WritePage(r.Context(), w, 200, loginPage()); err != nil {
@@ -286,14 +267,13 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 		Result:  web.Result{Mode: web.RenderAuto, Fragment: "counter", Location: "/"},
 	}))
 	private.HandleFunc("POST /logout", auth.logout)
-	mux.Handle("/", auth.protect(accountLimit(private)))
-	authenticated := middleware.Chain(mux, middleware.NoStore, sessions.Wrap, csrf.Wrap)
-	limitedLogin := loginLimit(authenticated)
+	mux.Handle("/", auth.protect(private))
+	authenticated := middleware.NoStore(sessions.Wrap(csrf.Wrap(mux)))
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
 	root.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/login" || r.URL.Path == "/oidc/callback" {
-			limitedLogin.ServeHTTP(w, r)
+			authenticated.ServeHTTP(w, r)
 			return
 		}
 		authenticated.ServeHTTP(w, r)
@@ -305,18 +285,14 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	if err != nil {
 		return nil, err
 	}
-	handler := middleware.Chain(root,
-		middleware.RequestID,
-		middleware.SecurityHeaders,
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Referrer-Policy", "no-referrer")
-				next.ServeHTTP(w, r)
-			})
-		},
-		middleware.RequestLogger(nil),
-		middleware.Recover,
-		policy,
+	referrerPolicy := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Referrer-Policy", "no-referrer")
+			next.ServeHTTP(w, r)
+		})
+	}
+	handler := middleware.SecurityHeaders(
+		referrerPolicy(middleware.Recover(policy(root))),
 	)
 	return &application{
 		auth:   auth,
@@ -329,16 +305,4 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 			handler.ServeHTTP(w, r)
 		}),
 	}, nil
-}
-
-func peerKey(r *http.Request) (string, error) {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return "", err
-	}
-	address, err := netip.ParseAddr(host)
-	if err != nil {
-		return "", err
-	}
-	return address.Unmap().String(), nil
 }

@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 6
+version: 8
 ---
 
 # Architecture
@@ -26,7 +26,7 @@ CSS inlined in `<style>`. Source of truth:
 | `components` | optional layout, controls, forms, tables, pagination, switcher |
 | `shared` | optional native-HTML widgets (accordion, tabs, dialog, …) |
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
-| `middleware` | security headers/CSP, CSRF, recover, request ID, logging, diagnostics |
+| `middleware` | security headers/CSP, CSRF, stream-safe recovery, request policy, runtime diagnostics |
 | `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
 | `httpx` | stdlib-only HTTP error policy, request IDs, Vary merging, response commitment |
 | `web` | runtime: `Action`/route → message → Update → store → commands → view |
@@ -115,7 +115,7 @@ sequenceDiagram
 8. Stream to `http.ResponseWriter`; error before first byte → `OnError`,
    after → log.
 
-HTTP policy and runtime extensions: [middleware](guides/middleware.md),
+HTTP policy and runtime behavior: [middleware](guides/middleware.md),
 [ADR-0019](adr/0019-http-policy-and-runtime-reliability.md).
 Late panics abort the stream; ordinary render errors remain logged without
 appending a replacement body. HTTP failure after CAS does not undo persistence.

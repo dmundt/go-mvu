@@ -191,7 +191,7 @@ func feedbackCard() html.Component {
 func formCard() html.Component {
 	return card("Form controls", components.FormLayout(
 		shared.Switch{Name: "notifications", Label: "Email notifications", Checked: true},
-		shared.Checkbox{
+		components.Checkbox{
 			Name:     "terms",
 			Label:    "I accept the terms",
 			Required: true,
@@ -207,7 +207,7 @@ func formCard() html.Component {
 				{Value: "enterprise", Label: "Enterprise", Disabled: true},
 			},
 		},
-		shared.Textarea{
+		components.Textarea{
 			Name:        "message",
 			Label:       "Message",
 			Placeholder: "Write a short note",
@@ -226,7 +226,7 @@ func stepsCard() html.Component {
 }
 
 func emptyCard() html.Component {
-	return card("Empty state", shared.EmptyState{
+	return card("Empty state", components.EmptyState{
 		Title:       "No projects yet",
 		Description: "Create a project to start tracking work.",
 		Action:      components.Button{Label: "New project", Variant: components.ButtonPrimary},
@@ -241,5 +241,5 @@ func card(title string, body ...html.Component) html.Component {
 }
 
 func inline(children ...html.Component) html.Component {
-	return shared.Inline{Children: children}
+	return components.Inline{Children: children}
 }

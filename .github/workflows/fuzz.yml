@@ -20,8 +20,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - package: middleware
-            target: FuzzActionID
           - package: session
             target: FuzzSessionCookie
     steps:

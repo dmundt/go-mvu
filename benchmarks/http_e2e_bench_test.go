@@ -110,9 +110,8 @@ func newHTTPBenchmarkServer(
 			Mode: web.RenderFragment, Fragment: "counter",
 		},
 	}))
-	handler := middleware.Chain(
-		mux, middleware.RequestID, middleware.SecurityHeaders,
-		middleware.Recover, middleware.NoStore,
+	handler := middleware.SecurityHeaders(
+		middleware.Recover(middleware.NoStore(mux)),
 	)
 	server := httptest.NewServer(handler)
 	b.Cleanup(server.Close)

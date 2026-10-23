@@ -1,8 +1,8 @@
 ---
 type: Guide
 title: HTTP middleware contracts
-description: Composition, response lifecycle, request policies, and optional deployment extensions.
-version: 3
+description: Standard net/http composition, response lifecycle, and framework-specific HTTP policies.
+version: 6
 ---
 
 # HTTP middleware
@@ -13,9 +13,9 @@ automatic middleware sorting, or application JavaScript.
 
 ## Composition and lifecycle
 
-`middleware.Chain(handler, wrappers...)` lists request execution order:
-first wrapper outermost, return path reversed. A rejection returns without
-calling the next handler.
+go-mvu handlers and middleware use standard `net/http` interfaces. Compose
+wrappers directly or use the router's middleware stack. A rejection returns
+without calling the next handler.
 
 ```go
 policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
@@ -25,32 +25,52 @@ policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
 if err != nil {
 	return err
 }
-handler := middleware.Chain(mux,
-	middleware.RequestID,
-	middleware.SecurityHeaders,
-	middleware.RequestLogger(logger),
-	diagnostics.Middleware,
-	middleware.Recover,
-	policy,
-	middleware.NoStore,
-	sessions.Wrap,
-	preference.Wrap,
-	csrf.Wrap,
-)
+router := chi.NewRouter()
+router.Use(existingMiddleware, middleware.SecurityHeaders, middleware.Recover)
+router.Handle("/", policy(mux))
 ```
 
-Recovery runs inside observers, with a request ID already assigned. Recovery
-before final response commitment produces a safe 500. A panic after commitment
-aborts through `http.ErrAbortHandler`; it never appends an error page.
-The standard library abort sentinel passes through unchanged.
-Logging and diagnostics finalize even during panic unwinding; diagnostics expose
-an `aborted` count, and include aborted responses in `errors`.
+Recovery before final response commitment produces a safe 500. A panic after
+commitment aborts through `http.ErrAbortHandler`; it never appends an error
+page. The standard library abort sentinel passes through unchanged. If an
+external request-ID middleware adds its ID to context, recovery and diagnostics
+include it in their logs.
+Diagnostics finalize even during panic unwinding; diagnostics expose an
+`aborted` count, and include aborted responses in `errors`.
 
 `httpx.Writer` tracks final status, accepted body bytes, and commitment. A 1xx
 other than 101 does not commit the final response. Duplicate final headers are
 ignored. Use `http.NewResponseController(w)` for flush, hijack, and deadlines:
 wrappers expose `Unwrap`, and flush commits every tracking layer before
 forwarding. Do not rely on optional interface assertions against wrapped writers.
+
+## Existing middleware and routers
+
+Runtime endpoints (`Runtime.Handle`, `Runtime.Page`, `Runtime.PageFunc`) and
+middleware use standard `net/http` contracts. Mount them directly in
+`http.ServeMux`, chi, or another router accepting `http.Handler`; use that
+router's middleware stack where route grouping or framework-specific behavior
+is useful. Existing middleware with signature `func(http.Handler) http.Handler`
+composes directly:
+
+```go
+app := runtime.Handle(route)
+router := chi.NewRouter()
+router.Use(existingMiddleware, anotherMiddleware)
+router.Handle("/", app)
+```
+
+The router example uses chi only as an illustration; go-mvu does not depend on
+it or require a particular router. For middleware with a different API, use
+its documented bridge to produce an `http.Handler` or
+`func(http.Handler) http.Handler`; keep that adapter in the application. No
+framework-specific integration package or middleware composer is needed.
+
+Preserve request context and response streaming. Middleware that buffers or
+replaces `http.ResponseWriter` must preserve `http.ResponseController`
+operations, especially `Flush`, and should expose `Unwrap` when wrapping the
+writer. Verify compatibility before placing such middleware around streamed
+HTML responses.
 
 ## Rejections
 
@@ -149,105 +169,19 @@ backend across instances during key rollover. It is concrete, not a distributed
 backend interface. Restart loses revocations; already-admitted requests are
 not canceled. Do not claim durable logout or cross-process revocation.
 
-## Optional deployment extensions
+## Application and deployment policies
 
-Each constructor below returns `(middleware.Extension, error)`. An `Extension`
-has the ordinary handler-wrapper signature. Invalid configuration returns an
-error; handle it during startup. Nothing is registered or enabled implicitly.
+go-mvu does not ship CORS, HSTS, admission, or rate-limit middleware. Use an
+existing middleware package, router integration, or deployment edge for these
+policies. CORS is usually unnecessary for same-origin SSR. Apply HSTS at the
+TLS terminator when TLS ends at a proxy. Use distributed enforcement for
+global quotas; never trust arbitrary forwarding headers for client identity.
 
-| Constructor | Required policy |
-| --- | --- |
-| `AdmissionLimit(AdmissionOptions)` | `MaxConcurrent`, `RetryAfter`; immediate 503 on overload |
-| `RateLimit(RateLimitOptions)` | `MaxEntries`, `Requests`, `Window`, application `Key` resolver |
-| `CORS(CORSOptions)` | Exact `Origins`, `Methods`, `Headers`; optional `Expose`, `Credentials`, `MaxAge` |
-| `HSTS(HSTSOptions)` | Positive `MaxAge`, explicit `IncludeSubDomains` / `Preload` |
+## Mutation retries and durable effects
 
-Admission, rate limiting, and CORS accept `ErrorHandler` for the application's
-shared rejection policy.
-
-### Admission and rate limits
-
-Admission has no wait queue: saturation returns 503 with `Retry-After`.
-Rate limiting uses a bounded, lazily expiring fixed-window table. Exhausting a
-key returns 429; filling the active-key table returns 503. Both return
-`Retry-After`. Supply a stable, validated `Key func(*http.Request) (string, error)`;
-avoid untrusted arbitrary header values that create new keys on every request.
-
-The table and counters belong to this limiter instance in one process. Restart
-resets quotas; replicas do not share them. Fixed windows permit bursts across
-window boundaries. Use gateway or distributed enforcement for global quotas.
-Behind a proxy, direct peer addresses identify the proxy. Configure trusted
-forwarding and global quotas at the deployment edge.
-
-CORS validates exact allowlists and preflights, merges `Vary`, and never grants
-wildcard credentialed access. It is normally unnecessary for same-origin SSR.
-HSTS emits only for direct TLS connections. Enable preload and subdomain
-coverage only when the whole deployment can honor them; terminate TLS and
-forward trusted headers at a correctly configured deployment edge.
-
-## In-memory action idempotency
-
-Use only on explicitly opted-in mutation routes, not global GET/page handlers.
-`IdempotencyOptions` requires bounded `MaxEntries`, `TTL`, `MaxBodyBytes`,
-`MaxResponseBytes`, a fixed `Route` label, and
-`Scope func(*http.Request) (string, error)`.
-Optional `MaxWaiters`, `WaitTimeout`, `Header`, `ReplayHeaders`, `Validate`,
-and `ErrorHandler` complete the policy.
-
-Default header: `Idempotency-Key`. Waiter count defaults to entry capacity;
-wait timeout defaults to TTL. Prefer explicit smaller bounds:
-
-```go
-record, err := middleware.Idempotency(middleware.IdempotencyOptions{
-	MaxEntries:       1024,
-	TTL:              10 * time.Minute,
-	MaxBodyBytes:     16 << 10,
-	MaxResponseBytes: 64 << 10,
-	MaxWaiters:       64,
-	WaitTimeout:      5 * time.Second,
-	Route:            "orders.create",
-	Scope:            authenticatedOrderScope,
-	Validate:         validateOrderInput,
-	ReplayHeaders:    []string{"HX-Push-Url", "HX-Redirect"},
-})
-if err != nil {
-	return err
-}
-mux.Handle("POST /orders", authenticate(csrf.Wrap(record(createOrder))))
-```
-
-Authenticate, authorize replay access, verify CSRF, route, and validate input
-before reservation. `Validate func(*http.Request) error` runs before reservation
-and again before duplicate replay, including after waiting. It must be read-only
-and reentrant and must check current replay access; transition authorization
-does not run on replay. Scope is also rechecked before exposing a duplicate.
-The body is reset before mutation. Do not put current-model expected-version
-checks in replay validation: those belong to the runtime transition, otherwise
-a successful duplicate would fail its now-stale precondition instead of replay.
-
-Scope action keys by principal/session and route. Fingerprints include method,
-path/query, configured route, content type/encoding, Accept/Accept-Language,
-all HX request headers, and bounded body. Reusing a key for a different
-fingerprint returns 409. Concurrent duplicates wait within configured bounds
-and can cancel independently. Pending entries never expire or get evicted while
-the original handler is running; capacity stays bounded.
-
-This wrapper deliberately buffers only its opted-in response. Streaming,
-hijacking, and trailers are unsupported on these routes. Panic, unsupported
-operations, and response overflow are terminal recorded failures for TTL;
-`ErrIdempotencyResponseLimit` identifies overflow. Completed failures replay,
-never rerun an ambiguous mutation.
-
-Replays retain current request IDs, session cookies, security/cache/CORS/timing
-metadata, not original request metadata. Default recorded response headers:
-Content-Type, Content-Language, Content-Disposition, Content-Encoding, Location.
-List required application/HTMX response headers explicitly in `ReplayHeaders`.
-
-**Guarantee boundary:** single-process duplicate suppression while records
-remain in memory. TTL expiry or restart allows execution again. No crash
-durability, transaction with model persistence, or exactly-once external effects.
-Use a durable application outbox or transactional action ledger when required.
-
-Race/fuzz CI, replay authorization, shutdown, bounded operational counters,
-durable action example, and response ordering:
+go-mvu does not buffer and replay mutation responses or provide a generic
+idempotency middleware. Use an application-owned durable action ledger or
+transactional inbox/outbox when duplicate delivery must not repeat effects.
+Ordinary model persistence and command execution are not one transaction;
+see the [durable store and outbox guide](durable-store-outbox.md) and
 [hardening](hardening.md).

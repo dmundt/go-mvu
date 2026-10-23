@@ -341,8 +341,8 @@ See [ADR-0010](../adr/0010-shared-ui-components.md). Gallery:
 | Group | Components | Native basis |
 | --- | --- | --- |
 | Overlay | `Accordion`, `Tabs`, `Dialog`, `Dropdown`, `Tooltip` | `details`, native links, auto-dismiss popovers |
-| Display | `Avatar`, `Progress`, `Spinner`, `Skeleton`, `Separator`, `Kbd`, `Stat`, `Steps` (+ aliases `Inline`, `EmptyState`) | `progress`, `role=status`, `dl`, `ol` |
-| Forms | `Switch`, `RadioGroup` (+ aliases `Checkbox`, `Textarea`) | `input[role=switch]`, `fieldset`, `textarea` |
+| Display | `Avatar`, `Progress`, `Spinner`, `Skeleton`, `Separator`, `Kbd`, `Stat`, `Steps` | `progress`, `role=status`, `dl`, `ol` |
+| Forms | `Switch`, `RadioGroup` | `input[role=switch]`, `fieldset`, `textarea` |
 
 ```go
 shared.Dialog{

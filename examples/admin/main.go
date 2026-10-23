@@ -98,8 +98,8 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
-	root.Handle("/", middleware.Chain(mux, middleware.NoStore,
-		sessions.Wrap, preference.Wrap, csrf.Wrap))
-	return middleware.Chain(root, middleware.RequestID, middleware.SecurityHeaders,
-		middleware.Recover, policy), nil
+	root.Handle("/", middleware.NoStore(
+		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
+	))
+	return middleware.SecurityHeaders(middleware.Recover(policy(root))), nil
 }

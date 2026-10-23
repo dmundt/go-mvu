@@ -2,7 +2,7 @@
 type: Guide
 title: Interactive applications without application JavaScript
 description: Native HTML and HTMX interaction patterns, server-owned state, and capability limits.
-version: 3
+version: 4
 ---
 
 # Interactive applications without application JavaScript
@@ -84,7 +84,7 @@ attribute passthrough; no typed fields for these are implied.
    server-side authorization. Validate every request, including HTMX requests.
 4. **Coordinate competing requests.** Debounce search and use `hx-sync` when
    requests can replace the same region; cancellation alone does not undo
-   server mutations. Use version checks and idempotency where needed. See
+   server mutations. Use version checks and application-owned idempotency where needed. See
    [hardening](hardening.md) and [HTTP policy](middleware.md).
 5. **Make failure visible.** Preserve entered values and field errors; do not
    turn failures into empty successful fragments. HTMX does not swap most

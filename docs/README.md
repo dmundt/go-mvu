@@ -2,7 +2,7 @@
 type: Documentation Router
 title: Documentation overview
 description: Entry points and recommended reading order for framework documentation.
-version: 3
+version: 4
 ---
 
 # Documentation
@@ -34,9 +34,9 @@ version: 3
     custom themes, `POST /theme`.
   - [Security](guides/security.md): escaping, CSP, local HTMX, CSRF, cookies.
   - [Middleware](guides/middleware.md): composition, streaming, request bounds,
-    rejection policies, HTMX error handling, optional extensions.
+    rejection policies, and HTMX error handling.
   - [Hardening](guides/hardening.md): race/fuzz/browser gates, durable action
-    example, replay access, shutdown, operational counters, response ordering.
+    example, shutdown, operational counters, response ordering.
   - [Benchmarks](guides/benchmarks.md): numbers, interpretation, rules.
 - [Engineering brief](engineering-brief.md): original design conversation;
   history only.

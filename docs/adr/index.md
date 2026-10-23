@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 2
+version: 3
 ---
 
 # Architecture Decision Records
@@ -32,3 +32,4 @@ version: 2
 * [ADR-0020](0020-optional-production-integrations.md) - optional CASK persistence and OIDC application wiring.
 * [ADR-0021](0021-concise-ui-composition.md) - concise layout, page, form, region, and field composition.
 * [ADR-0022](0022-default-theme-and-deployment-boundaries.md) - one bundled theme and explicit deployment boundaries.
+* [ADR-0023](0023-ecosystem-owned-generic-middleware.md) - keep generic HTTP middleware in the ecosystem.

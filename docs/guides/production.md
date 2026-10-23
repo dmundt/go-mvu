@@ -2,7 +2,7 @@
 type: Guide
 title: Deploy a durable authenticated application
 description: Connect CASK persistence, generic OIDC, middleware, and single-host operations.
-version: 2
+version: 3
 ---
 
 # Deploy a durable authenticated application
@@ -71,22 +71,20 @@ Host and prevent direct public access to the backend.
 Keep session cookies Secure and HttpOnly; use explicit loopback-only
 development mode only during local testing.
 
-Middleware supplies security headers, request IDs, structured path-only logs,
+The framework supplies its default security headers, stream-aware panic
 recovery, 64 KiB body limit, cooperative 15-second request timeout, no-store
-private responses, and CSRF. Static HTMX sits outside session/CSRF wrappers.
-Callback responses use `Referrer-Policy: no-referrer`; avoid logging query
-strings, authorization codes, tokens, and cookies at your proxy too.
+private responses, and CSRF. It does not ship generic request-ID, access-log,
+CORS, HSTS, admission, or rate-limit middleware. Compose existing `net/http`
+middleware through the router or add it at the deployment edge. Static HTMX
+sits outside session/CSRF wrappers. Callback responses use
+`Referrer-Policy: no-referrer`; avoid logging query strings, authorization
+codes, tokens, and cookies at your proxy too.
 
-Existing `middleware.RateLimit` is a bounded fixed-window limiter, not a
-missing feature. Example uses 20 login-route requests/minute/direct peer and
-120 private-route requests/minute/account; denial is 429 with `Retry-After`.
-Key-table saturation is 503. Per-process limits reset on restart and allow
-boundary bursts. Behind a proxy, peer identity is the proxy, not the browser.
-
-Use gateway/WAF controls for login attacks and distributed/global quotas.
-Configure trusted forwarding at the deployment edge; never trust arbitrary
-`X-Forwarded-For`. Tune quotas and admission limits from measured traffic; do
-not silently turn a full limiter table into unrestricted access.
+The example intentionally has no local rate limiter. Use a maintained
+middleware package for process-level policy or gateway/WAF controls for login
+attacks and distributed/global quotas. Configure trusted forwarding at the
+deployment edge; never trust arbitrary `X-Forwarded-For`. Tune quotas and
+admission controls from measured traffic.
 
 ## 5. Operate durable storage
 

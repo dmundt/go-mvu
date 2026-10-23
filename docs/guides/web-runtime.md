@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 4
+version: 5
 ---
 
 # Web runtime
@@ -290,25 +290,29 @@ policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
 	MaxBodyBytes: 1 << 20,
 	Timeout:      10 * time.Second,
 })
-handler = middleware.Chain(handler,
-	middleware.RequestID,
-	middleware.SecurityHeaders,
-	middleware.RequestLogger(logger),
-	diagnostics.Middleware, // optional
-	middleware.Recover,
-	policy,
-	middleware.NoStore,
-	sessions.Wrap,
-	preference.Wrap,
-	csrf.Wrap,
+handler = middleware.SecurityHeaders(
+	diagnostics.Middleware(
+		middleware.Recover(
+			policy(
+				middleware.NoStore(
+					sessions.Wrap(
+						preference.Wrap(
+							csrf.Wrap(handler),
+						),
+					),
+				),
+			),
+		),
+	),
 )
 ```
 
 Session before CSRF (token bound to session). Preference before views.
-Security headers on every response, including errors. Recovery inside observers
-ensures panic responses are recorded with request IDs. Mount public static
-assets outside session and CSRF wrappers. See [middleware](middleware.md)
-and [security](security.md).
+Security headers on every response, including errors. Recovery inside
+diagnostics ensures panic responses are recorded. Mount public static assets
+outside session and CSRF wrappers. Add existing request-ID and access-log
+middleware through the router or standard handler composition. See
+[middleware](middleware.md) and [security](security.md).
 
 ## Diagnostics
 
@@ -322,7 +326,7 @@ diagnostics := middleware.NewDiagnostics(middleware.DiagnosticsOptions{
 	ServerTiming:  true,                  // dev / trusted networks only
 })
 mux.Handle("GET /debug/diagnostics", diagnostics.Handler()) // internal only
-handler = diagnostics.Middleware(handler)                    // inside RequestID
+handler = diagnostics.Middleware(handler)                    // wrap around application handler
 ```
 
 | Phase | Measures |
@@ -335,7 +339,7 @@ handler = diagnostics.Middleware(handler)                    // inside RequestID
 | `ttfb`, `total` | added by middleware |
 
 - Per request: slog `request diagnostics` (Debug; Warn when slow) with phases
-  and request ID.
+  and optional request ID from context.
 - Aggregates: count/total/mean/max per phase; requests, slow, 5xx.
   `Snapshot()`, `Reset()`, JSON `Handler()`.
 - `Server-Timing` header: phases done before first byte + `ttfb`. Trailer:

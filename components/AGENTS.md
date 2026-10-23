@@ -21,5 +21,5 @@
 - Test page and fragment output, escaping, labels, validation associations,
   and component variants. Styling tests must include real computed styles
   when changing layout or CSS behavior.
-- Spec §13 components belong here, not in `shared`. Moving one from `shared`:
-  keep a type alias in `shared/aliases.go`; error prefix `components:`.
+- Spec §13 components belong here, not in `shared`; error prefix
+  `components:`.

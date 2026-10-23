@@ -2,7 +2,7 @@
 type: Guide
 title: Themes and CSS
 description: Theme modes, design tokens, CSS integration, and theme switching.
-version: 2
+version: 3
 ---
 
 # Themes and CSS
@@ -132,6 +132,12 @@ type Theme struct{}
 func (Theme) Name() string       { return "app" }
 func (Theme) Stylesheet() string { return css }
 ```
+
+The [custom CSS theme example](../../examples/custom-theme/) demonstrates an
+application-owned token set and adapter selectors that style go-mvu's semantic
+component classes. Bundled Bootstrap, Bulma, and Pico adapters were removed;
+adapt the framework already used by your application instead of adding one to
+go-mvu.
 
 ## Design tokens
 

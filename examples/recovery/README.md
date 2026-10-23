@@ -1,4 +1,4 @@
-# File-backed action ledger and outbox
+# File-backed action recovery and outbox
 
 Small application-owned persistence example. Standard library only, plus public
 `mvu.Functions` for the pure counter transition. No framework API changes, HTTP,
@@ -122,9 +122,9 @@ validated backup, not automatic replay of actions into a blank file.
 From the repository root:
 
 ```powershell
-go test ./examples/actionledger
-go vet ./examples/actionledger
-go test -count=5 ./examples/actionledger
+go test ./examples/recovery
+go vet ./examples/recovery
+go test -count=5 ./examples/recovery
 ```
 
 Tests cover restart deduplication and conflicts, scoped models/effect IDs,
