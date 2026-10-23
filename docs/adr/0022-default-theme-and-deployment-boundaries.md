@@ -2,12 +2,12 @@
 type: Architecture Decision Record
 title: Default theme and deployment boundaries
 description: Keep one bundled design system and delegate deployment-specific HTTP features.
-version: 1
+version: 2
 ---
 
 # ADR-0022: Default theme and deployment boundaries
 
-Status: Accepted
+Status: Accepted; middleware scope superseded by [ADR-0024](0024-ecosystem-owned-generic-middleware.md)
 
 ## Decision
 
@@ -17,11 +17,9 @@ Status: Accepted
 - Replace example framework selection with a shared mode picker.
 - Remove trusted-proxy, gzip, locale-negotiation, and traceparent middleware.
   Applications or deployment infrastructure own those policies. Retain
-  request bounds, security headers, CORS, direct-TLS HSTS, rate limits,
-  idempotency, and runtime diagnostics.
-- HSTS checks direct TLS only. TLS-terminating proxies must set HSTS at the
-  trusted edge; raw forwarding headers never establish secure transport.
-- Keep only fuzz jobs for shipped boundaries: action IDs and session cookies.
+  request bounds, security headers, and runtime diagnostics. Middleware
+  inventory further reduced by ADR-0023.
+- Keep fuzzing for shipped boundaries: signed session cookies.
 
 ## Consequences and migration
 
@@ -33,4 +31,5 @@ locale/trace context is automatically populated.
 
 ADR-0015 remains the default design-system decision. This decision supersedes
 bundled-adapter support described in ADR-0010 and ADR-0011, and narrows the
-deployment extension scope of ADR-0019; their remaining decisions stand.
+deployment extension scope of ADR-0019. ADR-0023 supersedes this decision's
+retained middleware inventory.

@@ -151,13 +151,10 @@ func newService(dataDir string) (*service, error) {
 	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
-	root.Handle("/", middleware.Chain(
-		mux, middleware.NoStore, sessions.Wrap, preference.Wrap, csrf.Wrap,
+	root.Handle("/", middleware.NoStore(
+		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
 	))
-	handler := middleware.Chain(
-		root, middleware.RequestID, middleware.SecurityHeaders,
-		middleware.Recover, policy,
-	)
+	handler := middleware.SecurityHeaders(middleware.Recover(policy(root)))
 	return &service{
 		handler: handler,
 		store:   modelStore,

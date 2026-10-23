@@ -17,42 +17,13 @@ import (
 	"github.com/dmundt/go-mvu/httpx"
 )
 
-func TestChainOrderAndShortCircuit(t *testing.T) {
-	var order []string
-	wrap := func(name string, stop bool) func(http.Handler) http.Handler {
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				order = append(order, name+" before")
-				if !stop {
-					next.ServeHTTP(w, r)
-				}
-				order = append(order, name+" after")
-			})
-		}
-	}
-	for _, stop := range []bool{false, true} {
-		order = nil
-		handler := Chain(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-			order = append(order, "handler")
-		}), wrap("outer", false), wrap("inner", stop))
-		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
-		want := "outer before,inner before,handler,inner after,outer after"
-		if stop {
-			want = "outer before,inner before,inner after,outer after"
-		}
-		if strings.Join(order, ",") != want {
-			t.Fatalf("order = %v", order)
-		}
-	}
-}
-
-func TestRecoveryCompletesObserversWithRequestID(t *testing.T) {
+func TestRecoveryCompletesDiagnostics(t *testing.T) {
 	var logs bytes.Buffer
-	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	diagnostics := NewDiagnostics(DiagnosticsOptions{Logger: logger})
-	handler := Chain(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+	handler := diagnostics.Middleware(SecurityHeaders(Recover(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		panic("secret panic value")
-	}), RequestID, SecurityHeaders, RequestLogger(logger), diagnostics.Middleware, Recover)
+	}))))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, httptest.NewRequest("GET", "/", nil))
 	if w.Code != 500 || strings.Contains(w.Body.String(), "secret") ||
@@ -62,18 +33,14 @@ func TestRecoveryCompletesObserversWithRequestID(t *testing.T) {
 	if diagnostics.Snapshot().Errors != 1 || diagnostics.Snapshot().Requests != 1 {
 		t.Fatal("recovered panic missing from diagnostics")
 	}
-	id := w.Header().Get(RequestIDHeader)
-	if id == "" || !strings.Contains(logs.String(), id) ||
-		strings.Count(logs.String(), `"msg":"request"`) != 1 {
-		t.Fatalf("completion log = %s", logs.String())
+	if !strings.Contains(logs.String(), `"msg":"request diagnostics"`) {
+		t.Fatalf("completion diagnostics missing: %s", logs.String())
 	}
 }
 
-func TestTrackingChainInformationalFlushAndTrailer(t *testing.T) {
+func TestTrackingMiddlewareInformationalFlushAndTrailer(t *testing.T) {
 	diagnostics := NewDiagnostics(DiagnosticsOptions{ServerTiming: true})
-	var logs bytes.Buffer
-	logger := slog.New(slog.NewJSONHandler(&logs, nil))
-	handler := Chain(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := diagnostics.Middleware(Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Trailer", "X-Complete")
 		w.WriteHeader(http.StatusEarlyHints)
 		w.WriteHeader(http.StatusCreated)
@@ -82,7 +49,7 @@ func TestTrackingChainInformationalFlushAndTrailer(t *testing.T) {
 			t.Error(err)
 		}
 		w.Header().Set("X-Complete", "done")
-	}), RequestID, RequestLogger(logger), diagnostics.Middleware, Recover)
+	})))
 	server := httptest.NewServer(handler)
 	defer server.Close()
 	hints := make(chan int, 1)
@@ -124,7 +91,7 @@ func TestPanicAfterFlushAbortsWithoutAppendingError(t *testing.T) {
 	for _, sentinel := range []bool{false, true} {
 		w := httptest.NewRecorder()
 		diagnostics := NewDiagnostics(DiagnosticsOptions{})
-		handler := Chain(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler := diagnostics.Middleware(Recover(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, _ = io.WriteString(w, "partial")
 			if err := http.NewResponseController(w).Flush(); err != nil {
 				t.Fatal(err)
@@ -133,8 +100,7 @@ func TestPanicAfterFlushAbortsWithoutAppendingError(t *testing.T) {
 				panic(http.ErrAbortHandler)
 			}
 			panic("late panic")
-		}), RequestLogger(slog.New(slog.NewTextHandler(io.Discard, nil))),
-			diagnostics.Middleware, Recover)
+		})))
 		func() {
 			defer func() {
 				if got := recover(); got != http.ErrAbortHandler {

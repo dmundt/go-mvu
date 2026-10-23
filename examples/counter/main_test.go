@@ -76,7 +76,7 @@ func TestCounterPolicyAndStaticIsolation(t *testing.T) {
 	for _, path := range []string{"/", "/static/htmx.min.js"} {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
-		if w.Code != 200 || w.Header().Get("X-Request-ID") == "" {
+		if w.Code != 200 {
 			t.Fatalf("%s: %d %v", path, w.Code, w.Header())
 		}
 		if path == "/" {

@@ -3,8 +3,8 @@
 Single-host production-oriented example, not a turnkey identity platform.
 Generic OpenID Connect authorization-code login using
 [`go-oidc`](https://github.com/coreos/go-oidc) and `oauth2`, example-only JSON
-file-backed models and authentication grants, CSRF-protected forms, and
-explicit rate limits.
+file-backed models and authentication grants, and CSRF-protected forms. Rate
+limiting is intentionally left to application middleware or deployment policy.
 No framework package imports OIDC. This example's separate module needs
 Go 1.25 or newer.
 
@@ -65,8 +65,9 @@ go vet ./...
 Tests use an isolated, signing OIDC provider fixture; no real provider or
 credentials required. They verify code exchange/PKCE, nonce, issuer, audience,
 expiry, signature, session binding/rotation, callback replay, CSRF, full-page
-and fragment paths, durable restart/logout, storage errors, and exact limiter
-thresholds. For manual browser checks:
+and fragment paths, durable restart/logout, and storage errors. Configure
+login and abuse limits in existing middleware or at the deployment gateway.
+For manual browser checks:
 
 ```powershell
 $env:GOMVU_BROWSER_TEST = "true"
@@ -91,14 +92,12 @@ a synthetic identity automatically; it is never part of the executable.
   requests are not canceled. External provider sessions may log in again.
 - Login attempts are bounded to 256, session-bound, single-use, expire after
   five minutes, and are lost on restart. Start a new login after restart.
-- Login routes: 20 requests/minute per direct peer; private routes: 120/minute
-  per account. Tables hold at most 10000 keys; full tables reject with 503.
-  These limits are process-local and reset on restart. Behind a proxy, the
-  peer limit groups clients under the proxy address. It is not a distributed
-  quota, and forwarded identity is deliberately not trusted.
 - JSON file storage coordinates writers only within one process. No horizontal
   scaling, network filesystem, automatic retention, encrypted storage, or
   multi-model transactions. The store is an example, not a framework adapter.
+- No process-local rate limiter is included. Configure login-abuse and
+  per-account quotas in existing middleware or at the trusted deployment edge;
+  do not trust arbitrary forwarded identity headers.
 - SIGINT/SIGTERM stops acceptance and drains HTTP work for up to 15 seconds
   before closing stores. No asynchronous command runner is used.
 

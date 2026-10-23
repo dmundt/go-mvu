@@ -2,15 +2,17 @@
 type: Architecture Decision Record
 title: Explicit HTTP policies and reliable transitions
 description: HTTP lifecycle, shared rejection contracts, and commit-aware MVU policy.
-version: 2
+version: 3
 ---
 
 # ADR-0019: Explicit HTTP policies and reliable transitions
 
 Status: Accepted
 
-Deployment extension scope narrowed by
-[ADR-0022](0022-default-theme-and-deployment-boundaries.md); remaining decisions stand.
+Generic middleware scope narrowed by
+[ADR-0022](0022-default-theme-and-deployment-boundaries.md) and
+[ADR-0024](0024-ecosystem-owned-generic-middleware.md); framework-specific
+HTTP reliability decisions remain accepted.
 
 ## Context
 
@@ -20,8 +22,6 @@ and command effects cannot be treated as one rollback-capable HTTP operation.
 
 ## Decision
 
-- Keep ordinary `func(http.Handler) http.Handler` composition. `Chain` lists
-  execution order without sorting or registration.
 - Add stdlib-only `httpx` contracts shared by middleware and the web runtime.
   Keep HTTP, persistence, and rendering out of `mvu`.
 - Recovery replaces only uncommitted responses; late panics abort. Completion
@@ -33,9 +33,9 @@ and command effects cannot be treated as one rollback-capable HTTP operation.
 - Authorization and expected-version checks belong at the transition boundary;
   command follow-ups use the same authorization path. Record commit-aware
   outcomes; failures after persistence do not imply rollback.
-- Bounded background execution and optional deployment policies are explicit.
-  In-memory idempotency and revocation are single-process conveniences, not
-  durable exactly-once or distributed security guarantees.
+- Bounded background execution and explicit deployment policies are
+  application-owned. In-memory session revocation is a single-process
+  convenience, not distributed security.
 - Fixed operational events cross the stdlib-only `httpx` boundary, including
   session revocation saturation. Diagnostics do not depend on web/runtime types.
   The application-owned file ledger example demonstrates atomic action
@@ -46,7 +46,7 @@ and command effects cannot be treated as one rollback-capable HTTP operation.
 Applications retain control of principals, validation markup, resource
 authorization, trusted proxies, and durable effect delivery. No blanket retry
 of mutations, global response buffering, or telemetry vendor dependency.
-The original specification stays verbatim; extensions are recorded in its map.
+The original specification stays verbatim; deviations are recorded in its map.
 
 This refines the HTTP lifecycle in ADR-0013 and diagnostics in ADR-0016 without
 replacing their MVU and package-boundary decisions.

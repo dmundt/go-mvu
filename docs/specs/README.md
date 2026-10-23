@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 10
+version: 11
 ---
 
 # Specs
@@ -38,7 +38,7 @@ version: 10
 | 17 | Validation | [validation](../../validation/), [contact field facts](../../examples/contact/fields.go) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
 | 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
-| 18 extensions | HTTP policy, lifecycle, deployment middleware | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md) |
+| 18 extensions | HTTP policy and lifecycle; generic deployment middleware and mutation replay remain application-owned | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md), [0024](../adr/0024-ecosystem-owned-generic-middleware.md) |
 | 19 | CSS | [theme/*.css](../../theme/), [scripts](../../scripts/) | [themes](../guides/themes.md) |
 | 20 | Testing | `*_test.go`, `scripts/themes.test.mjs` | [README](../../README.md#validation) |
 | 21 | Benchmarks | [benchmarks](../../benchmarks/) | [benchmarks](../guides/benchmarks.md) |
@@ -52,12 +52,16 @@ and aliases are removed. Markup, styles, and dependency boundaries are retained.
 See [ADR-0023](../adr/0023-unified-components.md) and
 [migration instructions](../guides/components.md#migrating-from-shared).
 
-The framework now bundles only the Open Props default theme; application-owned
+The framework bundles only the Open Props default theme; application-owned
 themes still implement `theme.Theme`. Bootstrap, Bulma, and Pico adapters are
-removed. Trusted-proxy, compression, locale-negotiation, and traceparent
-middleware are no longer shipped. HSTS uses direct TLS only; deployments own
-trusted-edge policies. See [ADR-0022](../adr/0022-default-theme-and-deployment-boundaries.md)
-and [middleware](../guides/middleware.md).
+removed. Trusted-proxy, compression, locale-negotiation, traceparent,
+request-ID, access-log, CORS, HSTS, admission-limit, and rate-limit middleware
+are not shipped; applications compose existing `net/http` middleware or place
+deployment policies at the edge. Generic response-recording idempotency
+middleware is also not shipped; durable action deduplication belongs at the
+application's transaction boundary. See [ADR-0022](../adr/0022-default-theme-and-deployment-boundaries.md),
+[ADR-0024](../adr/0024-ecosystem-owned-generic-middleware.md), and
+[middleware](../guides/middleware.md).
 
 Additional learning examples: [hello](../../examples/hello/) uses only
 document composition and an HTTP page writer; [admin](../../examples/admin/)
@@ -99,7 +103,7 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | diagnostics aggregates | + fixed operational event counters | saturation, stale actions, authorization, effect and stream failures |
 | CAS plus commands | application WAL/outbox example outside runtime | atomic receipt/model/effect descriptor with explicit at-least-once delivery |
 | unspecified response ordering | existing `hx-sync` attributes and two-tab expected-version tests | replace stale navigation responses, reject stale mutation intent |
-| outermost recovery | recovery inside observers, after request ID | completion records survive panics; request ID available to recovery |
+| outermost recovery | recovery inside diagnostics; optional ID via `httpx.WithRequestID` | completion records survive panics; external IDs can reach recovery logs |
 | unspecified HTTP policies | explicit request bounds, no-store HTML, HTMX 422 opt-in | preserve streaming, error statuses, and progressive enhancement |
 | runtime transition/effect failure | commit-aware outcomes and transition policies | distinguish persistence from effect/render failure; authorize command follow-ups |
 | signed session ID only | signed server expiry, key rollover, explicit rotation and revocation | copied cookies expire and can be revoked within one process |

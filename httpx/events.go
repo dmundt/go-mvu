@@ -6,27 +6,16 @@ import "context"
 type Event uint8
 
 const (
-	AdmissionOverload Event = iota + 1
-	RateLimited
-	RateCapacity
-	StaleAction
+	StaleAction Event = iota + 4
 	AuthorizationRejected
 	CommittedEffectFailure
 	ResponseAborted
-	IdempotencyCapacity
-	IdempotencyWaitCapacity
 	RevocationCapacity
 	CommandOverload
 )
 
 func (event Event) String() string {
 	switch event {
-	case AdmissionOverload:
-		return "admission_overload"
-	case RateLimited:
-		return "rate_limited"
-	case RateCapacity:
-		return "rate_capacity"
 	case StaleAction:
 		return "stale_action"
 	case AuthorizationRejected:
@@ -35,10 +24,6 @@ func (event Event) String() string {
 		return "committed_effect_failure"
 	case ResponseAborted:
 		return "response_aborted"
-	case IdempotencyCapacity:
-		return "idempotency_capacity"
-	case IdempotencyWaitCapacity:
-		return "idempotency_wait_capacity"
 	case RevocationCapacity:
 		return "revocation_capacity"
 	case CommandOverload:

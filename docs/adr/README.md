@@ -42,3 +42,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0021](0021-concise-ui-composition.md) | Small layout constructors and optional UI composition helpers | Accepted |
 | [0022](0022-default-theme-and-deployment-boundaries.md) | One bundled theme and application-owned deployment policies | Accepted |
 | [0023](0023-unified-components.md) | One reusable component package | Accepted |
+| [0024](0024-ecosystem-owned-generic-middleware.md) | Keep generic HTTP middleware in the ecosystem | Accepted |

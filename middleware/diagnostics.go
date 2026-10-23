@@ -93,7 +93,6 @@ func NewDiagnostics(options DiagnosticsOptions) *Diagnostics {
 }
 
 // Middleware attaches a timing.Trace to each request and records results.
-// Place inside RequestID so records carry the request ID.
 func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		trace := timing.New()
@@ -169,7 +168,7 @@ func (d *Diagnostics) record(
 		slog.Duration("total", total),
 		slog.Bool("slow", slow),
 		slog.Bool("aborted", aborted),
-		slog.String("request_id", RequestIDFromContext(r.Context())),
+		slog.String("request_id", httpx.RequestID(r.Context())),
 		slog.Group("phases", attrs...),
 	)
 }

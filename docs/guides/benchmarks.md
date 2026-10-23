@@ -2,7 +2,7 @@
 type: Guide
 title: Benchmarks
 description: Benchmarking rules, measured results, and interpretation.
-version: 1
+version: 2
 ---
 
 # Benchmarks
@@ -104,32 +104,6 @@ storage, traffic mix, and concurrency.
 - Pagination cost dominated by URL building (`url.Parse` + query encode per
   link); window size bounded, so pages=1000 ≈ pages=10.
 - Benchmarks write to `io.Discard`; network and compression excluded.
-
-## Saturated idempotency
-
-Windows amd64, i7-13800H, Go 1.27.0, four logical CPUs; one before/after run:
-
-```powershell
-go test ./middleware '-run=^$' '-bench=BenchmarkIdempotencySaturation' -benchmem -benchtime=300ms -count=1 -cpu=4
-```
-
-| Full table | Operation | Before ns/op | After ns/op |
-| --- | --- | ---: | ---: |
-| 128 | Replay | 4257 | 3507 |
-| 128 | Reject reservation | 3974 | 4217 |
-| 4096 | Replay | 55583 | 5400 |
-| 4096 | Reject reservation | 59875 | 5541 |
-| 16384 | Replay | 232810 | 4166 |
-| 16384 | Reject reservation | 251242 | 3845 |
-
-Both runs use parallel callers, hour-long receipt TTL, untimed table prefill,
-and the same benchmark-specific error responder without expected-503 logging.
-Replay stays at 43 allocs/op; rejection at 45–46 allocs/op. These are
-microbenchmarks with in-memory HTTP recorders, not end-to-end latency percentiles.
-Skipping cleanup until the earliest completed receipt expires removes
-per-request table scans. Cleanup at expiry remains O(entries) under the mutex.
-The small-table rejection difference is not evidence of an improvement there;
-single-run timing varies.
 
 ## Performance claims (spec §21)
 

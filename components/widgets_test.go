@@ -42,11 +42,11 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 			[]string{`steps__item--complete"><span class="visually-hidden">Completed: </span>A`, `aria-current="step">B`}},
 		{"switch", Switch{Name: "alerts", Label: "Alerts", Checked: true},
 			[]string{`type="checkbox" role="switch" id="alerts" name="alerts" value="on" checked`}},
-		{"checkbox", Checkbox{Name: "terms", Label: "Terms", Error: "Required"},
+		{"checkbox", components.Checkbox{Name: "terms", Label: "Terms", Error: "Required"},
 			[]string{`aria-invalid="true" aria-describedby="terms-error"`, `id="terms-error">Required`}},
 		{"radio", RadioGroup{Name: "plan", Legend: "Plan", Value: "b", Error: "Pick", Options: []Option{{Value: "a", Label: "A"}, {Value: "b", Label: "B"}}},
 			[]string{`<fieldset class="radio-group" aria-describedby="plan-error"><legend>Plan</legend>`, `id="plan-1" name="plan" value="b" checked`}},
-		{"textarea", Textarea{Name: "note", Label: "Note", Hint: "Short", Error: "Too long", Value: "\nhi"},
+		{"textarea", components.Textarea{Name: "note", Label: "Note", Hint: "Short", Error: "Too long", Value: "\nhi"},
 			[]string{`aria-invalid="true" aria-describedby="note-hint note-error">` + "\n\nhi</textarea>", `id="note-hint">Short`}},
 		{"inline", Inline{Children: []html.Component{Text("x")}}, []string{`<div class="inline">x</div>`}},
 	}
@@ -111,7 +111,7 @@ func TestComponentsEscapeDynamicContent(t *testing.T) {
 		Stat{Label: payload, Value: payload, Delta: payload},
 		Steps{Label: payload, Items: []string{payload}},
 		Kbd{Keys: []string{payload}},
-		Textarea{Name: "n", Label: payload, Value: "</textarea>" + payload},
+		components.Textarea{Name: "n", Label: payload, Value: "</textarea>" + payload},
 	} {
 		rendered := render(t, component)
 		if strings.Contains(rendered, "<img src=x") || strings.Contains(rendered, "</textarea><img") {
@@ -140,9 +140,9 @@ func TestComponentsRejectInvalidInput(t *testing.T) {
 		"textarea without label":           Textarea{Name: "n"},
 		"switch with invalid ID":           Switch{ID: "1x", Name: "n", Label: "L"},
 		"kbd without keys":                 Kbd{},
-		"empty state without title":        EmptyState{},
+		"empty state without title":        components.EmptyState{},
 		"tooltip without content":          Tooltip{ID: "t", Label: "L"},
-		"textarea rows over maximum":       Textarea{Name: "n", Label: "L", Rows: 51},
+		"textarea rows over maximum":       components.Textarea{Name: "n", Label: "L", Rows: 51},
 		"tabs without label":               Tabs{ID: "t", Active: "a", Items: []Tab{{ID: "a", Label: "A", URL: "/"}}},
 		"dialog without trigger label":     Dialog{ID: "d", Title: "T"},
 		"progress with negative maximum":   Progress{ID: "p", Label: "P", Max: -1},

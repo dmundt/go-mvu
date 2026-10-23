@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"log"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -118,7 +117,6 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
 		MaxBodyBytes: 1 << 20,
 		Timeout:      10 * time.Second,
@@ -128,15 +126,11 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
-	root.Handle("/", middleware.Chain(mux, middleware.NoStore,
-		sessions.Wrap, preference.Wrap, csrf.Wrap))
-	return middleware.Chain(root,
-		middleware.RequestID,
-		middleware.SecurityHeaders,
-		middleware.RequestLogger(logger),
-		diagnostics.Middleware,
-		middleware.Recover,
-		policy,
+	root.Handle("/", middleware.NoStore(
+		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
+	))
+	return middleware.SecurityHeaders(
+		diagnostics.Middleware(middleware.Recover(policy(root))),
 	), nil
 }
 

@@ -2,7 +2,7 @@
 type: Engineering Summary
 title: Engineering summary
 description: Project direction, implementation status, and technical summary.
-version: 4
+version: 5
 ---
 
 # Engineering Summary
@@ -40,7 +40,7 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 | `web` runtime: RequestContext, ThemeResolver, CommandRunner, RenderAuto | done, tested |
 | `theme`: default tokens, system mode, signed preference | done; Go + node tests |
 | `components`: controls, layouts, native widgets | done; unified gallery example |
-| `middleware`: CSP, CSRF, recover, request ID, logging | done, tested |
+| `middleware`: CSP, CSRF, stream-safe recover, request bounds, diagnostics | done, tested |
 | `static`: local HTMX 2.0.4 + SRI | done |
 | examples: counter, users, component gallery, themes | done; HTTP tests |
 | boundaries test, benchmarks | done |
@@ -55,8 +55,8 @@ HTTP request → middleware → route → typed Msg → Update (pure)
   native navigation links, not scripted ARIA tablists.
 - OIDC production example supplies authentication integration, not user
   management. Durable grants make local logout survive restart.
-- Rate limiting and cookie revocation exist; framework implementations remain
-  process-local, not distributed infrastructure.
+- Cookie revocation exists; its in-memory backend is process-local, not
+  distributed infrastructure.
 
 ## Extension rules
 

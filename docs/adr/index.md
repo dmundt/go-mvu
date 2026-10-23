@@ -33,3 +33,4 @@ version: 3
 * [ADR-0021](0021-concise-ui-composition.md) - concise layout, page, form, region, and field composition.
 * [ADR-0022](0022-default-theme-and-deployment-boundaries.md) - one bundled theme and explicit deployment boundaries.
 * [ADR-0023](0023-unified-components.md) - one reusable component package.
+* [ADR-0024](0024-ecosystem-owned-generic-middleware.md) - keep generic HTTP middleware in the ecosystem.

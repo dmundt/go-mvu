@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/timing"
 )
 
@@ -64,13 +65,15 @@ func TestDiagnosticsAggregatesAndLogsSlowRequests(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelWarn}))
 	diagnostics := NewDiagnostics(DiagnosticsOptions{Logger: logger, SlowThreshold: time.Nanosecond})
 	inner := diagnosticsHandler(http.StatusInternalServerError)
-	handler := RequestID(diagnostics.Middleware(http.HandlerFunc(
+	handler := diagnostics.Middleware(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(2 * time.Millisecond)
 			inner.ServeHTTP(w, r)
-		})))
+		}))
 	for range 2 {
-		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/users", nil))
+		request := httptest.NewRequest(http.MethodPost, "/users", nil)
+		request = request.WithContext(httpx.WithRequestID(request.Context(), "test-request"))
+		handler.ServeHTTP(httptest.NewRecorder(), request)
 	}
 	snapshot := diagnostics.Snapshot()
 	if snapshot.Requests != 2 || snapshot.Slow != 2 || snapshot.Errors != 2 {

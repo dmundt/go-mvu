@@ -2,7 +2,7 @@
 type: Guide
 title: Security
 description: Security boundaries for HTML rendering, requests, and sessions.
-version: 1
+version: 3
 ---
 
 # Security
@@ -101,9 +101,10 @@ passes user input as `id` or `hx-target` still owns that choice.
   Logged, no stack to client.
 - `web.InternalServerError`: generic body; details only in log.
 - Errors after response start: logged, never appended to body.
-- `middleware.RequestID`: `X-Request-ID` per response; `RequestLogger`
-  logs method, path, status, bytes, duration, request ID, htmx flag via
-  `slog`.
+- go-mvu does not ship generic request-ID or access-log middleware. Use an
+  existing `net/http` middleware. To include its ID in go-mvu error and
+  diagnostics logs, have it add the ID to request context with
+  `httpx.WithRequestID`.
 - `middleware.Diagnostics`: `Server-Timing` off by default; enable only for
   development or trusted networks. Mount `Diagnostics.Handler()` on internal
   or authenticated routes only (timing data aids side-channel probing).
@@ -119,8 +120,8 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 - Authentication and domain authorization remain application responsibilities.
   Optional transport limits do not establish identity.
-- In-memory idempotency and session revocation do not survive restart or
-  coordinate multiple processes. Durable effects need application persistence
-  and an outbox or equivalent transaction boundary.
+- Session revocation does not survive restart or coordinate multiple processes.
+  Durable effects need application persistence and an outbox or equivalent
+  transaction boundary.
 - Memory store / sessions single-process; multi-instance → shared store.
 - Deployment policies and guarantees: [middleware](middleware.md).

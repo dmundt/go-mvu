@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Reliability and operational hardening
+description: Validation gates, shutdown ownership, operational signals, and response ordering.
+version: 1
+---
+
 # Reliability and operational hardening
 
 ## Validation gates
@@ -8,9 +15,9 @@ packages with a five-minute test timeout. `go vet` is a separate required step.
 Configure these jobs as required branch checks in the hosting repository;
 workflow files alone do not enforce branch protection.
 
-Two isolated [fuzz jobs](../../.github/workflows/fuzz.yml) run for 30 seconds
-with two workers each, including manual dispatch:
-action IDs and signed session cookies. Failing corpus inputs are uploaded
+The isolated [fuzz job](../../.github/workflows/fuzz.yml) runs for 30 seconds
+with two workers, including manual dispatch, against signed session cookies.
+Failing corpus inputs are uploaded
 as artifacts. Keep minimized reproducers as regression corpus entries after
 investigation. Ordinary `go test ./...` also executes all seed corpora.
 
@@ -57,28 +64,6 @@ Filesystem sync, directory durability, lock ownership, and capacity caveats
 are explicit in the example. Do not delete a ledger or its receipt history to
 retry an uncertain action.
 
-## Authorization before replay
-
-Authentication, session checks, CSRF, and replay access authorization belong
-outside action recording. Transition authorization alone is insufficient:
-replay deliberately skips the transition.
-
-Use a stable scope containing the required account, tenant, and session
-identity, derived from authenticated server state. `IdempotencyOptions.Validate`
-must be read-only and reentrant. It checks current permission and input before
-reservation and again immediately before duplicate replay, including after
-waiting for an in-flight action. Scope is likewise rechecked after waiting.
-
-Tests cover logout, permission revocation, copied invalidated/expired cookies,
-changed principal, changed tenant, changed session, and access revoked while
-a duplicate waits. Different legitimate scopes execute their own actions;
-they never receive another scope's cached response.
-
-No callback can eliminate the race between its final authorization check and
-subsequent response delivery. Stronger guarantees require application
-transactional access checks and an explicit policy for already-admitted work.
-Session ID presence alone is not proof of current authorization.
-
 ## Shutdown ownership
 
 The counter and users examples now use
@@ -112,10 +97,8 @@ An effect that ignores context cannot be forcibly terminated safely.
 `DiagnosticsSnapshot.Counters` exposes fixed event names, never user/route/session
 labels:
 
-- `admission_overload`, `rate_limited`, `rate_capacity`
 - `stale_action`, `authorization_rejected`
 - `committed_effect_failure`, `response_aborted`
-- `idempotency_capacity`, `idempotency_wait_capacity`
 - `revocation_capacity`, `command_overload`
 
 Install `Diagnostics.Middleware` outside the relevant policies and runtime.
@@ -135,16 +118,6 @@ deployment-owned monitoring. Alert on counter increases and saturation:
 repeated 503s are not the only indication of dropped work.
 Choose thresholds from workload budgets; do not bake universal alert thresholds
 or a telemetry vendor into the framework.
-
-### Saturated idempotency costs
-
-`go test ./middleware -run='^$' -bench=BenchmarkIdempotencySaturation -benchmem -cpu=4`
-measures parallel replay and rejected new reservations against full tables of
-128, 4096, and 16384 entries. Prefill is outside the timed region; an explicit
-benchmark error handler avoids measuring expected-503 logging overhead.
-Expiry scans run only when the earliest completed receipt expires, not on every
-request. Pending actions remain unevictable. Expiry-boundary scans are still
-O(entries); steady-state benchmark results do not describe that tail latency.
 
 ## Response ordering and multiple tabs
 

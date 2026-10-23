@@ -1,0 +1,99 @@
+@layer orbit-tokens, orbit-adapter;
+
+@layer orbit-tokens {
+  :root {
+    --orbit-bg: #101827;
+    --orbit-surface: #19263a;
+    --orbit-edge: #3d536f;
+    --orbit-text: #edf4ff;
+    --orbit-muted: #b3c3d8;
+    --orbit-accent: #72e0c0;
+    --orbit-accent-ink: #092c27;
+    --orbit-radius: 14px;
+    --orbit-space: 1rem;
+  }
+}
+
+@layer orbit-adapter {
+  html[data-theme-name="orbit"] {
+    color-scheme: dark;
+    background: var(--orbit-bg);
+    color: var(--orbit-text);
+    font: 16px/1.5 system-ui, sans-serif;
+  }
+
+  html[data-theme-name="orbit"] body {
+    margin: 0;
+  }
+
+  html[data-theme-name="orbit"] .orbit-main,
+  html[data-theme-name="orbit"] main {
+    box-sizing: border-box;
+    display: grid;
+    gap: var(--orbit-space);
+    margin-inline: auto;
+    max-width: 48rem;
+    padding: 3rem 1.25rem;
+  }
+
+  .orbit-panel,
+  html[data-theme-name="orbit"] .card {
+    background: var(--orbit-surface);
+    border: 1px solid var(--orbit-edge);
+    border-radius: var(--orbit-radius);
+  }
+
+  html[data-theme-name="orbit"] .card__header,
+  html[data-theme-name="orbit"] .card__body {
+    padding: var(--orbit-space);
+  }
+
+  .orbit-button,
+  html[data-theme-name="orbit"] .button {
+    background: transparent;
+    border: 1px solid var(--orbit-edge);
+    border-radius: 999px;
+    color: var(--orbit-text);
+    cursor: pointer;
+    font: inherit;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .orbit-button--primary,
+  html[data-theme-name="orbit"] .button--primary {
+    background: var(--orbit-accent);
+    border-color: var(--orbit-accent);
+    color: var(--orbit-accent-ink);
+  }
+
+  html[data-theme-name="orbit"] .button--secondary {
+    background: var(--orbit-surface);
+  }
+
+  .orbit-field,
+  html[data-theme-name="orbit"] .input {
+    background: var(--orbit-bg);
+    border: 1px solid var(--orbit-edge);
+    border-radius: 8px;
+    color: var(--orbit-text);
+    font: inherit;
+    min-height: 2.75rem;
+    padding-inline: 0.75rem;
+  }
+
+  html[data-theme-name="orbit"] label {
+    color: var(--orbit-muted);
+    display: block;
+    margin-block-end: 0.25rem;
+  }
+
+  .orbit-pill,
+  html[data-theme-name="orbit"] .badge {
+    background: color-mix(in srgb, var(--orbit-accent) 18%, transparent);
+    border-radius: 999px;
+    color: var(--orbit-accent);
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+  }
+}

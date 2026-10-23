@@ -133,6 +133,12 @@ func (Theme) Name() string       { return "app" }
 func (Theme) Stylesheet() string { return css }
 ```
 
+The [custom CSS theme example](../../examples/custom-theme/) demonstrates an
+application-owned token set and adapter selectors that style go-mvu's semantic
+component classes. Bundled Bootstrap, Bulma, and Pico adapters were removed;
+adapt the framework already used by your application instead of adding one to
+go-mvu.
+
 ## Design tokens
 
 `base.css` defines short source tokens per palette (`--bg`, `--fg`,
