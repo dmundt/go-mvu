@@ -1,0 +1,25 @@
+html[data-theme] {
+	--bg: var(--bulma-scheme-main);
+	--fg: var(--bulma-text);
+	--surface: var(--bulma-scheme-main-bis);
+	--border: var(--bulma-border);
+	--primary: var(--bulma-primary);
+	--danger: var(--bulma-danger);
+	--success: var(--bulma-success);
+	--warning: var(--bulma-warning);
+	--info: var(--bulma-info);
+}
+
+.card__body { padding: var(--bulma-card-content-padding); }
+.button--primary { background: var(--bulma-primary); color: var(--bulma-primary-invert); }
+.button--secondary { background: var(--bulma-scheme-main-ter); color: var(--bulma-text); }
+.button--danger { background: var(--bulma-danger); color: var(--bulma-danger-invert); }
+.button--ghost { background: transparent; color: var(--bulma-link); }
+.alert--info, .badge--info { background: var(--bulma-info); color: var(--bulma-info-invert); }
+.alert--success, .badge--success { background: var(--bulma-success); color: var(--bulma-success-invert); }
+.alert--warning, .badge--warning { background: var(--bulma-warning); color: var(--bulma-warning-invert); }
+.alert--danger, .badge--danger { background: var(--bulma-danger); color: var(--bulma-danger-invert); }
+select.input { appearance: auto; }
+
+/* Shared choices: Bulma .checkbox/.radio are inline-block; restore flex gap. */
+.choice > .checkbox, .radio-group > .radio { display: inline-flex; align-items: center; gap: .625rem; }

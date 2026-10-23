@@ -1,0 +1,8 @@
+node_modules/
+.playwright-mcp/
+*.exe
+*.test
+*.out
+coverage.*
+.DS_Store
+Thumbs.db

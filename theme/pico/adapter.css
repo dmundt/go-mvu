@@ -1,0 +1,32 @@
+html[data-theme] {
+	--bg: var(--pico-background-color);
+	--fg: var(--pico-color);
+	--surface: var(--pico-card-background-color);
+	--border: var(--pico-form-element-border-color);
+	--primary: var(--pico-primary);
+}
+
+.card {
+	background: var(--pico-card-background-color);
+	border-radius: var(--pico-border-radius);
+	box-shadow: var(--pico-card-box-shadow);
+}
+
+.button, .button--primary {
+	background: var(--pico-primary-background);
+	color: var(--pico-primary-inverse);
+	border-color: var(--pico-primary-border);
+}
+
+.button--secondary {
+	background: var(--pico-secondary-background);
+	color: var(--pico-secondary-inverse);
+	border-color: var(--pico-secondary-border);
+}
+
+.button--danger { background: var(--danger); color: var(--on-danger); border-color: var(--danger); }
+.button--ghost { background: transparent; color: var(--pico-primary); border-color: transparent; }
+
+/* Shared dropdown: keep Pico chevron, drop shared border chevron. */
+details.dropdown > summary:not([role])::after { border: 0; }
+details.dropdown[open] > summary:not([role])::after { margin: 0; transform: rotate(180deg); }

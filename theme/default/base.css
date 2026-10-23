@@ -1,0 +1,461 @@
+/*
+ * Neutral base: palette, public tokens, and framework-neutral structure.
+ * Framework adapters embed this file too, so keep rules unscoped and plain.
+ * Values come from Open Props (open-props.css, generated).
+ */
+
+:root {
+	color-scheme: light;
+	--bg: var(--gray-0);
+	--fg: var(--gray-14);
+	--surface: var(--gray-1);
+	--border: var(--gray-2);
+	--primary: var(--blue-9);
+	--on-primary: #fff;
+	--danger: var(--red-9);
+	--on-danger: #fff;
+	--success: var(--green-9);
+	--warning: var(--yellow-10);
+	--info: var(--blue-9);
+}
+
+html[data-theme="dark"] {
+	color-scheme: dark;
+	--bg: var(--gray-14);
+	--fg: var(--gray-1);
+	--surface: var(--gray-13);
+	--border: var(--gray-12);
+	--primary: var(--blue-3);
+	--on-primary: var(--gray-15);
+	--danger: var(--red-4);
+	--on-danger: var(--gray-15);
+	--success: var(--green-4);
+	--warning: var(--yellow-4);
+	--info: var(--blue-3);
+}
+
+html[data-theme="system"] {
+	color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+	html[data-theme="system"] {
+		--bg: var(--gray-14);
+		--fg: var(--gray-1);
+		--surface: var(--gray-13);
+		--border: var(--gray-12);
+		--primary: var(--blue-3);
+		--on-primary: var(--gray-15);
+		--danger: var(--red-4);
+		--on-danger: var(--gray-15);
+		--success: var(--green-4);
+		--warning: var(--yellow-4);
+		--info: var(--blue-3);
+	}
+}
+
+/* Public semantic tokens. App CSS consumes these; palettes and theme
+   refinements set only the short source tokens. */
+html {
+	--color-background: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-raised: var(--surface);
+	--color-text: var(--fg);
+	--color-text-muted: var(--muted, var(--fg));
+	--color-border: var(--border);
+	--color-primary: var(--primary);
+	--color-primary-text: var(--on-primary);
+	--color-success: var(--success);
+	--color-warning: var(--warning);
+	--color-danger: var(--danger);
+	--focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 45%, transparent);
+	--shadow-small: var(--shadow-1);
+	--shadow-medium: var(--shadow, var(--shadow-3));
+	--radius-small: var(--radius-2);
+	--radius-medium: .5rem;
+	--space-1: var(--size-1);
+	--space-2: var(--size-2);
+	--space-3: .75rem;
+	--space-4: var(--size-3);
+	--space-5: var(--size-5);
+	--space-6: var(--size-7);
+	--space-7: var(--size-8);
+	--space-8: var(--size-9);
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		scroll-behavior: auto !important;
+		transition-duration: .01ms !important;
+		animation-duration: .01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--fg);
+	font: 1rem/1.5 var(--font-sans);
+}
+
+a {
+	color: var(--primary);
+}
+
+button,
+input,
+select {
+	font: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.grid {
+	display: grid;
+	gap: 1rem;
+}
+
+.stack--gap-none,
+.grid--gap-none {
+	gap: 0;
+}
+
+.stack--gap-xs,
+.grid--gap-xs {
+	gap: .25rem;
+}
+
+.stack--gap-sm,
+.grid--gap-sm {
+	gap: .5rem;
+}
+
+.stack--gap-md,
+.grid--gap-md {
+	gap: 1rem;
+}
+
+.stack--gap-lg,
+.grid--gap-lg {
+	gap: 1.5rem;
+}
+
+.stack--gap-xl,
+.grid--gap-xl {
+	gap: 2rem;
+}
+
+.card {
+	border: 1px solid var(--border);
+	border-radius: .5rem;
+	background: var(--surface);
+	padding: 1rem;
+}
+
+.card--default {
+	border-color: var(--border);
+}
+
+.card--primary {
+	border-color: var(--primary);
+}
+
+.card--success {
+	border-color: var(--success);
+}
+
+.card--warning {
+	border-color: var(--warning);
+}
+
+.card--danger {
+	border-color: var(--danger);
+}
+
+.alert {
+	border: 1px solid var(--border);
+	border-radius: .35rem;
+	padding: .75rem;
+}
+
+.alert--info {
+	border-color: var(--info);
+}
+
+.alert--success {
+	border-color: var(--success);
+}
+
+.alert--warning {
+	border-color: var(--warning);
+}
+
+.alert--danger {
+	border-color: var(--danger);
+}
+
+.badge {
+	display: inline-block;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--surface);
+	padding: .125rem .5rem;
+}
+
+.badge--info {
+	color: var(--info);
+}
+
+.badge--success {
+	color: var(--success);
+}
+
+.badge--warning {
+	color: var(--warning);
+}
+
+.badge--danger {
+	color: var(--danger);
+}
+
+.button {
+	border: 0;
+	border-radius: .3rem;
+	background: var(--primary);
+	padding: .5rem .8rem;
+	color: var(--on-primary);
+}
+
+.button--primary {
+	background: var(--primary);
+	color: var(--on-primary);
+}
+
+.button--secondary {
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--fg);
+}
+
+.button--danger {
+	background: var(--danger);
+	color: var(--on-danger);
+}
+
+.button--ghost {
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--primary);
+}
+
+.button:disabled {
+	cursor: not-allowed;
+	opacity: .6;
+}
+
+a.button {
+	display: inline-block;
+	text-align: center;
+	text-decoration: none;
+}
+
+.input {
+	max-width: 100%;
+	border: 1px solid var(--border);
+	border-radius: .25rem;
+	background: var(--bg);
+	padding: .45rem .6rem;
+	color: var(--fg);
+}
+
+.field-error {
+	display: block;
+	color: var(--danger);
+}
+
+.table-scroll {
+	max-width: 100%;
+	overflow-x: auto;
+	margin-block: 0 1rem;
+}
+
+.table-scroll > table {
+	margin-block: 0;
+}
+
+table {
+	width: 100%;
+	margin-block: 0 1rem;
+	border-collapse: collapse;
+	background: var(--bg);
+	color: var(--fg);
+	text-align: start;
+}
+
+caption {
+	caption-side: top;
+	padding: .75rem;
+	font-weight: 600;
+	text-align: start;
+}
+
+th,
+td {
+	border-bottom: 1px solid var(--border);
+	padding: .75rem 1rem;
+	text-align: start;
+	vertical-align: top;
+	overflow-wrap: anywhere;
+}
+
+thead th,
+tfoot th,
+tfoot td {
+	background: var(--surface);
+	font-weight: 600;
+}
+
+tbody tr:nth-child(even),
+tbody tr:hover,
+tbody tr:focus-within {
+	background: var(--surface);
+}
+
+.pagination {
+	display: flex;
+	align-items: center;
+	gap: .4rem;
+}
+
+.pagination [aria-current="page"] {
+	font-weight: 700;
+}
+
+.pagination a {
+	padding: .2rem .4rem;
+}
+
+.pagination__gap {
+	padding: .2rem .2rem;
+	color: var(--muted, var(--fg));
+}
+
+.shell {
+	display: grid;
+	grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+	gap: 1rem;
+}
+
+.shell main {
+	min-width: 0;
+}
+
+.shell:not(:has(> aside)) {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+nav ul {
+	padding: 0;
+	list-style: none;
+}
+
+.theme-switcher {
+	display: inline-flex;
+	gap: .25rem;
+}
+
+.theme-switcher button {
+	border: 1px solid var(--border);
+	border-radius: .3rem;
+	background: transparent;
+	padding: .35rem .6rem;
+	color: var(--fg);
+}
+
+.theme-switcher button[aria-pressed="true"] {
+	border-color: var(--primary);
+	background: var(--primary);
+	color: var(--on-primary);
+}
+
+.grid--columns-1 {
+	grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid--columns-2 {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid--columns-3 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid--columns-4 {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid--columns-5 {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.grid--columns-6 {
+	grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.grid--columns-7 {
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.grid--columns-8 {
+	grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+
+.grid--columns-9 {
+	grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+.grid--columns-10 {
+	grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+
+.grid--columns-11 {
+	grid-template-columns: repeat(11, minmax(0, 1fr));
+}
+
+.grid--columns-12 {
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+@media (max-width: 48rem) {
+	.shell {
+		grid-template-columns: 1fr;
+	}
+
+	.grid--columns-2,
+	.grid--columns-3,
+	.grid--columns-4,
+	.grid--columns-5,
+	.grid--columns-6,
+	.grid--columns-7,
+	.grid--columns-8,
+	.grid--columns-9,
+	.grid--columns-10,
+	.grid--columns-11,
+	.grid--columns-12 {
+		grid-template-columns: 1fr;
+	}
+}

@@ -1,0 +1,16 @@
+{
+  "name": "go-mvu-theme-assets",
+  "private": true,
+  "scripts": {
+    "build:themes": "node scripts/build-themes.mjs",
+    "test:themes": "node --test scripts/themes.test.mjs"
+  },
+  "devDependencies": {
+    "@picocss/pico": "2.1.1",
+    "bootstrap": "5.3.8",
+    "bulma": "1.0.4",
+    "open-props": "1.7.23",
+    "postcss": "8.5.31",
+    "postcss-selector-parser": "7.1.7"
+  }
+}

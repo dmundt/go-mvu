@@ -1,0 +1,36 @@
+html[data-theme] {
+	--bg: var(--bs-body-bg);
+	--fg: var(--bs-body-color);
+	--surface: var(--bs-tertiary-bg);
+	--border: var(--bs-border-color);
+	--primary: var(--bs-primary);
+	--danger: var(--bs-danger);
+	--success: var(--bs-success);
+	--warning: var(--bs-warning);
+	--info: var(--bs-info);
+}
+
+.card {
+	padding: 0;
+}
+
+.card__body {
+	padding: var(--bs-card-spacer-y) var(--bs-card-spacer-x);
+}
+
+.button--ghost {
+	background: transparent;
+}
+
+.badge {
+	color: var(--bs-body-color);
+}
+
+.badge--info { background: var(--bs-info-bg-subtle); color: var(--bs-info-text-emphasis); }
+.badge--success { background: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); }
+.badge--warning { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); }
+.badge--danger { background: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); }
+
+.theme-switcher button {
+	font: inherit;
+}

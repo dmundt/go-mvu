@@ -1,0 +1,771 @@
+/*
+ * go-mvu default design system.
+ *
+ * Minimal, dense, neutral. Target: business and technical apps — data
+ * tables, filters, forms, app shells, record inspectors. Tokens from Open
+ * Props (open-props.css, generated); this file maps them to roles.
+ *
+ * Every selector is scoped to html[data-theme-name="default"], so framework
+ * adapters, which embed base.css and shared.css, never see these rules.
+ */
+
+/* Palette: light */
+
+html[data-theme-name="default"] {
+	--gray-hue: 250;
+	--gray-chroma: .006;
+	--bg: color-mix(in oklch, var(--gray-0), var(--gray-1) 25%);
+	--surface: oklch(100% 0 0);
+	--subtle: var(--gray-1);
+	--border: color-mix(in oklch, var(--gray-1), var(--gray-2));
+	--border-strong: var(--gray-4);
+	--fg: var(--gray-13);
+	--muted: var(--gray-9);
+	--primary: var(--blue-9);
+	--on-primary: #fff;
+	--danger: var(--red-9);
+	--on-danger: #fff;
+	--success: var(--green-9);
+	--warning: var(--yellow-10);
+	--info: var(--blue-9);
+	--shadow: var(--shadow-2);
+	--radius-small: var(--radius-1);
+	--radius-medium: var(--radius-2);
+	--control-height: 2rem;
+	--text-xs: .75rem;
+	--text-sm: .8125rem;
+	--text-md: .875rem;
+	--focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+}
+
+/* Palette: dark */
+
+html[data-theme-name="default"][data-theme="dark"] {
+	--bg: color-mix(in oklch, var(--gray-15), var(--gray-14) 40%);
+	--surface: var(--gray-14);
+	--subtle: var(--gray-13);
+	--border: color-mix(in oklch, var(--gray-13), var(--gray-12) 40%);
+	--border-strong: var(--gray-11);
+	--fg: var(--gray-1);
+	--muted: var(--gray-5);
+	--primary: var(--blue-3);
+	--on-primary: var(--gray-15);
+	--danger: var(--red-4);
+	--on-danger: var(--gray-15);
+	--success: var(--green-4);
+	--warning: var(--yellow-4);
+	--info: var(--blue-3);
+	--shadow-color: 220 40% 2%;
+	--shadow-strength: 25%;
+}
+
+@media (prefers-color-scheme: dark) {
+	html[data-theme-name="default"][data-theme="system"] {
+		--bg: color-mix(in oklch, var(--gray-15), var(--gray-14) 40%);
+		--surface: var(--gray-14);
+		--subtle: var(--gray-13);
+		--border: color-mix(in oklch, var(--gray-13), var(--gray-12) 40%);
+		--border-strong: var(--gray-11);
+		--fg: var(--gray-1);
+		--muted: var(--gray-5);
+		--primary: var(--blue-3);
+		--on-primary: var(--gray-15);
+		--danger: var(--red-4);
+		--on-danger: var(--gray-15);
+		--success: var(--green-4);
+		--warning: var(--yellow-4);
+		--info: var(--blue-3);
+		--shadow-color: 220 40% 2%;
+		--shadow-strength: 25%;
+	}
+}
+
+/* Document */
+
+:where(html[data-theme-name="default"]) body {
+	padding: var(--size-3) var(--size-5);
+	font: var(--font-weight-4) var(--text-md)/1.45 var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+:where(html[data-theme-name="default"]) body > :where(main, .stack, div):not(:has(.shell)) {
+	width: 100%;
+	max-width: 80rem;
+	margin-inline: auto;
+}
+
+:where(html[data-theme-name="default"]) :where(h1, h2, h3, h4) {
+	margin-block: 0 var(--size-2);
+	font-weight: var(--font-weight-6);
+	line-height: var(--font-lineheight-1);
+	letter-spacing: -.01em;
+	text-wrap: balance;
+}
+
+:where(html[data-theme-name="default"]) h1 {
+	font-size: 1.375rem;
+}
+
+:where(html[data-theme-name="default"]) h2 {
+	font-size: 1.0625rem;
+}
+
+:where(html[data-theme-name="default"]) :where(h3, h4) {
+	font-size: var(--text-md);
+}
+
+:where(html[data-theme-name="default"]) p {
+	margin-block: 0 .75rem;
+}
+
+:where(html[data-theme-name="default"]) a {
+	color: var(--primary);
+	text-decoration-color: color-mix(in oklch, currentColor 35%, transparent);
+	text-underline-offset: .2em;
+}
+
+:where(html[data-theme-name="default"]) a:hover {
+	text-decoration-color: currentColor;
+}
+
+:where(html[data-theme-name="default"]) :where(code, kbd, samp, pre) {
+	font-family: var(--font-mono);
+	font-size: .92em;
+}
+
+:where(html[data-theme-name="default"]) code {
+	border-radius: var(--radius-small);
+	background: var(--subtle);
+	padding: .1em .3em;
+}
+
+:where(html[data-theme-name="default"]) pre {
+	overflow: auto;
+	margin-block: 0 .75rem;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--subtle);
+	padding: .625rem .75rem;
+}
+
+:where(html[data-theme-name="default"]) pre code {
+	background: none;
+	padding: 0;
+}
+
+:where(html[data-theme-name="default"]) small {
+	font-size: var(--text-sm);
+}
+
+:where(html[data-theme-name="default"]) hr {
+	margin-block: var(--size-3);
+	border: 0;
+	border-top: 1px solid var(--border);
+}
+
+:where(html[data-theme-name="default"]) ::selection {
+	background: color-mix(in oklch, var(--primary) 25%, transparent);
+}
+
+:where(html[data-theme-name="default"]) :where(button, input, select, textarea, a, summary, [tabindex]):focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
+/* App shell: edge-to-edge top bar, sidebar, content, status footer. */
+
+:where(html[data-theme-name="default"]) body:has(.shell) {
+	padding: 0;
+}
+
+:where(html[data-theme-name="default"]) header:has(+ .shell) {
+	display: flex;
+	align-items: center;
+	gap: var(--size-3);
+	min-height: 3rem;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+	padding: 0 var(--size-3);
+}
+
+:where(html[data-theme-name="default"]) header:has(+ .shell) > :where(h1, h2, p) {
+	margin: 0;
+	font-size: 1rem;
+}
+
+:where(html[data-theme-name="default"]) .shell {
+	grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+	gap: 0;
+	min-height: calc(100dvh - 3rem);
+}
+
+:where(html[data-theme-name="default"]) .shell:not(:has(> aside)) {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+:where(html[data-theme-name="default"]) .shell > aside {
+	border-right: 1px solid var(--border);
+	background: var(--surface);
+	padding: var(--size-2);
+}
+
+:where(html[data-theme-name="default"]) .shell > main {
+	padding: var(--size-3) var(--size-5);
+}
+
+:where(html[data-theme-name="default"]) .shell + footer {
+	border-top: 1px solid var(--border);
+	background: var(--surface);
+	padding: var(--size-2) var(--size-3);
+	color: var(--muted);
+	font-size: var(--text-xs);
+}
+
+/* Navigation: vertical list in sidebars, horizontal in headers. */
+
+:where(html[data-theme-name="default"]) nav > ul {
+	display: grid;
+	gap: 1px;
+	margin: 0;
+}
+
+:where(html[data-theme-name="default"]) header nav > ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-1);
+}
+
+:where(html[data-theme-name="default"]) nav ul ul {
+	margin: 1px 0 0;
+	padding-inline-start: .75rem;
+}
+
+:where(html[data-theme-name="default"]) nav li > :where(a, span) {
+	display: block;
+	border-radius: var(--radius-small);
+	padding: .3125rem .625rem;
+	color: var(--fg);
+	font-size: var(--text-sm);
+	font-weight: var(--font-weight-5);
+	text-decoration: none;
+}
+
+:where(html[data-theme-name="default"]) nav li > a:hover {
+	background: var(--subtle);
+}
+
+:where(html[data-theme-name="default"]) nav li > a[aria-current="page"] {
+	background: color-mix(in oklch, var(--primary) 10%, var(--surface));
+	color: var(--primary);
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) nav li > span[aria-disabled="true"] {
+	color: var(--muted);
+}
+
+/* Breadcrumbs */
+
+:where(html[data-theme-name="default"]) nav > ol {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .375rem;
+	margin: 0 0 .75rem;
+	padding: 0;
+	list-style: none;
+	color: var(--muted);
+	font-size: var(--text-sm);
+}
+
+:where(html[data-theme-name="default"]) nav > ol li + li::before {
+	margin-inline-end: .375rem;
+	color: var(--border-strong);
+	content: "/";
+}
+
+:where(html[data-theme-name="default"]) nav > ol a {
+	color: inherit;
+	text-decoration: none;
+}
+
+:where(html[data-theme-name="default"]) nav > ol a:hover {
+	color: var(--fg);
+}
+
+:where(html[data-theme-name="default"]) nav > ol [aria-current="page"] {
+	color: var(--fg);
+	font-weight: var(--font-weight-6);
+}
+
+/* Forms */
+
+:where(html[data-theme-name="default"]) form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2) .75rem;
+	margin-block: 0 var(--size-3);
+}
+
+:where(html[data-theme-name="default"]) label {
+	font-size: var(--text-sm);
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) .input {
+	min-height: var(--control-height);
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius-medium);
+	background: var(--surface);
+	padding: .25rem .625rem;
+	color: var(--fg);
+	font-size: var(--text-md);
+	line-height: 1.4;
+	transition: border-color 120ms var(--ease-2), box-shadow 120ms var(--ease-2);
+}
+
+:where(html[data-theme-name="default"]) .input:hover:not(:disabled) {
+	border-color: var(--muted);
+}
+
+:where(html[data-theme-name="default"]) .input:focus-visible {
+	border-color: var(--primary);
+	outline: 0;
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 22%, transparent);
+}
+
+:where(html[data-theme-name="default"]) .input::placeholder {
+	color: var(--muted);
+}
+
+:where(html[data-theme-name="default"]) .input[aria-invalid="true"] {
+	border-color: var(--danger);
+}
+
+:where(html[data-theme-name="default"]) .input:disabled {
+	background: var(--subtle);
+	color: var(--muted);
+	cursor: not-allowed;
+}
+
+:where(html[data-theme-name="default"]) textarea.input {
+	padding-block: .4375rem;
+}
+
+:where(html[data-theme-name="default"]) .field-error {
+	font-size: var(--text-sm);
+}
+
+:where(html[data-theme-name="default"]) .form-field {
+	gap: var(--size-1);
+}
+
+:where(html[data-theme-name="default"]) .form-field__hint {
+	font-size: var(--text-xs);
+}
+
+/* Buttons: one recipe, variants set three role tokens. */
+
+:where(html[data-theme-name="default"]) :is(button, .button) {
+	--button-bg: var(--primary);
+	--button-fg: var(--on-primary);
+	--button-border: var(--button-bg);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: .375rem;
+	min-height: var(--control-height);
+	border: 1px solid var(--button-border);
+	border-radius: var(--radius-medium);
+	background: var(--button-bg);
+	padding: 0 .75rem;
+	color: var(--button-fg);
+	font: var(--font-weight-6) var(--text-sm)/1 var(--font-sans);
+	text-decoration: none;
+	white-space: nowrap;
+	width: fit-content;
+	transition: background-color 120ms var(--ease-2), border-color 120ms var(--ease-2);
+}
+
+:where(html[data-theme-name="default"]) a.button {
+	display: inline-flex;
+}
+
+:where(html[data-theme-name="default"]) .button--secondary {
+	--button-bg: var(--surface);
+	--button-fg: var(--fg);
+	--button-border: var(--border-strong);
+}
+
+:where(html[data-theme-name="default"]) .button--danger {
+	--button-bg: var(--danger);
+	--button-fg: var(--on-danger);
+	--button-border: var(--danger);
+}
+
+:where(html[data-theme-name="default"]) .button--ghost {
+	--button-bg: transparent;
+	--button-fg: var(--primary);
+	--button-border: transparent;
+}
+
+:where(html[data-theme-name="default"]) :is(button, .button):not(:disabled):hover {
+	background: color-mix(in oklch, var(--button-bg) 88%, var(--fg));
+}
+
+:where(html[data-theme-name="default"]) :is(button, .button):not(:disabled):active {
+	background: color-mix(in oklch, var(--button-bg) 80%, var(--fg));
+}
+
+:where(html[data-theme-name="default"]) :is(button, .button):disabled {
+	cursor: not-allowed;
+	opacity: .5;
+}
+
+/* Theme switcher: segmented control. */
+
+html[data-theme-name="default"] .theme-switcher {
+	gap: 2px;
+	margin: 0;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--subtle);
+	padding: 2px;
+}
+
+html[data-theme-name="default"] .theme-switcher button {
+	min-height: 1.625rem;
+	border: 0;
+	border-radius: var(--radius-small);
+	background: transparent;
+	padding: 0 .625rem;
+	color: var(--muted);
+	font-size: var(--text-xs);
+}
+
+html[data-theme-name="default"] .theme-switcher button:hover {
+	background: transparent;
+	color: var(--fg);
+}
+
+html[data-theme-name="default"] .theme-switcher button[aria-pressed="true"] {
+	background: var(--surface);
+	box-shadow: var(--shadow-1);
+	color: var(--fg);
+}
+
+/* Cards */
+
+:where(html[data-theme-name="default"]) .card {
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--surface);
+	padding: 0;
+	box-shadow: var(--shadow-1);
+}
+
+:where(html[data-theme-name="default"]) .card:is(.card--primary, .card--success, .card--warning, .card--danger) {
+	border-top-width: 2px;
+}
+
+:where(html[data-theme-name="default"]) .card--default {
+	border-color: var(--border);
+}
+
+:where(html[data-theme-name="default"]) .card__header {
+	border-bottom: 1px solid var(--border);
+	padding: .625rem var(--size-3);
+	font-size: var(--text-md);
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) .card__header > :where(h1, h2, h3, h4) {
+	margin: 0;
+	font-size: inherit;
+}
+
+:where(html[data-theme-name="default"]) .card__body {
+	padding: var(--size-3);
+}
+
+:where(html[data-theme-name="default"]) .card__body > :last-child {
+	margin-bottom: 0;
+}
+
+:where(html[data-theme-name="default"]) .card__footer {
+	border-top: 1px solid var(--border);
+	border-radius: 0 0 var(--radius-medium) var(--radius-medium);
+	background: var(--bg);
+	padding: .5rem var(--size-3);
+	color: var(--muted);
+	font-size: var(--text-sm);
+}
+
+/* Alerts and badges: tone token per variant. */
+
+:where(html[data-theme-name="default"]) :is(.alert, .badge) {
+	--tone: var(--muted);
+}
+
+:where(html[data-theme-name="default"]) :is(.alert--info, .badge--info) {
+	--tone: var(--info);
+}
+
+:where(html[data-theme-name="default"]) :is(.alert--success, .badge--success) {
+	--tone: var(--success);
+}
+
+:where(html[data-theme-name="default"]) :is(.alert--warning, .badge--warning) {
+	--tone: var(--warning);
+}
+
+:where(html[data-theme-name="default"]) :is(.alert--danger, .badge--danger) {
+	--tone: var(--danger);
+}
+
+:where(html[data-theme-name="default"]) .alert {
+	margin-block: 0 .75rem;
+	border: 1px solid color-mix(in oklch, var(--tone) 30%, var(--border));
+	border-inline-start: 3px solid var(--tone);
+	border-radius: var(--radius-medium);
+	background: color-mix(in oklch, var(--tone) 7%, var(--surface));
+	padding: .5rem .75rem;
+	font-size: var(--text-md);
+}
+
+:where(html[data-theme-name="default"]) .badge {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	min-height: 1.25rem;
+	border: 0;
+	border-radius: var(--radius-small);
+	background: color-mix(in oklch, var(--tone) 13%, var(--surface));
+	padding: 0 .375rem;
+	color: color-mix(in oklch, var(--tone) 85%, var(--fg));
+	font-size: .6875rem;
+	font-weight: var(--font-weight-7);
+	letter-spacing: .02em;
+	line-height: 1.2;
+	white-space: nowrap;
+}
+
+/* Data tables: compact rows, quiet uppercase header, sticky in scroll box. */
+
+:where(html[data-theme-name="default"]) .table-scroll {
+	margin-block: 0 var(--size-3);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--surface);
+}
+
+:where(html[data-theme-name="default"]) :not(.table-scroll) > table {
+	margin-block: 0 var(--size-3);
+	border: 1px solid var(--border);
+}
+
+:where(html[data-theme-name="default"]) table {
+	border-collapse: collapse;
+	background: var(--surface);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+:where(html[data-theme-name="default"]) caption {
+	padding: .625rem .75rem;
+	color: var(--fg);
+	font-size: var(--text-md);
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) :is(th, td) {
+	border-bottom: 1px solid var(--border);
+	padding: .4375rem .75rem;
+	vertical-align: middle;
+	line-height: 1.35;
+}
+
+:where(html[data-theme-name="default"]) thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: var(--bg);
+	padding-block: .375rem;
+	color: var(--muted);
+	font-size: .6875rem;
+	font-weight: var(--font-weight-6);
+	letter-spacing: .06em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+:where(html[data-theme-name="default"]) tbody th {
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) :is(tfoot th, tfoot td) {
+	border-top: 1px solid var(--border);
+	border-bottom: 0;
+	background: var(--bg);
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) tbody tr:last-child > :is(th, td) {
+	border-bottom: 0;
+}
+
+:where(html[data-theme-name="default"]) tbody tr:nth-child(even) {
+	background: transparent;
+}
+
+:where(html[data-theme-name="default"]) tbody tr:hover {
+	background: color-mix(in oklch, var(--fg) 3%, var(--surface));
+}
+
+:where(html[data-theme-name="default"]) tbody tr:focus-within {
+	background: color-mix(in oklch, var(--primary) 7%, var(--surface));
+	box-shadow: inset 2px 0 var(--primary);
+}
+
+/* Pagination */
+
+:where(html[data-theme-name="default"]) .pagination {
+	flex-wrap: wrap;
+	gap: var(--size-1);
+	margin-block: 0 var(--size-3);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+:where(html[data-theme-name="default"]) .pagination :where(a, [aria-current="page"]) {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--control-height);
+	min-height: var(--control-height);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-medium);
+	background: var(--surface);
+	padding: 0 .5rem;
+	color: var(--fg);
+	text-decoration: none;
+}
+
+:where(html[data-theme-name="default"]) .pagination a:hover {
+	border-color: var(--border-strong);
+	background: var(--subtle);
+}
+
+:where(html[data-theme-name="default"]) .pagination [aria-current="page"] {
+	border-color: var(--primary);
+	background: var(--primary);
+	color: var(--on-primary);
+	font-weight: var(--font-weight-6);
+}
+
+:where(html[data-theme-name="default"]) .pagination__gap {
+	color: var(--muted);
+}
+
+/* Live values */
+
+:where(html[data-theme-name="default"]) output {
+	font-size: 1.5rem;
+	font-weight: var(--font-weight-6);
+	font-variant-numeric: tabular-nums;
+}
+
+/* Shared widgets: density only; structure lives in shared.css. */
+
+html[data-theme-name="default"] .accordion,
+html[data-theme-name="default"] .dropdown__menu,
+html[data-theme-name="default"] .stat,
+html[data-theme-name="default"] .empty-state {
+	border-radius: var(--radius-medium);
+}
+
+html[data-theme-name="default"] .accordion__trigger {
+	padding: .625rem var(--size-3);
+	font-size: var(--text-md);
+}
+
+html[data-theme-name="default"] .accordion__content {
+	padding: 0 var(--size-3) var(--size-3);
+}
+
+html[data-theme-name="default"] .tabset__list {
+	border-radius: var(--radius-medium);
+	padding: 2px;
+}
+
+html[data-theme-name="default"] .tabset__tab {
+	border-radius: var(--radius-small);
+	padding: .3125rem .75rem;
+	font-size: var(--text-sm);
+}
+
+html[data-theme-name="default"] .dropdown > summary {
+	min-height: var(--control-height);
+	border-color: var(--border-strong);
+	border-radius: var(--radius-medium);
+	padding: 0 .75rem;
+	font-size: var(--text-sm);
+}
+
+html[data-theme-name="default"] .dropdown__menu {
+	box-shadow: var(--shadow-3);
+	padding: var(--size-1);
+	font-size: var(--text-sm);
+}
+
+html[data-theme-name="default"] .dropdown__menu a {
+	border-radius: var(--radius-small);
+	padding: .375rem .625rem;
+}
+
+html[data-theme-name="default"] .dialog {
+	border-radius: var(--radius-3);
+	box-shadow: var(--shadow-5);
+}
+
+html[data-theme-name="default"] .stat {
+	padding: .75rem var(--size-3);
+}
+
+html[data-theme-name="default"] .stat__value {
+	font-size: 1.5rem;
+}
+
+html[data-theme-name="default"] .empty-state {
+	padding: var(--size-7) var(--size-3);
+}
+
+html[data-theme-name="default"] .empty-state__title {
+	font-size: 1rem;
+}
+
+html[data-theme-name="default"] .kbd {
+	font-family: var(--font-mono);
+}
+
+@media (max-width: 48rem) {
+	:where(html[data-theme-name="default"]) .shell > aside {
+		border-right: 0;
+		border-bottom: 1px solid var(--border);
+	}
+
+	:where(html[data-theme-name="default"]) .shell > main {
+		padding: var(--size-3);
+	}
+}
+
+@media (max-width: 36rem) {
+	:where(html[data-theme-name="default"]) body {
+		padding: var(--size-2);
+	}
+
+	:where(html[data-theme-name="default"]) form:not(.theme-switcher) > :is(button, .button) {
+		flex: 1 1 100%;
+	}
+}

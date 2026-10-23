@@ -1,0 +1,27 @@
+# Architecture Decision Records
+
+This directory records the current architectural decisions for go-mvu. See
+the [architecture overview](../architecture.md) for package responsibilities
+and runtime flow. The [gomvu spec](../specs/gomvu-chat-spec.md) is authoritative; the
+[engineering brief](../engineering-brief.md) is history. Earlier alternatives,
+such as generic multi-format rendering, are not current decisions.
+
+## Records
+
+| ADR | Decision | Status |
+| --- | --- | --- |
+| [0001](0001-html-ssr-and-htmx.md) | Keep the framework focused on Go server-rendered HTML and HTMX | Accepted |
+| [0002](0002-package-boundaries.md) | Enforce package boundaries and one-way dependencies | Accepted |
+| [0003](0003-mvu-runtime-boundaries.md) | Keep MVU updates pure and isolate side effects in commands | Accepted |
+| [0004](0004-direct-safe-html-rendering.md) | Stream HTML directly with explicit escaping APIs | Accepted |
+| [0005](0005-pages-and-fragments.md) | Distinguish full-page and fragment response contracts | Accepted |
+| [0006](0006-versioned-session-models.md) | Persist versioned models behind storage and session boundaries | Accepted |
+| [0007](0007-server-controlled-themes.md) | Provide server-controlled light and dark themes | Accepted |
+| [0008](0008-explicit-validation.md) | Decode and validate forms explicitly without reflection | Accepted |
+| [0009](0009-reusable-components.md) | Keep reusable components optional and application components local | Accepted |
+| [0010](0010-shared-ui-components.md) | Separate shared UI components from core components | Accepted |
+| [0011](0011-system-theme-mode.md) | System theme mode as default | Accepted |
+| [0012](0012-csp-and-local-htmx.md) | Strict CSP with locally served HTMX | Accepted |
+| [0013](0013-runtime-request-context.md) | Explicit request context, command runners, auto rendering | Accepted |
+| [0014](0014-enforced-package-boundaries.md) | Enforce package boundaries by test | Accepted |
+| [0015](0015-open-props-default-design-system.md) | Open Props default design system | Accepted |
