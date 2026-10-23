@@ -4,6 +4,11 @@ Notable changes to go-mvu are documented here.
 
 ## Unreleased
 
+### Added
+
+- `ui.ModePicker` for native GET theme previews, with explicit hidden query
+  fields. Promoted from the example-only helper; gallery behavior is unchanged.
+
 ### Changed
 
 - **Breaking:** consolidate `shared` widgets into `components`. Replace

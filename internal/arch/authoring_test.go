@@ -137,7 +137,7 @@ func TestAuthoringPolicyStaysScoped(t *testing.T) {
 	}{
 		{"examples/counter/view.go", true},
 		{"examples/newapp/view.go", true},
-		{"examples/internal/modepicker/modepicker.go", true},
+		{"examples/internal/shared/view.go", true},
 		{"examples/themes/lowlevel.go", false},
 		{"examples/components/lowlevel.go", false},
 		{"examples/newapp/lowlevel.go", true},

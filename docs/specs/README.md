@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 12
+version: 13
 ---
 
 # Specs
@@ -81,6 +81,8 @@ and [page policy](../guides/components.md#shared-page-policy).
 
 `ui.ActionLink` shares one GET URL between native and enhanced links;
 `ui.ThemeSwitcher` supplies the CSRF field for the standard preference form.
+`ui.ModePicker` supplies a GET-only theme preview selector, with explicit
+hidden query fields and no persisted preference or CSRF requirement.
 The optional `ui` layer imports `theme` for its typed mode. Ordinary
 component-returning functions are the default example authoring pattern;
 custom types and `RegionView` remain supported. The counter can be copied

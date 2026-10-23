@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 5
+version: 6
 ---
 
 # Components and pagination
@@ -258,6 +258,24 @@ and `Return` fields and supplies the CSRF input. Missing CSRF context returns
 `middleware.ErrCSRFTokenUnset` before output. It does not install protection
 or the preference handler. Use `components.ThemeSwitcher` for custom
 endpoints, targets, or attributes.
+
+For URL-based previews, use `ui.ModePicker` instead:
+
+```go
+picker := ui.ModePicker{
+	Mode: theme.Dark,
+	Hidden: []ui.ModePickerField{{Name: "tab", Value: "settings"}},
+}
+```
+
+It renders a native GET form targeting `?`, a labeled `mode` select with
+System/Light/Dark choices, preserved hidden query fields, and an Apply theme
+button. The application reads `mode` and selects the rendered appearance.
+It does not persist preferences, need CSRF/session middleware, or install a
+handler. Hidden names and values are escaped; rendering errors propagate.
+Like any GET form, only named controls are submitted; pass query parameters
+that should survive through `Hidden`. The picker uses control ID `mode`;
+render one per page to avoid duplicate IDs.
 
 ## Low-level element builder
 

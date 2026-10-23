@@ -3,7 +3,7 @@ type: Architecture Decision
 title: Concise UI composition
 status: Accepted
 description: Small layout constructors and optional application-level integration helpers.
-version: 2
+version: 3
 ---
 
 # ADR-0021: Concise UI composition
@@ -34,6 +34,9 @@ Add optional `ui` package above `components`, `web`, `middleware`, `static`,
 - `ThemeSwitcher` accepts explicit mode and return path and supplies the CSRF
   field. It requires session/CSRF context; routes remain application-owned.
   The `theme` dependency provides the existing typed mode, not a new policy.
+- `ModePicker` composes a native GET preview form with typed mode and explicit
+  hidden query fields. The application reads the query; no cookie mutation,
+  CSRF/session dependency, or route registration is introduced.
 - `Region` supplies one fragment identity and an escaped section root.
   Unknown fragments remain errors. Region names are restricted to safe CSS
   identifiers so default action targets need no selector escaping.

@@ -20,9 +20,10 @@
   semantic tables in the users example.
 - Keep custom reusable components in normal Go packages, not registration
   systems. Cover imported components and handlers with tests.
-- Cross-example helpers live in `examples/internal/` (`modepicker`); Go
+- Cross-example helpers live in `examples/internal/`; Go
   `internal` rule keeps them out of framework API. Reuse them; do not duplicate
-  mode-picker forms. Single-example code stays in that example.
+  helpers. Theme-preview forms use `ui.ModePicker`. Single-example code stays
+  in that example.
   Examples must not import other example applications or their subpackages,
   including in tests and nested modules; share code through `examples/internal/`.
 - Layout: `main.go` = server wiring + `newHandler`; view/components in

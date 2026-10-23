@@ -7,9 +7,9 @@ import (
 	"net/http"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/internal/modepicker"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/theme"
+	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -40,7 +40,7 @@ type gallery struct {
 func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Component(ctx, components.Main{Children: []html.Component{
 		components.Heading{Level: 1, Text: "Default theme modes"},
-		modepicker.Form{Mode: view.Mode},
+		ui.ModePicker{Mode: view.Mode},
 		components.Stack{Children: []html.Component{
 			buttonCard(),
 			components.Alert{

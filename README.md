@@ -33,6 +33,7 @@ Open <http://localhost:8080> and try the counter.
 - [Try a form with validation](docs/guides/forms.md)
 - [Build views with small Go functions](examples/counter/view.go)
 - [Build shorter views and lists](docs/guides/components.md#shorter-composition)
+- [Choose theme previews or saved preferences](docs/guides/components.md#action-aware-navigation)
 - [Design interactive apps without application JavaScript](docs/guides/interactions.md)
 - [Browse examples](examples/README.md)
 - [Prepare for launch](docs/guides/production.md)
