@@ -2,7 +2,7 @@
 type: Guide
 title: Interactive applications without application JavaScript
 description: Native HTML and HTMX interaction patterns, server-owned state, and capability limits.
-version: 2
+version: 3
 ---
 
 # Interactive applications without application JavaScript
@@ -202,6 +202,20 @@ canceled content. Define cancellation, duplicate-submit, back-navigation, focus
 return, Escape, and loading/error behavior. Browser-test repeated open,
 invalid submit, successful save/list refresh, cancel during load, keyboard
 operation, and no-HTMX fallback before claiming a complete modal lifecycle.
+
+### Runnable non-modal example
+
+The [admin example](../../examples/admin/README.md) implements this lifecycle
+without claiming true modality. Native buttons open a pre-existing popover;
+HTMX loads its inner editor. Validation returns 422 and replaces only inner
+content. Success replaces the workspace, removing the open shell and
+installing a fresh closed one, while status updates out of band. This
+deliberately avoids pretending that empty inner content closes a native shell.
+
+Full-page Edit links provide the same form workflow without HTMX or Popover API
+support. Explicit cancel clears the draft; Escape only dismisses native UI.
+Browser tests exercise delayed competing responses, cancel during load,
+keyboard/focus behavior, computed styles, and no-JavaScript submission.
 
 ## Live updates and SSE
 

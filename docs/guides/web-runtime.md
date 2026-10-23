@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 3
+version: 4
 ---
 
 # Web runtime
@@ -10,6 +10,36 @@ version: 3
 `web` binds an `mvu.Application` to `net/http`: key resolution, message
 decoding, versioned persistence, commands, rendering. `mvu` stays free of
 HTTP, HTML, storage.
+
+## Ownership and guarantees
+
+The runtime owns the request-driven server loop, not a desktop event loop:
+
+```text
+HTTP request -> key + decoder -> typed message -> pure Update
+             -> versioned save -> commands -> latest model -> View -> HTML
+```
+
+Applications configure routes, decoding, storage, views, and response policy
+once. `Runtime.Handle` orchestrates each action; application handlers do not
+need to repeat load/update/save/render logic. State lives in a keyed
+`store.Store`, not a single mutable runtime field. There is no public
+`Runtime.Dispatch` or `Runtime.Model` API.
+
+| Boundary | Contract |
+| --- | --- |
+| Session and access | Middleware supplies session identity and protects HTTP access; `Keys` resolves the model key. Runtime does not install cookie, authentication, CSRF, or asset middleware. |
+| Update | May run again after a CAS conflict. Keep it pure and preserve previous snapshots; no database writes, HTTP calls, timers, or mutation of shared slices/maps. |
+| Commands | Run after persistence. Model commit, command admission, and external effects are not one transaction and are not automatically exactly-once. Use application-owned outbox/inbox or idempotency where required. |
+| Rendering | Happens according to `Result`, not automatically after every background state change. Page reads can render without `Update`; redirects and `RenderNothing` skip the view. |
+| Browser | HTMX requests and swaps HTML; runtime neither patches DOM nor manages focus, popover visibility, or client-local state. Plain links/forms retain full-page behavior. |
+| Async completion | Follow-up messages re-enter state transitions, but do not rewrite an already-delivered response or refresh open pages. Use another request, polling, or a separately designed push integration. |
+| Subscriptions | No built-in desktop-style subscription or SSE lifecycle. Commands are not an implicit streaming transport. |
+| Failures | A command/render/HTTP failure after model persistence does not roll back the commit. Report failure explicitly; do not blindly replay consequential mutations. |
+
+The [counter tutorial](first-app.md#what-runs-after-a-click) shows the smallest
+wiring. The [admin example](../../examples/admin/) adds validated editing,
+non-modal popover content, and coordinated page/fragment responses.
 
 ## Configuration
 

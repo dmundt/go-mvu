@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 6
+version: 8
 ---
 
 # Specs
@@ -27,7 +27,7 @@ version: 6
 | 7 | Versioned store | [store](../../store/), [session](../../session/) | ADR [0006](../adr/0006-versioned-session-models.md) |
 | 8 | Web views, RequestContext | [web](../../web/) | [web runtime](../guides/web-runtime.md), ADR [0013](../adr/0013-runtime-request-context.md) |
 | 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md), [interactions](../guides/interactions.md) |
-| 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`) | [web runtime](../guides/web-runtime.md) |
+| 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`), [admin workflow](../../examples/admin/) | [runtime ownership](../guides/web-runtime.md#ownership-and-guarantees), [first-app loop](../guides/first-app.md#what-runs-after-a-click), [dialog workflows](../guides/interactions.md#dialog-workflows-temporary-pages) |
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |
 | 13 | Component library | [components](../../components/), [shared](../../shared/) | [components](../guides/components.md), ADR [0009](../adr/0009-reusable-components.md), [0010](../adr/0010-shared-ui-components.md) |
@@ -46,6 +46,11 @@ version: 6
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+Additional learning examples: [hello](../../examples/hello/) uses only
+document composition and an HTTP page writer; [admin](../../examples/admin/)
+combines per-session state, validated edits, filters, pagination, and two
+independent regions. Neither changes core contracts or adds dependencies.
 
 UI conveniences: `Select.Placeholder` owns an optional empty-value choice;
 `ui.Document.Validate` rejects HTMX-only flags without HTMX. Form field
