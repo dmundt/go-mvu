@@ -15,8 +15,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/theme"
 )
 
@@ -32,13 +31,13 @@ var (
 // TransitionAuthorizer authorizes each transition attempt using current
 // stored model state. Page/PageFunc initialization remains governed by Init
 // and is not gated here; a missing model created during Handle is gated.
-type TransitionAuthorizer[K comparable, Model any, Msg mvu.Message] func(
+type TransitionAuthorizer[K comparable, Model any, Msg core.Message] func(
 	context.Context, K, Model, Msg,
 ) error
 
-type RuntimeConfig[K comparable, Model any, Msg mvu.Message] struct {
-	App   mvu.Application[Model, Msg]
-	Store store.Store[K, Model]
+type RuntimeConfig[K comparable, Model any, Msg core.Message] struct {
+	App   core.Application[Model, Msg]
+	Store core.Store[K, Model]
 	Keys  KeyResolver[K]
 	View  View[Model]
 	// Theme is the active visual theme. Nil → theme.DefaultTheme.
@@ -58,9 +57,9 @@ type RuntimeConfig[K comparable, Model any, Msg mvu.Message] struct {
 	MaxRetries int
 }
 
-type Runtime[K comparable, Model any, Msg mvu.Message] struct {
-	app        mvu.Application[Model, Msg]
-	store      store.Store[K, Model]
+type Runtime[K comparable, Model any, Msg core.Message] struct {
+	app        core.Application[Model, Msg]
+	store      core.Store[K, Model]
 	keys       KeyResolver[K]
 	view       View[Model]
 	theme      theme.Theme
@@ -73,7 +72,7 @@ type Runtime[K comparable, Model any, Msg mvu.Message] struct {
 }
 
 // NewRuntime validates config and applies defaults.
-func NewRuntime[K comparable, Model any, Msg mvu.Message](
+func NewRuntime[K comparable, Model any, Msg core.Message](
 	config RuntimeConfig[K, Model, Msg],
 ) (*Runtime[K, Model, Msg], error) {
 	if config.App == nil || config.Store == nil || config.Keys == nil || config.View == nil {

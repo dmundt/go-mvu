@@ -2,7 +2,7 @@
 type: Engineering Summary
 title: Engineering summary
 description: Project direction, implementation status, and technical summary.
-version: 7
+version: 8
 ---
 
 # Engineering Summary
@@ -36,8 +36,8 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 
 | Area | State |
 | --- | --- |
-| Pure contracts: `mvu`, `html`, `htmx`, `store` | done, tested |
-| `web`: runtime, RequestContext, typed forms, CommandRunner, RenderAuto | done, tested |
+| `core`: MVU contracts and versioned storage; `html`: rendering contracts | done, tested |
+| `web`: runtime, HTMX transport, RequestContext, typed forms, CommandRunner, RenderAuto | done, tested |
 | `theme`: default tokens, system mode, signed preference | done; Go + node tests |
 | `components`: controls, layouts, native widgets, page policy, secure actions | done; unified gallery example |
 | `web`: CSP, CSRF, stream-safe recover, diagnostics | done, tested; request/cache policy application-owned |

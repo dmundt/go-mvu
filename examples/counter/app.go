@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type CounterModel struct {
@@ -11,7 +11,7 @@ type CounterModel struct {
 }
 
 type CounterMessage interface {
-	mvu.Message
+	core.Message
 	isCounterMessage()
 }
 
@@ -29,7 +29,7 @@ func (Reset) isCounterMessage()     {}
 
 type CounterApp struct{}
 
-func (CounterApp) Init(context.Context) (CounterModel, []mvu.Command[CounterMessage], error) {
+func (CounterApp) Init(context.Context) (CounterModel, []core.Command[CounterMessage], error) {
 	return CounterModel{}, nil, nil
 }
 
@@ -37,7 +37,7 @@ func (CounterApp) Update(
 	_ context.Context,
 	model CounterModel,
 	msg CounterMessage,
-) (CounterModel, []mvu.Command[CounterMessage], error) {
+) (CounterModel, []core.Command[CounterMessage], error) {
 	switch msg.(type) {
 	case Increment:
 		model.Count++

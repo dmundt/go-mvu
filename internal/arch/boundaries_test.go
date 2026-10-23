@@ -16,17 +16,15 @@ const module = "github.com/dmundt/go-mvu/"
 // allowed lists permitted in-module imports per package (non-test files).
 // Spec: docs/specs/gomvu-chat-spec.md §2.
 var allowed = map[string][]string{
-	"mvu":                        {},
+	"core":                       {},
 	"html":                       {},
-	"store":                      {},
 	"theme":                      {},
 	"internal/arch":              {},
 	"internal/browsertest":       {},
-	"internal/example/jsonstore": {"store"},
+	"internal/example/jsonstore": {"core"},
 	"internal/example/server":    {"web"},
-	"htmx":                       {"html"},
-	"components":                 {"html", "htmx", "theme", "web"},
-	"web":                        {"mvu", "html", "htmx", "store", "theme"},
+	"components":                 {"html", "theme", "web"},
+	"web":                        {"core", "html", "theme"},
 }
 
 func TestPublicFrameworkPackages(t *testing.T) {
@@ -52,7 +50,7 @@ func TestPublicFrameworkPackages(t *testing.T) {
 			}
 		}
 	}
-	want := []string{"components", "html", "htmx", "mvu", "store", "theme", "web"}
+	want := []string{"components", "core", "html", "theme", "web"}
 	if !slices.Equal(packages, want) {
 		t.Fatalf("public framework packages = %v, want %v", packages, want)
 	}

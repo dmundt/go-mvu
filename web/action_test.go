@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/dmundt/go-mvu/htmx"
 )
 
 func TestActionSharesRouteAndHTMXConfiguration(t *testing.T) {
@@ -14,14 +12,14 @@ func TestActionSharesRouteAndHTMXConfiguration(t *testing.T) {
 		config.App = testApp{initCommand: true}
 	})
 	action := Action[testMessage]{
-		Method: htmx.Post,
+		Method: Post,
 		Path:   "/add",
 		Decode: StaticMessage[testMessage](1),
 		Result: Result{Mode: RenderAuto, Fragment: "count"},
 	}
 	browser := action.HTMX()
-	if browser.Method != htmx.Post || browser.URL != action.Path ||
-		browser.Target != "#count" || browser.Swap != htmx.OuterHTML {
+	if browser.Method != Post || browser.URL != action.Path ||
+		browser.Target != "#count" || browser.Swap != OuterHTML {
 		t.Fatalf("HTMX action = %+v", browser)
 	}
 
@@ -45,7 +43,7 @@ func TestActionSharesRouteAndHTMXConfiguration(t *testing.T) {
 func TestActionRegisterRejectsInvalidConfiguration(t *testing.T) {
 	runtime := newTestRuntime(t, nil)
 	valid := Action[testMessage]{
-		Method: htmx.Post,
+		Method: Post,
 		Path:   "/add",
 		Decode: StaticMessage[testMessage](1),
 		Result: Result{Mode: RenderAuto, Fragment: "count"},
@@ -68,6 +66,26 @@ func TestActionRegisterRejectsInvalidConfiguration(t *testing.T) {
 	}
 }
 
+func TestBrowserAndRuntimeActionErrorsRemainDistinct(t *testing.T) {
+	browser := BrowserAction{Method: Post, URL: "/add", Target: "\n"}
+	if err := browser.Validate(); !errors.Is(err, ErrInvalidHTMXAction) || errors.Is(err, ErrInvalidAction) {
+		t.Fatalf("browser error = %v, want only ErrInvalidHTMXAction", err)
+	}
+	runtime := newTestRuntime(t, nil)
+	action := PostMessage[testMessage]("/add", 1, Result{Mode: RenderAuto, Fragment: "count"})
+	action.Target = browser.Target
+	err := runtime.Register(http.NewServeMux(), action)
+	if !errors.Is(err, ErrInvalidAction) || !errors.Is(err, ErrInvalidHTMXAction) {
+		t.Fatalf("runtime error = %v, want both runtime and browser causes", err)
+	}
+	action.Target = ""
+	action.Decode = nil
+	err = runtime.Register(http.NewServeMux(), action)
+	if !errors.Is(err, ErrInvalidAction) || errors.Is(err, ErrInvalidHTMXAction) {
+		t.Fatalf("decoder error = %v, want only ErrInvalidAction", err)
+	}
+}
+
 func TestPostMessageAndBatchRegistration(t *testing.T) {
 	runtime := newTestRuntime(t, nil)
 	result := Result{Mode: RenderAuto, Fragment: "count", Location: "/"}
@@ -77,7 +95,7 @@ func TestPostMessageAndBatchRegistration(t *testing.T) {
 	if err != nil || message != 1 {
 		t.Fatalf("decoded message = %v, error = %v", message, err)
 	}
-	if add.Method != htmx.Post || add.Result != result || add.HTMX().Target != "#count" {
+	if add.Method != Post || add.Result != result || add.HTMX().Target != "#count" {
 		t.Fatalf("action = %+v", add)
 	}
 	if err := runtime.RegisterAll(nil); !errors.Is(err, ErrInvalidAction) {

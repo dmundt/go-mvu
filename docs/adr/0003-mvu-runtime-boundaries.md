@@ -2,12 +2,16 @@
 type: Architecture Decision Record
 title: "ADR-0003: Keep MVU updates separate from I/O"
 description: Keep state updates pure and isolate side effects in commands.
-version: 1
+version: 2
 ---
 
 # ADR-0003: Keep MVU updates separate from I/O
 
 - Status: Accepted
+
+Application contracts now live in `core` alongside versioned storage per
+[ADR-0030](0030-five-public-packages.md). The purity requirement below remains
+unchanged; co-location does not authorize persistence from updates.
 
 ## Context
 

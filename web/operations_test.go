@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 )
 
 func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
@@ -28,9 +27,9 @@ func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
 		{"stale", StaleAction, func(c *RuntimeConfig[string, testModel, testMessage]) {}, true},
 		{"effect", CommittedEffectFailure, func(c *RuntimeConfig[string, testModel, testMessage]) {
 			c.Commands = failingEventCommands{}
-			c.App = mvu.Functions[testModel, testMessage]{
-				UpdateFunc: func(_ context.Context, model testModel, _ testMessage) (testModel, []mvu.Command[testMessage], error) {
-					return model, []mvu.Command[testMessage]{mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error { return nil })}, nil
+			c.App = core.Functions[testModel, testMessage]{
+				UpdateFunc: func(_ context.Context, model testModel, _ testMessage) (testModel, []core.Command[testMessage], error) {
+					return model, []core.Command[testMessage]{core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error { return nil })}, nil
 				},
 			}
 		}, false},
@@ -41,7 +40,7 @@ func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
 			runtime := newTestRuntime(t, test.configure)
 			route := addRoute(Result{Mode: RenderNothing})
 			if test.expected {
-				route.ExpectedVersion = func(*http.Request) (store.Version, error) { return 999, nil }
+				route.ExpectedVersion = func(*http.Request) (core.Version, error) { return 999, nil }
 			}
 			runtime.Handle(route).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("POST", "/add", nil).WithContext(ctx))
 			if events[test.event] != 1 {
@@ -53,7 +52,7 @@ func TestRuntimeEventsWithoutOutcomeCallback(t *testing.T) {
 
 type failingEventCommands struct{}
 
-func (failingEventCommands) Run(context.Context, []mvu.Command[testMessage], mvu.Dispatch[testMessage]) error {
+func (failingEventCommands) Run(context.Context, []core.Command[testMessage], core.Dispatch[testMessage]) error {
 	return errors.New("effect failed")
 }
 
@@ -71,20 +70,20 @@ func TestAsyncEventsAndRepeatedClose(t *testing.T) {
 		t.Fatal(err)
 	}
 	entered, release := make(chan struct{}), make(chan struct{})
-	work := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	work := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		close(entered)
 		<-release
 		return errors.New("downstream failed")
 	})
-	if err := runner.Run(ctx, []mvu.Command[testMessage]{work}, nil); err != nil {
+	if err := runner.Run(ctx, []core.Command[testMessage]{work}, nil); err != nil {
 		t.Fatal(err)
 	}
 	<-entered
-	noop := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error { return nil })
-	if err := runner.Run(ctx, []mvu.Command[testMessage]{noop}, nil); err != nil {
+	noop := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error { return nil })
+	if err := runner.Run(ctx, []core.Command[testMessage]{noop}, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := runner.Run(ctx, []mvu.Command[testMessage]{noop}, nil); !errors.Is(err, ErrCommandOverload) {
+	if err := runner.Run(ctx, []core.Command[testMessage]{noop}, nil); !errors.Is(err, ErrCommandOverload) {
 		t.Fatalf("saturation = %v", err)
 	}
 	canceled, cancel := context.WithCancel(context.Background())

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 // EffectError marks failures from commands after a model transition committed.
@@ -23,15 +23,15 @@ func (e *EffectError) Unwrap() error { return e.Cause }
 
 // CommandRunner executes commands returned by Init and Update.
 // dispatch performs a full transition and runs follow-up commands.
-type CommandRunner[Msg mvu.Message] interface {
-	Run(context.Context, []mvu.Command[Msg], mvu.Dispatch[Msg]) error
+type CommandRunner[Msg core.Message] interface {
+	Run(context.Context, []core.Command[Msg], core.Dispatch[Msg]) error
 }
 
 // SyncCommands runs commands in order before the response renders.
-type SyncCommands[Msg mvu.Message] struct{}
+type SyncCommands[Msg core.Message] struct{}
 
 func (SyncCommands[Msg]) Run(
-	ctx context.Context, commands []mvu.Command[Msg], dispatch mvu.Dispatch[Msg],
+	ctx context.Context, commands []core.Command[Msg], dispatch core.Dispatch[Msg],
 ) error {
 	for _, command := range commands {
 		if command == nil {
@@ -47,9 +47,9 @@ func (SyncCommands[Msg]) Run(
 	return nil
 }
 
-type asyncTask[Msg mvu.Message] struct {
-	command  mvu.Command[Msg]
-	dispatch mvu.Dispatch[Msg]
+type asyncTask[Msg core.Message] struct {
+	command  core.Command[Msg]
+	dispatch core.Dispatch[Msg]
 	ctx      context.Context
 }
 
@@ -58,7 +58,7 @@ type asyncTask[Msg mvu.Message] struct {
 // Close stops acceptance and drains queued jobs; a Close context timeout only
 // bounds waiting and does not cancel running work. Per-command timeout bounds
 // cooperative jobs independently of request and shutdown contexts.
-type AsyncCommandRunner[Msg mvu.Message] struct {
+type AsyncCommandRunner[Msg core.Message] struct {
 	queue   chan asyncTask[Msg]
 	timeout time.Duration
 	onError func(error)
@@ -68,7 +68,7 @@ type AsyncCommandRunner[Msg mvu.Message] struct {
 	done    chan struct{}
 }
 
-func NewAsyncCommandRunner[Msg mvu.Message](
+func NewAsyncCommandRunner[Msg core.Message](
 	concurrency, queueSize int, timeout time.Duration, onError func(error),
 ) (*AsyncCommandRunner[Msg], error) {
 	if concurrency <= 0 || queueSize < 0 || timeout <= 0 {
@@ -90,7 +90,7 @@ func NewAsyncCommandRunner[Msg mvu.Message](
 }
 
 func (runner *AsyncCommandRunner[Msg]) Run(
-	ctx context.Context, commands []mvu.Command[Msg], dispatch mvu.Dispatch[Msg],
+	ctx context.Context, commands []core.Command[Msg], dispatch core.Dispatch[Msg],
 ) error {
 	runner.mu.Lock()
 	defer runner.mu.Unlock()

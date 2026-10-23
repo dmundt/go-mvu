@@ -2,19 +2,19 @@
 type: Guide
 title: Durable storage and outbox
 description: Persist model transitions with retryable, idempotent external effects.
-version: 1
+version: 2
 ---
 
 # Durable storage and outbox
 
-The framework's default `store.Memory` is process-local. Replace it with an
-application-owned `store.Store` when model state must survive restarts. See the
+The framework's default `core.Memory` is process-local. Replace it with an
+application-owned `core.Store` when model state must survive restarts. See the
 [durable example](../../examples/durable/README.md) for an example-only JSON
 file store; it is not part of the framework.
 
 ## Transaction boundary
 
-An `mvu.Command` runs after the model transition has committed. A process can
+A `core.Command` runs after the model transition has committed. A process can
 stop between those steps, so a command alone is not a durable job queue.
 Persist pending effect records in the same commit unit as the model transition.
 Treat wake-up signals as hints; scan pending records after startup and

@@ -2,14 +2,15 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 9
+version: 10
 ---
 
 # Web runtime
 
-`web` binds an `mvu.Application` to `net/http`: key resolution, message
-decoding, versioned persistence, commands, rendering. `mvu` stays free of
-HTTP, HTML, storage.
+`web` binds a `core.Application` to `net/http`: key resolution, message
+decoding, versioned persistence, commands, rendering. `core` owns MVU and
+storage contracts but stays free of HTTP and HTML dependencies. Application
+updates remain pure; persistence belongs to runtime orchestration.
 
 ## Ownership and guarantees
 
@@ -23,7 +24,7 @@ HTTP request -> key + decoder -> typed message -> pure Update
 Applications configure routes, decoding, storage, views, and response policy
 once. `Runtime.Handle` orchestrates each action; application handlers do not
 need to repeat load/update/save/render logic. State lives in a keyed
-`store.Store`, not a single mutable runtime field. There is no public
+`core.Store`, not a single mutable runtime field. There is no public
 `Runtime.Dispatch` or `Runtime.Model` API.
 
 | Boundary | Contract |
@@ -46,7 +47,7 @@ non-modal popover content, and coordinated page/fragment responses.
 ```go
 runtime, err := web.NewRuntime(web.RuntimeConfig[string, Model, Message]{
 	App:    App{},                          // required
-	Store:  store.NewMemory[string, Model](), // required
+	Store:  core.NewMemory[string, Model](), // required
 	Keys:   sessionKey,                     // required
 	View:   View{},                         // required
 	Theme:  theme.Default,                  // nil → theme.DefaultTheme
@@ -76,7 +77,7 @@ type RequestContext struct {
 	Mode       theme.Mode
 	Locale     string
 	IsHTMX     bool
-	HTMX       htmx.Request
+	HTMX       web.HTMXRequest
 	CurrentURL string // HX-Current-URL for HTMX, else request URI
 }
 ```
@@ -95,7 +96,7 @@ and response once. Reuse the action in the view:
 
 ```go
 var submit = web.Action[Message]{
-	Method: htmx.Post,
+	Method: web.Post,
 	Path:   "/contact",
 	Decode: decodeContact,
 	Result: web.Result{Mode: web.RenderAuto, Fragment: "contact-form"},
@@ -190,7 +191,7 @@ resolve key → decode message
 ```
 
 - No store lock held during Update result use, commands, or rendering.
-- Update must stay pure: no HTTP, no I/O. Effects → `mvu.Command`.
+- Update must stay pure: no HTTP, no I/O. Effects → `core.Command`.
 
 ## Commands
 
@@ -246,7 +247,7 @@ for rejection. Never use HX request metadata as proof of identity.
 protect private page access at the HTTP boundary.
 
 `Route.ExpectedVersion` accepts a function:
-`func(*http.Request) (store.Version, error)`.
+`func(*http.Request) (core.Version, error)`.
 A stale initial action returns
 409 without rebasing the user's intent. If CAS conflicts while this explicit
 precondition is active, reject rather than retry against a newer model.

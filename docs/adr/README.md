@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 10
+version: 11
 ---
 
 # Architecture Decision Records
@@ -20,11 +20,11 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | ADR | Decision | Status |
 | --- | --- | --- |
 | [0001](0001-html-ssr-and-htmx.md) | Keep the framework focused on Go server-rendered HTML and HTMX | Accepted |
-| [0002](0002-package-boundaries.md) | Enforce package boundaries and one-way dependencies | Accepted; package layout superseded by 0029 |
-| [0003](0003-mvu-runtime-boundaries.md) | Keep MVU updates pure and isolate side effects in commands | Accepted |
+| [0002](0002-package-boundaries.md) | Enforce package boundaries and one-way dependencies | Accepted; package layout superseded by 0030 |
+| [0003](0003-mvu-runtime-boundaries.md) | Keep MVU updates pure and isolate side effects in commands | Accepted; contracts now in core per 0030 |
 | [0004](0004-direct-safe-html-rendering.md) | Stream HTML directly with explicit escaping APIs | Accepted |
 | [0005](0005-pages-and-fragments.md) | Distinguish full-page and fragment response contracts | Accepted |
-| [0006](0006-versioned-session-models.md) | Persist versioned models behind storage and session boundaries | Accepted; package placement superseded by 0029 |
+| [0006](0006-versioned-session-models.md) | Persist versioned models behind storage and session boundaries | Accepted; package placement superseded by 0030 |
 | [0007](0007-server-controlled-themes.md) | Provide server-controlled light and dark themes | Accepted |
 | [0008](0008-explicit-validation.md) | Decode and validate forms explicitly without reflection | Accepted; package placement superseded by 0028 |
 | [0009](0009-reusable-components.md) | Keep reusable components optional and application components local | Accepted |
@@ -47,4 +47,5 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0026](0026-prototype-api-simplification.md) | Canonical names, function contracts, single theme-resolution path | Accepted; HTTP API ownership superseded by 0029 |
 | [0027](0027-consolidated-http-observability.md) | Request tracing in shared HTTP support; remove standalone timing package | Accepted; package placement superseded by 0029 |
 | [0028](0028-web-owned-form-validation.md) | Explicit form validation in web; remove standalone validation package | Accepted |
-| [0029](0029-seven-public-packages.md) | Seven public packages; web-owned HTTP infrastructure and components-owned UI integration | Accepted |
+| [0029](0029-seven-public-packages.md) | Seven public packages; web-owned HTTP infrastructure and components-owned UI integration | Package layout superseded by 0030 |
+| [0030](0030-five-public-packages.md) | Five public packages; core-owned MVU/storage and web-owned HTMX transport | Accepted |

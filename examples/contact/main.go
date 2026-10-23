@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/internal/example/server"
-	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -55,7 +55,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, ContactModel, ContactMessage]{
 		App:   ContactApp{},
-		Store: store.NewMemory[string, ContactModel](),
+		Store: core.NewMemory[string, ContactModel](),
 		Keys:  sessionKey,
 		View:  contactView(document),
 		Theme: contactTheme{},

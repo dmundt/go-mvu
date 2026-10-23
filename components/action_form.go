@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 var ErrInvalidForm = errors.New("components: form requires a same-origin GET or POST action")
@@ -15,7 +15,7 @@ var ErrInvalidForm = errors.New("components: form requires a same-origin GET or 
 // includes a CSRF field and requires web.CSRF.Wrap. GET never sends it.
 // PUT, PATCH and DELETE have no native form fallback and are rejected.
 type ActionForm struct {
-	Action htmx.Action
+	Action web.BrowserAction
 	Body   html.Component
 	Attrs  html.Attrs
 }
@@ -23,9 +23,9 @@ type ActionForm struct {
 func (form ActionForm) RenderHTML(ctx context.Context, out *html.Context) error {
 	method := FormPost
 	switch form.Action.Method {
-	case htmx.Get:
+	case web.Get:
 		method = FormGet
-	case htmx.Post:
+	case web.Post:
 	default:
 		return ErrInvalidForm
 	}
@@ -51,7 +51,7 @@ func (form ActionForm) RenderHTML(ctx context.Context, out *html.Context) error 
 // ActionButton is a standalone submit button with a native form fallback.
 // Attrs apply to the form; use ActionForm with Button for custom button attributes.
 type ActionButton struct {
-	Action    htmx.Action
+	Action    web.BrowserAction
 	Label     string
 	AriaLabel string
 	Variant   ButtonVariant

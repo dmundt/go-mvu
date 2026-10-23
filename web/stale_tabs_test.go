@@ -7,11 +7,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 )
 
 func TestTwoTabsCannotCommitSameExpectedVersion(t *testing.T) {
-	memory := store.NewMemory[string, testModel]()
+	memory := core.NewMemory[string, testModel]()
 	snapshot, err := memory.Create(context.Background(), "client", testModel{})
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +27,7 @@ func TestTwoTabsCannotCommitSameExpectedVersion(t *testing.T) {
 		}
 	})
 	route := addRoute(Result{Mode: RenderNothing})
-	route.ExpectedVersion = func(*http.Request) (store.Version, error) {
+	route.ExpectedVersion = func(*http.Request) (core.Version, error) {
 		return snapshot.Version, nil
 	}
 	handler := runtime.Handle(route)

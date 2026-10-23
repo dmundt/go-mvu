@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"sync/atomic"
 
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type OutcomeState uint8
@@ -68,7 +68,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			fail(err)
 			return
 		}
-		var expected *store.Version
+		var expected *core.Version
 		if route.ExpectedVersion != nil {
 			version, err := route.ExpectedVersion(r)
 			if err != nil {
@@ -87,7 +87,7 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			_, err := runtime.store.Load(ctx, key)
 			done()
 			if err != nil {
-				if errors.Is(err, store.ErrNotFound) {
+				if errors.Is(err, core.ErrNotFound) {
 					fail(&Error{Status: http.StatusNotFound, Public: http.StatusText(http.StatusNotFound), Cause: err})
 				} else {
 					fail(err)

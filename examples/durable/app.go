@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type CounterModel struct {
@@ -22,7 +22,7 @@ type OutboxEvent struct {
 }
 
 type CounterMessage interface {
-	mvu.Message
+	core.Message
 	isCounterMessage()
 }
 
@@ -35,7 +35,7 @@ type CounterApp struct {
 	Wake chan<- string
 }
 
-func (CounterApp) Init(context.Context) (CounterModel, []mvu.Command[CounterMessage], error) {
+func (CounterApp) Init(context.Context) (CounterModel, []core.Command[CounterMessage], error) {
 	return CounterModel{}, nil, nil
 }
 
@@ -43,7 +43,7 @@ func (app CounterApp) Update(
 	_ context.Context,
 	model CounterModel,
 	message CounterMessage,
-) (CounterModel, []mvu.Command[CounterMessage], error) {
+) (CounterModel, []core.Command[CounterMessage], error) {
 	increment, ok := message.(Increment)
 	if !ok {
 		return model, nil, fmt.Errorf("unsupported message %T", message)
@@ -60,7 +60,7 @@ func (app CounterApp) Update(
 		Count: model.Count,
 	}
 	model.Outbox = append(model.Outbox, event)
-	return model, []mvu.Command[CounterMessage]{
+	return model, []core.Command[CounterMessage]{
 		WakeOutbox{Key: increment.Key, Wake: app.Wake},
 	}, nil
 }
@@ -70,7 +70,7 @@ type WakeOutbox struct {
 	Wake chan<- string
 }
 
-func (command WakeOutbox) Execute(ctx context.Context, _ mvu.Dispatch[CounterMessage]) error {
+func (command WakeOutbox) Execute(ctx context.Context, _ core.Dispatch[CounterMessage]) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 var ErrInvalidAction = errors.New("invalid web action")
@@ -16,22 +15,22 @@ var ErrInvalidAction = errors.New("invalid web action")
 // An empty target and swap use the fragment name as "#<fragment>" and
 // outerHTML. Non-GET RenderAuto actions redirect plain submissions to Path
 // unless Result.Location is set.
-type Action[Msg mvu.Message] struct {
-	Method          htmx.Method
+type Action[Msg core.Message] struct {
+	Method          Method
 	Path            string
 	Decode          Decoder[Msg]
 	Result          Result
 	Target          string
-	Swap            htmx.Swap
+	Swap            Swap
 	RequireModel    bool
 	ExpectedVersion ExpectedVersion
 }
 
 // PostMessage defines a POST action for a static message. Result remains
 // explicit so fragment and plain-form redirect policy stay visible.
-func PostMessage[Msg mvu.Message](path string, message Msg, result Result) Action[Msg] {
+func PostMessage[Msg core.Message](path string, message Msg, result Result) Action[Msg] {
 	return Action[Msg]{
-		Method: htmx.Post,
+		Method: Post,
 		Path:   path,
 		Decode: StaticMessage(message),
 		Result: result,
@@ -55,15 +54,15 @@ func (runtime *Runtime[K, Model, Msg]) RegisterAll(
 }
 
 // HTMX returns the browser action described by this route.
-func (action Action[Msg]) HTMX() htmx.Action {
+func (action Action[Msg]) HTMX() BrowserAction {
 	target, swap := action.Target, action.Swap
 	if target == "" && action.Result.Fragment != "" {
 		target = "#" + action.Result.Fragment
 	}
 	if swap == "" && action.Result.Fragment != "" {
-		swap = htmx.OuterHTML
+		swap = OuterHTML
 	}
-	return htmx.Action{
+	return BrowserAction{
 		Method: action.Method,
 		URL:    action.Path,
 		Target: target,
@@ -91,7 +90,7 @@ func (runtime *Runtime[K, Model, Msg]) Register(
 	}
 
 	result := action.Result
-	if result.Mode == RenderAuto && result.Location == "" && action.Method != htmx.Get {
+	if result.Mode == RenderAuto && result.Location == "" && action.Method != Get {
 		result.Location = action.Path
 	}
 	mux.Handle(method+" "+action.Path, runtime.Handle(Route[Msg]{
@@ -107,15 +106,15 @@ func (runtime *Runtime[K, Model, Msg]) Register(
 
 func (action Action[Msg]) httpMethod() string {
 	switch action.Method {
-	case htmx.Get:
+	case Get:
 		return http.MethodGet
-	case htmx.Post:
+	case Post:
 		return http.MethodPost
-	case htmx.Put:
+	case Put:
 		return http.MethodPut
-	case htmx.Patch:
+	case Patch:
 		return http.MethodPatch
-	case htmx.Delete:
+	case Delete:
 		return http.MethodDelete
 	default:
 		return ""

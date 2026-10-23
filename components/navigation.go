@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 type Pagination struct {
@@ -18,7 +18,7 @@ type Pagination struct {
 	BaseURL       string
 	QueryName     string
 	Target        string
-	Swap          htmx.Swap
+	Swap          web.Swap
 	PushURL       bool
 	PreviousLabel string
 	NextLabel     string
@@ -126,9 +126,9 @@ func (pagination Pagination) link(out *html.Context, page int, label, rel string
 	out.Static("\"")
 	optionalAttribute(out, "rel", rel)
 	if pagination.Target != "" {
-		action := htmx.Action{Method: htmx.Get, URL: href, Target: pagination.Target, Swap: pagination.Swap}
+		action := web.BrowserAction{Method: web.Get, URL: href, Target: pagination.Target, Swap: pagination.Swap}
 		if action.Swap == "" {
-			action.Swap = htmx.OuterHTML
+			action.Swap = web.OuterHTML
 		}
 		if pagination.PushURL {
 			action.PushURL = "true"

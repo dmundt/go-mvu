@@ -11,9 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
 )
 
 type principalContextKey struct{}
@@ -75,7 +74,7 @@ func TestRenderAutoAddsNoStoreAndMergesVary(t *testing.T) {
 }
 
 func TestExpectedVersionRejectsStaleIntentWithoutRetry(t *testing.T) {
-	memory := store.NewMemory[string, testModel]()
+	memory := core.NewMemory[string, testModel]()
 	_, err := memory.Create(context.Background(), "client", testModel{Count: 9})
 	if err != nil {
 		t.Fatal(err)
@@ -84,7 +83,7 @@ func TestExpectedVersionRejectsStaleIntentWithoutRetry(t *testing.T) {
 		c.Store = memory
 	})
 	route := addRoute(Result{Mode: RenderNothing})
-	route.ExpectedVersion = func(*http.Request) (store.Version, error) {
+	route.ExpectedVersion = func(*http.Request) (core.Version, error) {
 		return 0, nil
 	}
 	response := serve(runtime.Handle(route), httptest.NewRequest(http.MethodPost, "/add", nil))
@@ -98,13 +97,13 @@ func TestExpectedVersionRejectsStaleIntentWithoutRetry(t *testing.T) {
 }
 
 func TestExpectedVersionAppliesOnlyToDirectTransition(t *testing.T) {
-	probe := &lockProbeStore{Memory: store.NewMemory[string, testModel]()}
+	probe := &lockProbeStore{Memory: core.NewMemory[string, testModel]()}
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.Store = probe
 		c.App = commandApp{probe: probe}
 	})
 	route := addRoute(Result{Mode: RenderFragment, Fragment: "count"})
-	route.ExpectedVersion = func(*http.Request) (store.Version, error) {
+	route.ExpectedVersion = func(*http.Request) (core.Version, error) {
 		return 1, nil
 	}
 	response := serve(runtime.Handle(route), httptest.NewRequest(http.MethodPost, "/add", nil))
@@ -114,7 +113,7 @@ func TestExpectedVersionAppliesOnlyToDirectTransition(t *testing.T) {
 }
 
 func TestTransitionAuthorizationRunsForCASRetriesAndCommands(t *testing.T) {
-	backing := &conflictStore{Memory: store.NewMemory[string, testModel](), conflicts: 1}
+	backing := &conflictStore{Memory: core.NewMemory[string, testModel](), conflicts: 1}
 	var mu sync.Mutex
 	var models []int
 	var messages []testMessage
@@ -158,13 +157,13 @@ func TestTransitionAuthorizationRejectsWithoutMutation(t *testing.T) {
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("status = %d", response.Code)
 	}
-	if _, err := runtime.store.Load(context.Background(), "client"); !errors.Is(err, store.ErrNotFound) {
+	if _, err := runtime.store.Load(context.Background(), "client"); !errors.Is(err, core.ErrNotFound) {
 		t.Fatalf("unauthorized request created model: %v", err)
 	}
 }
 
 func TestCanceledRequestDoesNotCreateModel(t *testing.T) {
-	memory := store.NewMemory[string, testModel]()
+	memory := core.NewMemory[string, testModel]()
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.Store = memory
 	})
@@ -175,7 +174,7 @@ func TestCanceledRequestDoesNotCreateModel(t *testing.T) {
 	if response.Code != http.StatusRequestTimeout {
 		t.Fatalf("status = %d", response.Code)
 	}
-	if _, err := memory.Load(context.Background(), "client"); !errors.Is(err, store.ErrNotFound) {
+	if _, err := memory.Load(context.Background(), "client"); !errors.Is(err, core.ErrNotFound) {
 		t.Fatalf("canceled request created model: %v", err)
 	}
 }
@@ -184,10 +183,10 @@ type failingEffectApp struct{ testApp }
 
 func (failingEffectApp) Update(
 	_ context.Context, model testModel, message testMessage,
-) (testModel, []mvu.Command[testMessage], error) {
+) (testModel, []core.Command[testMessage], error) {
 	model.Count += int(message)
-	return model, []mvu.Command[testMessage]{
-		mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	return model, []core.Command[testMessage]{
+		core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 			return errors.New("effect failed")
 		}),
 	}, nil
@@ -274,24 +273,24 @@ func TestBoundedAsyncRunnerRejectsOverloadAndDrains(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	blocked := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	blocked := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		ran.Add(1)
 		close(started)
 		<-release
 		return nil
 	})
-	queued := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	queued := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		ran.Add(1)
 		return nil
 	})
-	if err := runner.Run(context.Background(), []mvu.Command[testMessage]{blocked}, nil); err != nil {
+	if err := runner.Run(context.Background(), []core.Command[testMessage]{blocked}, nil); err != nil {
 		t.Fatal(err)
 	}
 	<-started
-	if err := runner.Run(context.Background(), []mvu.Command[testMessage]{queued}, nil); err != nil {
+	if err := runner.Run(context.Background(), []core.Command[testMessage]{queued}, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := runner.Run(context.Background(), []mvu.Command[testMessage]{queued}, nil); !errors.Is(err, ErrCommandOverload) {
+	if err := runner.Run(context.Background(), []core.Command[testMessage]{queued}, nil); !errors.Is(err, ErrCommandOverload) {
 		t.Fatalf("overload error = %v", err)
 	}
 	close(release)
@@ -320,13 +319,13 @@ func TestBoundedAsyncRunnerIgnoresRequestCancellation(t *testing.T) {
 		principal string
 	}
 	finished := make(chan completion, 1)
-	command := mvu.CommandFunc[testMessage](func(ctx context.Context, _ mvu.Dispatch[testMessage]) error {
+	command := core.CommandFunc[testMessage](func(ctx context.Context, _ core.Dispatch[testMessage]) error {
 		<-ctx.Done()
 		principal, _ := ctx.Value(principalContextKey{}).(string)
 		finished <- completion{err: ctx.Err(), principal: principal}
 		return nil
 	})
-	if err := runner.Run(ctx, []mvu.Command[testMessage]{command}, nil); err != nil {
+	if err := runner.Run(ctx, []core.Command[testMessage]{command}, nil); err != nil {
 		t.Fatal(err)
 	}
 	select {
@@ -345,7 +344,7 @@ func TestBoundedAsyncRunnerIgnoresRequestCancellation(t *testing.T) {
 }
 
 func TestAsyncFollowupAuthorizationRetainsRequestPrincipal(t *testing.T) {
-	probe := &lockProbeStore{Memory: store.NewMemory[string, testModel]()}
+	probe := &lockProbeStore{Memory: core.NewMemory[string, testModel]()}
 	runner, err := NewAsyncCommandRunner[testMessage](1, 4, time.Second, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -397,22 +396,22 @@ func TestAsyncRunnerRecursiveDispatchFailsFastWithoutDeadlock(t *testing.T) {
 	started := make(chan struct{})
 	release := make(chan struct{})
 	result := make(chan error, 1)
-	command := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	command := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		close(started)
 		<-release
-		result <- runner.Run(context.Background(), []mvu.Command[testMessage]{
-			mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+		result <- runner.Run(context.Background(), []core.Command[testMessage]{
+			core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 				return nil
 			}),
 		}, nil)
 		return nil
 	})
-	if err := runner.Run(context.Background(), []mvu.Command[testMessage]{command}, nil); err != nil {
+	if err := runner.Run(context.Background(), []core.Command[testMessage]{command}, nil); err != nil {
 		t.Fatal(err)
 	}
 	<-started
-	if err := runner.Run(context.Background(), []mvu.Command[testMessage]{
-		mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error { return nil }),
+	if err := runner.Run(context.Background(), []core.Command[testMessage]{
+		core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error { return nil }),
 	}, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -439,12 +438,12 @@ func TestAsyncRunnerCloseReturnsContextErrorWhileDraining(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	command := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	command := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		close(started)
 		<-release
 		return nil
 	})
-	if err := runner.Run(context.Background(), []mvu.Command[testMessage]{command}, nil); err != nil {
+	if err := runner.Run(context.Background(), []core.Command[testMessage]{command}, nil); err != nil {
 		t.Fatal(err)
 	}
 	<-started
@@ -547,10 +546,10 @@ type cancellationEffectApp struct{ testApp }
 
 func (cancellationEffectApp) Update(
 	_ context.Context, model testModel, message testMessage,
-) (testModel, []mvu.Command[testMessage], error) {
+) (testModel, []core.Command[testMessage], error) {
 	model.Count += int(message)
-	return model, []mvu.Command[testMessage]{
-		mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	return model, []core.Command[testMessage]{
+		core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 			return context.Canceled
 		}),
 	}, nil

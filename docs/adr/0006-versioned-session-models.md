@@ -2,7 +2,7 @@
 type: Architecture Decision Record
 title: "ADR-0006: Keep versioned models behind storage and session boundaries"
 description: Persist versioned models through storage and session boundaries.
-version: 2
+version: 3
 ---
 
 # ADR-0006: Keep versioned models behind storage and session boundaries
@@ -13,6 +13,11 @@ Package placement and import names are superseded by
 [ADR-0029](0029-seven-public-packages.md). The historical decision below
 retains its behavioral contracts; use the seven-package layout and
 [migration notes](../../CHANGELOG.md#unreleased) for current APIs.
+
+
+The MVU/store/HTMX package split is further superseded by
+[ADR-0030](0030-five-public-packages.md): MVU and storage now share `core`,
+and HTMX transport lives in `web`. Behavioral contracts remain unchanged.
 
 ## Context
 

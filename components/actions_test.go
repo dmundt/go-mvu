@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -45,7 +44,7 @@ func TestFormDerivesNativeAndHTMXSubmission(t *testing.T) {
 	protectedContext(t, func(ctx context.Context) {
 		var output strings.Builder
 		form := ActionForm{
-			Action: htmx.Action{Method: htmx.Post, URL: "/send", Target: "#form", Swap: htmx.OuterHTML},
+			Action: web.BrowserAction{Method: web.Post, URL: "/send", Target: "#form", Swap: web.OuterHTML},
 			Body:   Button{Type: ButtonSubmit, Label: "Send <request>"},
 			Attrs:  html.Attrs{html.A("class", "contact-form")},
 		}
@@ -69,7 +68,7 @@ func TestFormDerivesNativeAndHTMXSubmission(t *testing.T) {
 	})
 
 	get := renderIntegration(t, ActionForm{
-		Action: htmx.Action{Method: htmx.Get, URL: "/search?q=a&sort=b"},
+		Action: web.BrowserAction{Method: web.Get, URL: "/search?q=a&sort=b"},
 		Body:   Input{Name: "q", Value: "<value>"},
 	})
 	if !strings.Contains(get, `method="get" action="/search?q=a&amp;sort=b" hx-get=`) ||
@@ -79,16 +78,16 @@ func TestFormDerivesNativeAndHTMXSubmission(t *testing.T) {
 }
 
 func TestFormRejectsUnsupportedOrUnsafeActions(t *testing.T) {
-	tests := []htmx.Action{
+	tests := []web.BrowserAction{
 		{},
-		{Method: htmx.Put, URL: "/send"},
-		{Method: htmx.Patch, URL: "/send"},
-		{Method: htmx.Delete, URL: "/send"},
-		{Method: htmx.Post, URL: "https://outside.test/send"},
-		{Method: htmx.Post, URL: "//outside.test/send"},
-		{Method: htmx.Post, URL: "/\\outside.test"},
-		{Method: htmx.Post, URL: "/\noutside.test"},
-		{Method: htmx.Post, URL: "send"},
+		{Method: web.Put, URL: "/send"},
+		{Method: web.Patch, URL: "/send"},
+		{Method: web.Delete, URL: "/send"},
+		{Method: web.Post, URL: "https://outside.test/send"},
+		{Method: web.Post, URL: "//outside.test/send"},
+		{Method: web.Post, URL: "/\\outside.test"},
+		{Method: web.Post, URL: "/\noutside.test"},
+		{Method: web.Post, URL: "send"},
 	}
 	for _, action := range tests {
 		var output strings.Builder
@@ -100,16 +99,16 @@ func TestFormRejectsUnsupportedOrUnsafeActions(t *testing.T) {
 		}
 	}
 	if err := html.Render(context.Background(), io.Discard, ActionForm{
-		Action: htmx.Action{Method: htmx.Get, URL: "/send", Swap: "invalid"},
-	}); !errors.Is(err, htmx.ErrInvalidAction) {
+		Action: web.BrowserAction{Method: web.Get, URL: "/send", Swap: "invalid"},
+	}); !errors.Is(err, web.ErrInvalidHTMXAction) {
 		t.Fatalf("invalid swap error = %v", err)
 	}
 }
 
 func TestPostRequiresCSRFContext(t *testing.T) {
 	for _, component := range []html.Component{
-		ActionForm{Action: htmx.Action{Method: htmx.Post, URL: "/send"}},
-		ActionButton{Action: htmx.Action{Method: htmx.Post, URL: "/send"}, Label: "Send"},
+		ActionForm{Action: web.BrowserAction{Method: web.Post, URL: "/send"}},
+		ActionButton{Action: web.BrowserAction{Method: web.Post, URL: "/send"}, Label: "Send"},
 	} {
 		if err := html.Render(context.Background(), io.Discard, component); !errors.Is(err, web.ErrCSRFTokenUnset) {
 			t.Fatalf("render error = %v, want missing CSRF token", err)
@@ -121,7 +120,7 @@ func TestActionButtonPreservesAccessibilityAndVariant(t *testing.T) {
 	protectedContext(t, func(ctx context.Context) {
 		var output strings.Builder
 		if err := html.Render(ctx, &output, ActionButton{
-			Action:    htmx.Action{Method: htmx.Post, URL: "/minus"},
+			Action:    web.BrowserAction{Method: web.Post, URL: "/minus"},
 			Label:     "-",
 			AriaLabel: "Decrement <count>",
 			Variant:   ButtonSecondary,
@@ -242,7 +241,7 @@ func TestHelpersPropagateChildAndWriterErrors(t *testing.T) {
 	child := html.ComponentFunc(func(context.Context, *html.Context) error { return want })
 	for _, component := range []html.Component{
 		Region("form").Wrap(child),
-		ActionForm{Action: htmx.Action{Method: htmx.Get, URL: "/search"}, Body: child},
+		ActionForm{Action: web.BrowserAction{Method: web.Get, URL: "/search"}, Body: child},
 		PagePolicy{}.Page(web.RequestContext{}, "", child),
 	} {
 		if err := html.Render(context.Background(), io.Discard, component); !errors.Is(err, want) {

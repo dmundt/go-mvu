@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func TestAttrsPassthroughMergesClassAndKeepsOwnedAttributes(t *testing.T) {
@@ -28,7 +28,7 @@ func TestAttrsPassthroughMergesClassAndKeepsOwnedAttributes(t *testing.T) {
 		{"button", Button{Label: "Go", Variant: ButtonPrimary, Attrs: html.Attrs{
 			html.A("class", "wide"), html.A("type", "submit"), html.A("hx-post", "/go"), html.Flag("autofocus"),
 		}}, `<button type="button" class="button button--primary wide" hx-post="/go" autofocus>Go</button>`},
-		{"button action owns hx", Button{Label: "Go", Action: htmx.Action{Method: htmx.Get, URL: "/a"},
+		{"button action owns hx", Button{Label: "Go", Action: web.BrowserAction{Method: web.Get, URL: "/a"},
 			Attrs: html.Attrs{html.A("hx-get", "/b"), html.A("hx-target", "#x"), html.A("data-k", "v")}},
 			`<button type="button" class="button" hx-get="/a" data-k="v">Go</button>`},
 		{"heading", Heading{Level: 2, Text: "T", Attrs: html.Attrs{html.A("class", "muted")}},
@@ -67,7 +67,7 @@ func TestAttrsPassthroughRejectsUnsafeAttributes(t *testing.T) {
 }
 
 func TestElementBuilderComposesWithComponents(t *testing.T) {
-	action, err := htmx.Action{Method: htmx.Post, URL: "/save", Target: "#panel", Swap: htmx.OuterHTML}.Attrs()
+	action, err := web.BrowserAction{Method: web.Post, URL: "/save", Target: "#panel", Swap: web.OuterHTML}.Attrs()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func TestAttrsActionOwnsEveryHTMXAlias(t *testing.T) {
 		html.A("hx-trigger", "every 2s"), html.A("data-hx-swap", "innerHTML"),
 		html.A("data-note", "retained"),
 	}
-	action := htmx.Action{Method: htmx.Get, URL: "/owned", Target: "#owned"}
+	action := web.BrowserAction{Method: web.Get, URL: "/owned", Target: "#owned"}
 	for _, tc := range []struct {
 		name      string
 		component html.Component

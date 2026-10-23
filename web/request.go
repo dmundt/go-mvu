@@ -4,10 +4,8 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
 )
 
@@ -16,7 +14,7 @@ type RequestContext struct {
 	Theme      theme.Theme
 	Mode       theme.Mode
 	IsHTMX     bool
-	HTMX       htmx.Request
+	HTMX       HTMXRequest
 	CurrentURL string
 	// Locale is explicitly resolved by HTTP middleware and passed to views.
 	Locale string
@@ -29,7 +27,7 @@ func NewRequestContext(r *http.Request, active theme.Theme) RequestContext {
 		active = theme.DefaultTheme{}
 	}
 	mode := theme.ModeFromContext(r.Context())
-	request := htmx.FromRequest(r)
+	request := HTMXFromRequest(r)
 	current := r.URL.RequestURI()
 	if request.IsHTMX && request.CurrentURL != "" {
 		current = request.CurrentURL
@@ -69,19 +67,19 @@ func (f ViewFunctions[Model]) Fragment(
 }
 
 // Decoder parses a request into an application message.
-type Decoder[Msg mvu.Message] func(*http.Request) (Msg, error)
+type Decoder[Msg core.Message] func(*http.Request) (Msg, error)
 
 // StaticMessage returns a decoder for a request-independent message.
 // Messages containing mutable data must not be mutated by Update.
-func StaticMessage[Msg mvu.Message](message Msg) Decoder[Msg] {
+func StaticMessage[Msg core.Message](message Msg) Decoder[Msg] {
 	return func(*http.Request) (Msg, error) { return message, nil }
 }
 
 type KeyResolver[K comparable] func(*http.Request) (K, error)
 
-type ExpectedVersion func(*http.Request) (store.Version, error)
+type ExpectedVersion func(*http.Request) (core.Version, error)
 
-type Route[Msg mvu.Message] struct {
+type Route[Msg core.Message] struct {
 	Method  string
 	Pattern string
 	Decode  Decoder[Msg]

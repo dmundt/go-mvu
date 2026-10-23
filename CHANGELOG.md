@@ -13,6 +13,29 @@ Notable changes to go-mvu are documented here.
 
 ### Changed
 
+- **Breaking:** consolidate seven public packages into five: `core`, `html`,
+  `theme`, `web`, and `components`. Examples and internal packages remain
+  separate. No forwarding packages or compatibility aliases remain.
+  - Replace `mvu` and `store` imports/qualifiers with `core`. Their application,
+    command, versioned-store, and memory-store names retain their spelling.
+    Merge duplicate imports. Pure updates still must not perform persistence,
+    HTTP work, or rendering.
+  - Move `htmx` into `web`. `htmx.Action` becomes `web.BrowserAction`;
+    `web.Action[Msg]` remains the typed runtime route and `.HTMX()` returns
+    `web.BrowserAction`. `htmx.ErrInvalidAction` becomes
+    `web.ErrInvalidHTMXAction`, distinct from runtime `web.ErrInvalidAction`.
+  - `htmx.Request` and `htmx.FromRequest` become `web.HTMXRequest` and
+    `web.HTMXFromRequest`. Request metadata remains browser-provided, not
+    authentication or authorization evidence.
+  - Prefix response helpers with `HTMX`: `web.HTMXRedirect`, `HTMXRefresh`,
+    `HTMXPushURL`, `HTMXReplaceURL`, `HTMXRetarget`, `HTMXReswap`,
+    `HTMXReselect`, and `HTMXTrigger`.
+  - `Method`, `Swap`, method constants (`Get`, `Post`, etc.), and swap constants
+    (`InnerHTML`, `OuterHTML`, etc.) retain their names under `web`.
+  - Markup, HTMX headers, URL validation, store/CAS behavior, session formats,
+    and rendering semantics are unchanged.
+  See [ADR-0030](docs/adr/0030-five-public-packages.md).
+
 - **Breaking:** seven public framework packages: `mvu`, `store`, `html`, `htmx`,
   `theme`, `web`, and `components`. Internal packages and examples are not part
   of this count. No forwarding packages or compatibility aliases remain.

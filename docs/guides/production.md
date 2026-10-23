@@ -2,7 +2,7 @@
 type: Guide
 title: Deploy a durable authenticated application
 description: Connect example JSON file persistence, generic OIDC, middleware, and single-host operations.
-version: 3
+version: 4
 ---
 
 # Deploy a durable authenticated application
@@ -21,7 +21,7 @@ multiple writers against the same data directory or deploy multiple replicas
 over the same volume.
 
 For horizontal scaling, supply a genuinely shared, transactional
-`store.Store`, shared authentication/revocation policy, and distributed
+`core.Store`, shared authentication/revocation policy, and distributed
 quota enforcement. A reverse proxy alone does not make local state distributed.
 
 Persisted MVU models are application state, not a domain database abstraction.

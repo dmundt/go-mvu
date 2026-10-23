@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/theme"
+	"github.com/dmundt/go-mvu/web"
 )
 
 type ButtonType string
@@ -29,7 +29,7 @@ type Button struct {
 	Label    string
 	Variant  ButtonVariant
 	Disabled bool
-	Action   htmx.Action
+	Action   web.BrowserAction
 	// AriaLabel names icon-only or symbol buttons such as "+" or "×".
 	AriaLabel string
 	// Attrs adds passthrough attributes. With Action set, hx-* names are
@@ -57,7 +57,7 @@ func buttonClass(out *html.Context, variant ButtonVariant, attrs html.Attrs) {
 }
 
 // actionOwned returns "hx-*" when action renders htmx attributes.
-func actionOwned(action htmx.Action) string {
+func actionOwned(action web.BrowserAction) string {
 	if action.Method == 0 {
 		return ""
 	}
@@ -93,10 +93,10 @@ func (switcher ThemeSwitcher) RenderHTML(ctx context.Context, out *html.Context)
 	out.Attribute(path)
 	out.Static(`" aria-label="Color theme"`)
 	out.PassAttrs(switcher.Attrs, "method", "action", "aria-label", "hx-*")
-	action := htmx.Action{Method: htmx.Post, URL: path, Swap: htmx.NoSwap}
+	action := web.BrowserAction{Method: web.Post, URL: path, Swap: web.NoSwap}
 	if switcher.Target != "" {
 		action.Target = switcher.Target
-		action.Swap = htmx.OuterHTML
+		action.Swap = web.OuterHTML
 	}
 	if err := action.RenderAttributes(out); err != nil {
 		return err
@@ -162,7 +162,7 @@ func (button Button) RenderHTML(_ context.Context, out *html.Context) error {
 type Link struct {
 	Label  string
 	URL    string
-	Action htmx.Action
+	Action web.BrowserAction
 	// Variant renders the link as a button (class "button button--<variant>").
 	Variant ButtonVariant
 	Attrs   html.Attrs

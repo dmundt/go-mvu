@@ -9,11 +9,13 @@ go-mvu is not stable yet. Its API may change at any time. Prototype cleanup
 removes compatibility aliases rather than retaining deprecated alternatives;
 see [migration notes](CHANGELOG.md#unreleased).
 
-Seven public framework packages: `mvu`, `store`, `html`, `htmx`, `theme`,
-`web`, and `components`. Examples and internal support packages stay separate.
+Five public framework packages: `core`, `html`, `theme`, `web`, and
+`components`. Examples and internal support packages stay separate.
 
-`web` owns HTTP runtime, sessions, CSRF, security headers, recovery, diagnostics,
-and typed form decoding. `components` owns reusable controls, application
+`core` owns MVU contracts and versioned storage; updates still return commands
+rather than performing persistence or HTTP work. `web` owns HTTP runtime,
+HTMX contracts, sessions, CSRF, security headers, recovery, diagnostics, and
+typed form decoding. `components` owns reusable controls, application
 composition helpers, and embedded HTMX assets. Applications still install
 middleware and asset routes explicitly; request limits and cache policy remain
 application-owned. See [architecture](docs/architecture.md),

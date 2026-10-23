@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 8
+version: 9
 ---
 
 # Components and pagination
@@ -299,7 +299,7 @@ html.El("section", html.Attrs{html.A("class", "panel"), html.A("id", "release")}
   `html.ErrInvalidElement`.
 - Unsafe attributes → `html.ErrUnsafeAttribute` (see
   [security](security.md#attribute-allowlist)).
-- `htmx.Action{...}.Attrs()` returns the `hx-*` list for `El`.
+- `web.BrowserAction{...}.Attrs()` returns the `hx-*` list for `El`.
 
 ## Attribute passthrough
 
@@ -527,7 +527,7 @@ Prefer primitives over hand-written `Static` tags. Example:
 components.Button{
 	Label:     "+",
 	AriaLabel: "Increment",
-	Action:    htmx.Action{Method: htmx.Post, URL: "/counter/increment"},
+	Action:    web.BrowserAction{Method: web.Post, URL: "/counter/increment"},
 }
 ```
 
@@ -579,7 +579,7 @@ components.Pagination{
 	BaseURL:       "/users",
 	QueryName:     "page",
 	Target:        "#users-results",
-	Swap:          htmx.OuterHTML,
+	Swap:          web.OuterHTML,
 	PushURL:       true,
 	PreviousLabel: "Previous",
 	NextLabel:     "Next",

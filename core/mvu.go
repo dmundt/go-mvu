@@ -1,4 +1,9 @@
-package mvu
+// Package core provides pure MVU application contracts and versioned storage.
+//
+// Updates return models and commands; they must not inspect HTTP requests,
+// render HTML, or perform hidden persistence. Storage is an explicit runtime
+// boundary, even though its contracts share this package.
+package core
 
 import "context"
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 // Shutdown contract relied on by graceful servers: a Close timeout bounds only
@@ -19,14 +19,14 @@ func TestAsyncRunnerCloseTimeoutKeepsAcceptedJobsRunning(t *testing.T) {
 	started := make(chan context.Context, 1)
 	release := make(chan struct{})
 	queuedRan := make(chan struct{})
-	running := mvu.CommandFunc[testMessage](func(
-		ctx context.Context, _ mvu.Dispatch[testMessage],
+	running := core.CommandFunc[testMessage](func(
+		ctx context.Context, _ core.Dispatch[testMessage],
 	) error {
 		started <- ctx
 		<-release
 		return nil
 	})
-	queued := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	queued := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		close(queuedRan)
 		return nil
 	})
@@ -65,6 +65,6 @@ func TestAsyncRunnerCloseTimeoutKeepsAcceptedJobsRunning(t *testing.T) {
 	}
 }
 
-func shutdownCommands(command mvu.Command[testMessage]) []mvu.Command[testMessage] {
-	return []mvu.Command[testMessage]{command}
+func shutdownCommands(command core.Command[testMessage]) []core.Command[testMessage] {
+	return []core.Command[testMessage]{command}
 }

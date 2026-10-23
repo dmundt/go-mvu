@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type testModel struct {
@@ -58,16 +58,16 @@ func TestStoreContractAndConcurrentCAS(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer models.Close()
-	if _, err := models.Load(ctx, "k"); !errors.Is(err, store.ErrNotFound) {
+	if _, err := models.Load(ctx, "k"); !errors.Is(err, core.ErrNotFound) {
 		t.Fatal(err)
 	}
-	if _, err := models.CompareAndSwap(ctx, "k", 9, 1); !errors.Is(err, store.ErrConflict) {
+	if _, err := models.CompareAndSwap(ctx, "k", 9, 1); !errors.Is(err, core.ErrConflict) {
 		t.Fatal(err)
 	}
 	if _, err := models.CompareAndSwap(ctx, "k", 0, 1); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := models.Create(ctx, "k", 2); !errors.Is(err, store.ErrAlreadyExists) {
+	if _, err := models.Create(ctx, "k", 2); !errors.Is(err, core.ErrAlreadyExists) {
 		t.Fatal(err)
 	}
 
@@ -83,7 +83,7 @@ func TestStoreContractAndConcurrentCAS(t *testing.T) {
 				mu.Lock()
 				wins++
 				mu.Unlock()
-			} else if !errors.Is(err, store.ErrConflict) {
+			} else if !errors.Is(err, core.ErrConflict) {
 				t.Error(err)
 			}
 		}()
@@ -98,7 +98,7 @@ func TestStoreContractAndConcurrentCAS(t *testing.T) {
 	if err := models.Delete(ctx, "missing"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := models.Load(ctx, "k"); !errors.Is(err, store.ErrNotFound) {
+	if _, err := models.Load(ctx, "k"); !errors.Is(err, core.ErrNotFound) {
 		t.Fatal(err)
 	}
 }
@@ -137,7 +137,7 @@ func TestSerializationFailureDoesNotPersist(t *testing.T) {
 	if _, err := models.Create(context.Background(), "bad", make(chan int)); err == nil {
 		t.Fatal("unsupported JSON accepted")
 	}
-	if _, err := models.Load(context.Background(), "bad"); !errors.Is(err, store.ErrNotFound) {
+	if _, err := models.Load(context.Background(), "bad"); !errors.Is(err, core.ErrNotFound) {
 		t.Fatalf("failed write persisted: %v", err)
 	}
 }

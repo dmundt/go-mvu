@@ -10,7 +10,7 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 const hostile = `<script>alert("x")</script> & 'quotes' plus ordinary text`
@@ -41,8 +41,8 @@ type counterFragment struct {
 }
 
 var (
-	decrement = htmx.Action{Method: htmx.Post, URL: "/counter/decrement", Target: "#counter", Swap: htmx.OuterHTML}
-	increment = htmx.Action{Method: htmx.Post, URL: "/counter/increment", Target: "#counter", Swap: htmx.OuterHTML}
+	decrement = web.BrowserAction{Method: web.Post, URL: "/counter/decrement", Target: "#counter", Swap: web.OuterHTML}
+	increment = web.BrowserAction{Method: web.Post, URL: "/counter/increment", Target: "#counter", Swap: web.OuterHTML}
 )
 
 func (counter counterFragment) RenderHTML(_ context.Context, out *html.Context) error {

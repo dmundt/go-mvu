@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/store"
 )
 
 type RenderMode uint8
@@ -79,10 +78,10 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		return err
 	}
 	if result.PushURL != "" {
-		htmx.PushURL(w, result.PushURL)
+		HTMXPushURL(w, result.PushURL)
 	}
 	if result.ReplaceURL != "" {
-		htmx.ReplaceURL(w, result.ReplaceURL)
+		HTMXReplaceURL(w, result.ReplaceURL)
 	}
 	trace := TraceFromContext(r.Context())
 	var err error
@@ -158,7 +157,7 @@ func isResponseAbort(err error) bool {
 func staleVersionError() error {
 	return &Error{
 		Status: http.StatusConflict, Public: http.StatusText(http.StatusConflict),
-		Cause: store.ErrConflict,
+		Cause: core.ErrConflict,
 	}
 }
 

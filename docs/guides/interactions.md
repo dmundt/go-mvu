@@ -2,7 +2,7 @@
 type: Guide
 title: Interactive applications without application JavaScript
 description: Native HTML and HTMX interaction patterns, server-owned state, and capability limits.
-version: 4
+version: 5
 ---
 
 # Interactive applications without application JavaScript
@@ -32,7 +32,7 @@ focus, scroll, expanded details, and popover visibility.
 
 Use semantic application components for views. Put low-level markup and
 attribute composition inside named components, not business-view tag streams.
-Use typed `htmx.Action` fields first; validated `Attrs` covers missing HTMX
+Use typed `web.BrowserAction` fields first; validated `Attrs` covers missing HTMX
 attributes. See [components](components.md),
 [web runtime](web-runtime.md), and [architecture](../architecture.md).
 
@@ -63,7 +63,7 @@ transitions, and slide-over presentation belong in CSS files embedded into
 document style blocks, never component style attributes or external
 stylesheet requests.
 
-`htmx.Action.Trigger` is a string, not a dedicated search/polling builder.
+`web.BrowserAction.Trigger` is a string, not a dedicated search/polling builder.
 `Target`, `Include`, `Indicator`, `DisabledElt`, `PushURL`, and `ReplaceURL`
 configure requests and navigation. `Swap` accepts the defined swap constants,
 not arbitrary modifier strings. `hx-sync` and `hx-swap-oob` use validated
