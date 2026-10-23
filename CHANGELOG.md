@@ -11,6 +11,9 @@ Notable changes to go-mvu are documented here.
 
 ### Changed
 
+- Separate runtime, rendering, controls, and example startup responsibilities
+  into focused source files without changing package paths or public APIs.
+
 - **Breaking:** consolidate `shared` widgets into `components`. Replace
   `github.com/dmundt/go-mvu/shared` imports and `shared.` qualifiers with
   `github.com/dmundt/go-mvu/components` and `components.`. Remove duplicate

@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 10
+version: 11
 ---
 
 # Architecture
@@ -91,6 +91,30 @@ embedded styles remain unchanged. See [ADR-0023](adr/0023-unified-components.md)
 `ui` sits above the existing layers; core packages never import it. Apps
 opt in explicitly and still own middleware and asset routing. See
 [ADR-0021](adr/0021-concise-ui-composition.md).
+
+## Source organization
+
+Responsibilities stay within existing packages; file boundaries do not add
+dependency layers or change public APIs.
+
+- `web`: [configuration](../web/web.go),
+  [request and view contracts](../web/request.go),
+  [HTTP orchestration and outcomes](../web/handler.go),
+  [model transitions](../web/transition.go),
+  [command execution](../web/commands.go), and
+  [response rendering](../web/response.go).
+- `components`: [primitives and feedback](../components/components.go),
+  [documents](../components/document.go), [layout](../components/layout.go),
+  [buttons and links](../components/controls.go), [forms](../components/forms.go),
+  [tables](../components/table.go), and [navigation](../components/navigation.go).
+  Specialized native widgets retain their existing files.
+- Durable example: [lifecycle](../examples/durable/main.go),
+  [service wiring](../examples/durable/service.go), and
+  [persistent secrets](../examples/durable/secret.go).
+- Production example: [lifecycle](../examples/production/main.go),
+  [configuration](../examples/production/config.go),
+  [handler wiring](../examples/production/handler.go), and
+  [authentication](../examples/production/auth.go).
 
 ## Request lifecycle
 
