@@ -1,4 +1,4 @@
-// Command custom-theme demonstrates mapping application CSS tokens to go-mvu
+// Command custom demonstrates mapping application CSS tokens to go-mvu
 // component classes through theme.Theme.
 package main
 
