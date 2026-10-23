@@ -48,8 +48,8 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 
 ## Known limits
 
-- Memory store is process-local; optional CASK adapter persists models under
-  exclusive single-process directory ownership.
+- Memory store is process-local; the durable example demonstrates a simple
+  JSON file store outside framework packages, with single-process scope.
 - `style-src 'unsafe-inline'` required by inline CSS.
 - Shared widgets: tooltip uses native Escape-dismissible popover; tabs are
   native navigation links, not scripted ARIA tablists.

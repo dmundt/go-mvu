@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/durable/caskstore"
+	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/store"
 )
 
@@ -67,7 +67,7 @@ func (sink *FileSink) Deliver(ctx context.Context, event OutboxEvent) error {
 }
 
 type outboxWorker struct {
-	store *caskstore.Store[CounterModel]
+	store *jsonstore.Store[CounterModel]
 	sink  *FileSink
 }
 

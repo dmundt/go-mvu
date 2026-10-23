@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/durable/caskstore"
+	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/mvu"
@@ -193,14 +193,14 @@ func BenchmarkHTTPParallelMemory(b *testing.B) {
 	benchmarkHTTPParallel(b, nil)
 }
 
-func BenchmarkHTTPParallelCASK(b *testing.B) {
-	models, err := caskstore.Open[httpBenchModel](filepath.Join(b.TempDir(), "cask"))
+func BenchmarkHTTPParallelJSONFile(b *testing.B) {
+	models, err := jsonstore.Open[httpBenchModel](filepath.Join(b.TempDir(), "models"))
 	if err != nil {
 		b.Fatal(err)
 	}
 	b.Cleanup(func() {
 		if err := models.Close(); err != nil {
-			b.Errorf("close CASK store: %v", err)
+			b.Errorf("close JSON file store: %v", err)
 		}
 	})
 	benchmarkHTTPParallel(b, models)

@@ -22,4 +22,4 @@
 * [ADR-0017](0017-element-builder-and-attrs.md) - use typed element builder and attribute passthrough.
 * [ADR-0018](0018-ui-authoring-boundaries.md) - enforce semantic composition and scoped authoring boundaries.
 * [ADR-0019](0019-http-policy-and-runtime-reliability.md) - define HTTP policies and reliable transition outcomes.
-* [ADR-0020](0020-optional-production-integrations.md) - optional CASK persistence and OIDC application wiring.
+* [ADR-0020](0020-optional-production-integrations.md) - example-only JSON persistence and OIDC application wiring.

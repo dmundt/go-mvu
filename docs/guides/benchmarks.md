@@ -65,20 +65,20 @@ Loopback client/server on one machine; not a latency SLO or throughput claim.
 ## Concurrency, latency, and persistent-store paths
 
 Additional benchmarks exercise parallel clients with unique session keys,
-go-cask-backed CAS transitions, and an explicitly delayed client transport.
+JSON-file-backed CAS transitions, and an explicitly delayed client transport.
 Run controlled cases with:
 
 ```powershell
 go test '-run=^$' '-bench=HTTP' -benchmem -benchtime=5s -cpu=1,4,8 ./benchmarks
 ```
 
-Benchmark names distinguish memory and go-cask stores. Parallel cases report
+Benchmark names distinguish memory and JSON file stores. Parallel cases report
 `-cpu`/GOMAXPROCS results; they are local contention measurements, not a
-multi-host storage comparison. The CASK benchmark uses a temporary filesystem
-root and is not a distributed storage comparison. The synthetic 20ms-RTT case
-adds 10ms before and after each loopback request; it isolates request/response
-latency effects but does not emulate packet loss, bandwidth limits, TLS, or a
-real network.
+multi-host storage comparison. The JSON file benchmark uses a temporary
+filesystem root and is not a distributed storage comparison. The synthetic
+20ms-RTT case adds 10ms before and after each loopback request; it isolates
+request/response latency effects but does not emulate packet loss, bandwidth
+limits, TLS, or a real network.
 
 Single run, Go 1.27.0, Windows/amd64, 13th Gen Intel Core i7-13800H,
 `-benchtime=1s -cpu=1,4`:
@@ -87,13 +87,13 @@ Single run, Go 1.27.0, Windows/amd64, 13th Gen Intel Core i7-13800H,
 | --- | ---: | ---: | ---: | ---: |
 | HTTP parallel memory | 1 | 152218 | 60843 | 139 |
 | HTTP parallel memory | 4 | 70536 | 61953 | 142 |
-| HTTP parallel CASK | 1 | 7204112 | 65561 | 180 |
-| HTTP parallel CASK | 4 | 1327087 | 67499 | 182 |
+| HTTP parallel JSON file | 1 | 2054542 | 62694 | 153 |
+| HTTP parallel JSON file | 4 | 1082056 | 63166 | 155 |
 | HTTP loopback synthetic 20ms RTT | 1 | 21336904 | 66529 | 134 |
 
-Illustrative measurements only. CASK timings include durable filesystem writes;
-do not compare with memory-only numbers as a framework speed ranking. No
-deployment latency or throughput claim without matching target hardware,
+Illustrative measurements only. JSON file timings include durable filesystem
+writes; do not compare with memory-only numbers as a framework speed ranking.
+No deployment latency or throughput claim without matching target hardware,
 storage, traffic mix, and concurrency.
 
 ## Reading

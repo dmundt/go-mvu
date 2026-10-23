@@ -38,4 +38,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0017](0017-element-builder-and-attrs.md) | Element builder and attribute passthrough | Accepted |
 | [0018](0018-ui-authoring-boundaries.md) | Semantic composition with scoped authoring boundaries | Accepted |
 | [0019](0019-http-policy-and-runtime-reliability.md) | Explicit HTTP policy, streaming lifecycle, reliable transitions | Accepted |
-| [0020](0020-optional-production-integrations.md) | Optional CASK adapter and OIDC production integration | Accepted |
+| [0020](0020-optional-production-integrations.md) | Example-only JSON persistence and OIDC integration | Accepted |

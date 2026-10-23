@@ -16,7 +16,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dmundt/go-mvu/examples/durable/caskstore"
+	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/store"
 )
 
@@ -44,9 +44,9 @@ func TestCounterEventIDSurvivesJSONForBinarySessionKeys(t *testing.T) {
 	}
 }
 
-func TestCaskStorePersistsCompareAndSwapAcrossRestart(t *testing.T) {
+func TestJSONStorePersistsCompareAndSwapAcrossRestart(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "models")
-	first, err := caskstore.Open[CounterModel](path)
+	first, err := jsonstore.Open[CounterModel](path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestCaskStorePersistsCompareAndSwapAcrossRestart(t *testing.T) {
 	if err := first.Close(); err != nil {
 		t.Fatal(err)
 	}
-	restarted, err := caskstore.Open[CounterModel](path)
+	restarted, err := jsonstore.Open[CounterModel](path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestCaskStorePersistsCompareAndSwapAcrossRestart(t *testing.T) {
 func TestOutboxDeliveryIsIdempotentAfterCrashBeforeAcknowledgement(t *testing.T) {
 	ctx := context.Background()
 	dataDir := t.TempDir()
-	models, err := caskstore.Open[CounterModel](filepath.Join(dataDir, "models"))
+	models, err := jsonstore.Open[CounterModel](filepath.Join(dataDir, "models"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestOutboxDeliveryIsIdempotentAfterCrashBeforeAcknowledgement(t *testing.T)
 	if err := sink.Deliver(ctx, event); err != nil {
 		t.Fatal(err)
 	}
-	restartedModels, err := caskstore.Open[CounterModel](filepath.Join(dataDir, "models"))
+	restartedModels, err := jsonstore.Open[CounterModel](filepath.Join(dataDir, "models"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,9 +190,6 @@ func TestDurableExamplePersistsSessionAndPendingOutbox(t *testing.T) {
 	body, readErr := io.ReadAll(response.Body)
 	response.Body.Close()
 	server.Close()
-	if err := first.store.Close(); err != nil {
-		t.Fatal(err)
-	}
 	if readErr != nil {
 		t.Fatal(readErr)
 	}
@@ -211,6 +208,9 @@ func TestDurableExamplePersistsSessionAndPendingOutbox(t *testing.T) {
 	event := snapshot.Model.Outbox[0]
 	if snapshot.Model.Count != 1 {
 		t.Fatalf("committed count = %d, want 1", snapshot.Model.Count)
+	}
+	if err := first.store.Close(); err != nil {
+		t.Fatal(err)
 	}
 
 	// Simulate delivery succeeding immediately before the process crashes,

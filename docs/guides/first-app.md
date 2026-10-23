@@ -119,5 +119,5 @@ protected diagnostics, server timeouts, and graceful shutdown. Continue with
 [HTTP middleware](middleware.md), [security](security.md), and
 [durable storage](durable-store-outbox.md).
 
-For working CASK persistence and generic OIDC login, continue with the
+For example-only JSON file persistence and generic OIDC login, continue with the
 [production walkthrough](production.md).

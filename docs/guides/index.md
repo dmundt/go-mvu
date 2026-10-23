@@ -3,7 +3,7 @@
 ## Framework guides
 
 * [Build your first app](first-app.md) - run and customize a complete counter.
-* [Production walkthrough](production.md) - CASK, OIDC, limits, and single-host operations.
+* [Production walkthrough](production.md) - JSON file persistence, OIDC, limits, and single-host operations.
 * [Benchmarks](benchmarks.md) - measured performance and benchmark rules.
 * [Components and pagination](components.md) - reusable UI component contracts.
 * [Durable storage and outbox](durable-store-outbox.md) - persistence and at-least-once effects.

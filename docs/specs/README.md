@@ -47,9 +47,9 @@ version: 2
 
 ## Deviations
 
-Production integrations: optional nested modules `adapters/caskstore` and
-`examples/production` add CASK persistence and generic OIDC without importing
-those dependencies into framework packages. CASK is single-host/single-owner;
+Production integration: optional nested module `examples/production` adds
+generic OIDC and uses example-only JSON file persistence without importing
+those dependencies into framework packages. The JSON store is single-process;
 no database abstraction, identity platform, or distributed rate limiter is added.
 See [ADR-0020](../adr/0020-optional-production-integrations.md).
 

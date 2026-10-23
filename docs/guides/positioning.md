@@ -42,10 +42,9 @@ cross-framework speed ranking is justified by go-mvu's current benchmarks.
 - **Explicit rendering:** streaming escaped HTML and typed component contracts;
   unlike templ, there is no HTML template DSL or generated view code.
 - **Persistence is pluggable:** `store.Memory` is process-local. The
-  [go-cask outbox example](../../examples/durable/README.md) demonstrates
-  content-addressed persistence with an atomic ref commit; distributed
-  production stores remain application infrastructure. The current go-cask
-  release raises this module's minimum Go version to 1.24.
+  [JSON outbox example](../../examples/durable/README.md) demonstrates a
+  simple file-backed store outside framework packages; distributed production
+  stores remain application infrastructure.
 
 Prioritize durable-store/outbox patterns, browser-tested accessibility for
 shared widgets, and request benchmarks that include controlled concurrency,
