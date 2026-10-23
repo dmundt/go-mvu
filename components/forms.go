@@ -25,6 +25,7 @@ type Form struct {
 	CSRFField html.Component
 	Action    htmx.Action
 	Children  []html.Component
+	Attrs     html.Attrs
 }
 
 func (form Form) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -43,11 +44,13 @@ func (form Form) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Static(` method="` + string(method) + `" action="`)
 	out.Attribute(form.URL)
 	out.Static(`"`)
+	out.Class("", form.Attrs)
 	if form.Action.Method != 0 {
 		if err := form.Action.RenderAttributes(out); err != nil {
 			return err
 		}
 	}
+	out.PassAttrs(form.Attrs, when(form.ID, "id"), "method", "action", actionOwned(form.Action))
 	out.Static(">")
 	if method == FormPost {
 		out.Component(ctx, form.CSRFField)
@@ -61,13 +64,16 @@ func (form Form) RenderHTML(ctx context.Context, out *html.Context) error {
 
 // Label renders <label for=…>.
 type Label struct {
-	For  string
-	Text string
+	For   string
+	Text  string
+	Attrs html.Attrs
 }
 
 func (label Label) RenderHTML(_ context.Context, out *html.Context) error {
 	out.Static("<label")
 	optionalAttribute(out, "for", label.For)
+	out.Class("", label.Attrs)
+	out.PassAttrs(label.Attrs, when(label.For, "for"))
 	out.Static(">")
 	out.Text(label.Text)
 	out.Static("</label>")
@@ -79,15 +85,20 @@ func (label Label) RenderHTML(_ context.Context, out *html.Context) error {
 type FieldError struct {
 	ID      string
 	Message string
+	Attrs   html.Attrs
 }
 
 func (fieldError FieldError) RenderHTML(_ context.Context, out *html.Context) error {
 	if fieldError.Message == "" {
 		return nil
 	}
-	out.Static(`<span class="field-error"`)
+	out.Static(`<span class="field-error`)
+	out.ExtraClass(fieldError.Attrs)
+	out.Static(`"`)
 	optionalAttribute(out, "id", fieldError.ID)
-	out.Static(` role="alert">`)
+	out.Static(` role="alert"`)
+	out.PassAttrs(fieldError.Attrs, "role", when(fieldError.ID, "id"))
+	out.Static(">")
 	out.Text(fieldError.Message)
 	out.Static("</span>")
 	return out.Err()
@@ -97,11 +108,16 @@ func (fieldError FieldError) RenderHTML(_ context.Context, out *html.Context) er
 type TableRow struct {
 	ID    string
 	Cells []html.Component
+	Attrs html.Attrs
 }
 
 func (row TableRow) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Static("<tr")
 	optionalAttribute(out, "id", row.ID)
+	if len(row.Attrs) != 0 {
+		out.Class("", row.Attrs)
+		out.PassAttrs(row.Attrs, when(row.ID, "id"))
+	}
 	out.Static(">")
 	for _, cell := range row.Cells {
 		out.Component(ctx, cell)
@@ -123,12 +139,14 @@ type TableCell struct {
 	Header bool
 	Scope  CellScope
 	Body   html.Component
+	Attrs  html.Attrs
 }
 
 func (cell TableCell) RenderHTML(ctx context.Context, out *html.Context) error {
 	if cell.Scope != "" && cell.Scope != ScopeColumn && cell.Scope != ScopeRow {
 		return fmt.Errorf("invalid table cell scope %q", cell.Scope)
 	}
+	// open ends with ">" so the common no-Attrs path is a single write.
 	open, closing := "<td>", "</td>"
 	if cell.Header {
 		open, closing = "<th>", "</th>"
@@ -139,7 +157,14 @@ func (cell TableCell) RenderHTML(ctx context.Context, out *html.Context) error {
 			open = `<th scope="row">`
 		}
 	}
-	out.Static(open)
+	if len(cell.Attrs) == 0 {
+		out.Static(open)
+	} else {
+		out.Static(open[:len(open)-1])
+		out.Class("", cell.Attrs)
+		out.PassAttrs(cell.Attrs, whenSet(cell.Header && cell.Scope != "", "scope"))
+		out.Static(">")
+	}
 	out.Component(ctx, cell.Body)
 	out.Static(closing)
 	return out.Err()

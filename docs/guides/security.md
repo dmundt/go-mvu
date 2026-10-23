@@ -11,6 +11,26 @@ Defaults safe; opt-out explicit.
   else `url.Parse`). Only relative, `http`, `https` allowed;
   else `ErrInvalidAction`.
 
+## Attribute allowlist
+
+`html.El`, `Context.Attrs` and component `Attrs` passthrough validate every
+attribute (`html.ValidateAttr`); failures stop rendering with
+`html.ErrUnsafeAttribute`:
+
+- Names: `[A-Za-z_:][A-Za-z0-9_.:-]*`.
+- Rejected: `on*` event handlers, `style` (CSS stays in stylesheets),
+  `srcdoc`, `hx-on*`, `hx-vars`, `data-hx-on*`.
+- `hx-vals` / `hx-headers`: no `js:` / `javascript:` evaluation.
+- `hx-trigger`: no `[...]` filters (they evaluate JavaScript).
+- URL attributes (`href`, `src`, `action`, `formaction`, `hx-get`, …):
+  relative, `http`, `https`, `mailto`, `tel` only.
+- Tags: `[a-z][a-z0-9-]*`; `script`, `style`, `link`, `meta`, `base`,
+  `iframe`, `object`, `embed`, `template`, … rejected
+  (`html.ErrInvalidElement`).
+
+Values are always escaped. Allowlist does not judge semantics: an app that
+passes user input as `id` or `hx-target` still owns that choice.
+
 ## Security headers
 
 `middleware.SecurityHeaders` sets on every response:

@@ -117,6 +117,12 @@ func (g Greeting) RenderHTML(_ context.Context, out *html.Context) error {
 - Slots = `html.Component` fields (`Header`, `Body`, `Footer`, `Children`).
 - Prefer primitives (`Button`, `Heading`, `Paragraph`, `Form`, `TableRow`)
   over raw tags. Guide: [components](docs/guides/components.md).
+- No component fits? `html.El("time", html.Attrs{html.A("datetime", d)},
+  html.Text(label))`: typed, escaped, allowlisted. Mixes with components.
+- Extra attributes on any component: `Attrs: html.Attrs{html.A("class",
+  "wide"), html.A("hx-get", "/stats")}`. Class merges; owned names win;
+  `on*`, `style`, `javascript:` rejected. ADR
+  [0017](docs/adr/0017-element-builder-and-attrs.md).
 
 ## HTMX enhancement and no-HTMX fallback
 

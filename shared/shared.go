@@ -66,6 +66,22 @@ func optionalAttr(out *html.Context, name, value string) {
 	}
 }
 
+// when returns name when value is set, else "" (which owns nothing).
+func when(value, name string) string {
+	if value == "" {
+		return ""
+	}
+	return name
+}
+
+// whenSet returns name when set is true, else "".
+func whenSet(set bool, name string) string {
+	if !set {
+		return ""
+	}
+	return name
+}
+
 func flag(out *html.Context, name string, enabled bool) {
 	if enabled {
 		out.Static(" ")

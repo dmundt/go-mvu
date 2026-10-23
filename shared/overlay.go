@@ -23,6 +23,7 @@ type Accordion struct {
 	ID        string
 	Exclusive bool
 	Items     []AccordionItem
+	Attrs     html.Attrs
 }
 
 func (accordion Accordion) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -46,8 +47,11 @@ func (accordion Accordion) RenderHTML(ctx context.Context, out *html.Context) er
 	if accordion.Exclusive && open > 1 {
 		return errors.New("shared: exclusive accordion allows one open item")
 	}
-	out.Static(`<div class="accordion"`)
+	out.Static(`<div class="accordion`)
+	out.ExtraClass(accordion.Attrs)
+	out.Static(`"`)
 	optionalAttr(out, "id", accordion.ID)
+	out.PassAttrs(accordion.Attrs, when(accordion.ID, "id"))
 	out.Static(">")
 	for _, item := range accordion.Items {
 		out.Static(`<details class="accordion__item"`)
@@ -81,6 +85,8 @@ type Tabs struct {
 	Active string
 	Panel  html.Component
 	HTMX   bool
+	// Attrs apply to the div.tabset root.
+	Attrs html.Attrs
 }
 
 func (tabs Tabs) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -109,8 +115,11 @@ func (tabs Tabs) RenderHTML(ctx context.Context, out *html.Context) error {
 	if !seen[tabs.Active] {
 		return fmt.Errorf("shared: unknown active tab %q", tabs.Active)
 	}
-	out.Static(`<div class="tabset"`)
+	out.Static(`<div class="tabset`)
+	out.ExtraClass(tabs.Attrs)
+	out.Static(`"`)
 	attr(out, "id", tabs.ID)
+	out.PassAttrs(tabs.Attrs, "id")
 	out.Static(`><nav class="tabset__list"`)
 	attr(out, "aria-label", tabs.Label)
 	out.Static(">")
@@ -153,6 +162,8 @@ type Dialog struct {
 	CloseLabel     string
 	Body           html.Component
 	Footer         html.Component
+	// Attrs apply to the popover div (not the trigger button).
+	Attrs html.Attrs
 }
 
 func (dialog Dialog) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -173,9 +184,12 @@ func (dialog Dialog) RenderHTML(ctx context.Context, out *html.Context) error {
 	attr(out, "popovertarget", dialog.ID)
 	out.Static(">")
 	out.Text(dialog.TriggerLabel)
-	out.Static(`</button><div class="dialog" popover role="dialog"`)
+	out.Static(`</button><div class="dialog`)
+	out.ExtraClass(dialog.Attrs)
+	out.Static(`" popover role="dialog"`)
 	attr(out, "id", dialog.ID)
 	attr(out, "aria-labelledby", dialog.ID+"-title")
+	out.PassAttrs(dialog.Attrs, "popover", "role", "id", "aria-labelledby")
 	out.Static(`><header class="dialog__header"><h2 class="dialog__title"`)
 	attr(out, "id", dialog.ID+"-title")
 	out.Static(">")
@@ -206,6 +220,7 @@ type Dropdown struct {
 	Label    string
 	Items    []MenuItem
 	AlignEnd bool
+	Attrs    html.Attrs
 }
 
 func (dropdown Dropdown) RenderHTML(_ context.Context, out *html.Context) error {
@@ -224,7 +239,10 @@ func (dropdown Dropdown) RenderHTML(_ context.Context, out *html.Context) error 
 	if dropdown.AlignEnd {
 		out.Static(" dropdown--end")
 	}
-	out.Static(`"><summary>`)
+	out.ExtraClass(dropdown.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(dropdown.Attrs)
+	out.Static(`><summary>`)
 	out.Text(dropdown.Label)
 	out.Static(`</summary><ul class="dropdown__menu">`)
 	for _, item := range dropdown.Items {
@@ -244,6 +262,8 @@ type Tooltip struct {
 	ID      string
 	Label   string
 	Content string
+	// Attrs apply to the span.tip wrapper.
+	Attrs html.Attrs
 }
 
 func (tooltip Tooltip) RenderHTML(_ context.Context, out *html.Context) error {
@@ -253,7 +273,11 @@ func (tooltip Tooltip) RenderHTML(_ context.Context, out *html.Context) error {
 	if tooltip.Label == "" || tooltip.Content == "" {
 		return errors.New("shared: tooltip requires label and content")
 	}
-	out.Static(`<span class="tip">`)
+	out.Static(`<span class="tip`)
+	out.ExtraClass(tooltip.Attrs)
+	out.Static(`"`)
+	out.PassAttrs(tooltip.Attrs)
+	out.Static(">")
 	buttonOpen(out, components.ButtonSecondary)
 	attr(out, "aria-describedby", tooltip.ID)
 	out.Static(">")
