@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 4
+version: 5
 ---
 
 # Architecture
@@ -126,6 +126,18 @@ appending a replacement body. HTTP failure after CAS does not undo persistence.
   swap target subtree. Distinct marker types; runtime cannot mix.
 - `RenderAuto`: HTMX → fragment; plain form → 303 `Location`; else page.
   Same route serves HTMX and no-JS clients.
+
+## Interaction ownership
+
+- Server owns domain and workflow state; browser owns transient native control
+  state, such as input values and expanded disclosure widgets.
+- Prefer native HTML for local behavior. Use HTMX requests and stable fragment
+  roots for server-backed transitions, not a client-side state mirror.
+- No application JavaScript: no inline handlers or HTMX expressions either.
+  HTMX itself is browser JavaScript; full-page links and forms remain the
+  baseline. Push transports and additional extensions are not implied.
+- Capability boundaries, fallback rules, and interaction recipes:
+  [interactive applications](guides/interactions.md).
 
 ## Rendering
 
