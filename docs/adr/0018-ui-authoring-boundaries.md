@@ -31,7 +31,7 @@ Import boundaries alone cannot distinguish authoring levels.
   patterns. Third-party applications need not adopt these repository tests.
   Scope tests guard that distinction; test files and browser harnesses are
   excluded from authoring checks. Browser regressions execute real example
-  handlers and computed styles across all themes and desktop/mobile modes.
+  handlers and computed styles across default-theme modes and desktop/mobile.
 - Package import tests discover production files recursively and require
   explicit declarations for new packages, including nested packages.
 - Prefer typed properties over `Attrs`. Document actual exceptions:

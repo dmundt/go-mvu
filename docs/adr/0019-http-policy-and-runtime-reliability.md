@@ -2,12 +2,15 @@
 type: Architecture Decision Record
 title: Explicit HTTP policies and reliable transitions
 description: HTTP lifecycle, shared rejection contracts, and commit-aware MVU policy.
-version: 1
+version: 2
 ---
 
 # ADR-0019: Explicit HTTP policies and reliable transitions
 
 Status: Accepted
+
+Deployment extension scope narrowed by
+[ADR-0022](0022-default-theme-and-deployment-boundaries.md); remaining decisions stand.
 
 ## Context
 

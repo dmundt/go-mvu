@@ -8,10 +8,9 @@ packages with a five-minute test timeout. `go vet` is a separate required step.
 Configure these jobs as required branch checks in the hosting repository;
 workflow files alone do not enforce branch protection.
 
-Six isolated [fuzz jobs](../../.github/workflows/fuzz.yml) run for 30 seconds
+Two isolated [fuzz jobs](../../.github/workflows/fuzz.yml) run for 30 seconds
 with two workers each, including manual dispatch:
-trusted proxy headers, traceparent, gzip negotiation, locale negotiation,
-action IDs, and signed session cookies. Failing corpus inputs are uploaded
+action IDs and signed session cookies. Failing corpus inputs are uploaded
 as artifacts. Keep minimized reproducers as regression corpus entries after
 investigation. Ordinary `go test ./...` also executes all seed corpora.
 
