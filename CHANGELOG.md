@@ -2,6 +2,17 @@
 
 Notable changes to go-mvu are documented here.
 
+## Unreleased
+
+### Changed
+
+- **Breaking:** consolidate `shared` widgets into `components`. Replace
+  `github.com/dmundt/go-mvu/shared` imports and `shared.` qualifiers with
+  `github.com/dmundt/go-mvu/components` and `components.`. Remove duplicate
+  imports where both packages were used. No forwarding aliases remain.
+- Widget validation errors now use the `components:` prefix. Markup, native
+  interactions, CSS classes, and embedded widget styles remain unchanged.
+
 ## [0.1.0] - 2026-10-23
 
 Initial release.

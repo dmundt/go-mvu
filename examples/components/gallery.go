@@ -7,7 +7,6 @@ import (
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/examples/internal/modepicker"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/shared"
 	"github.com/dmundt/go-mvu/theme"
 )
 
@@ -80,22 +79,22 @@ func (view gallery) url(id string) string {
 
 func stats() html.Component {
 	return components.Grid{Columns: 4, Gap: "1rem", Children: []html.Component{
-		shared.Stat{
+		components.Stat{
 			Label: "Revenue", Value: "$48.2k",
-			Delta: "+12.4% this month", Trend: shared.TrendUp,
+			Delta: "+12.4% this month", Trend: components.TrendUp,
 		},
-		shared.Stat{Label: "Active users", Value: "2,431", Delta: "+3.1%", Trend: shared.TrendUp},
-		shared.Stat{Label: "Churn", Value: "1.8%", Delta: "-0.4%", Trend: shared.TrendDown},
-		shared.Stat{Label: "Uptime", Value: "99.98%", Delta: "No change"},
+		components.Stat{Label: "Active users", Value: "2,431", Delta: "+3.1%", Trend: components.TrendUp},
+		components.Stat{Label: "Churn", Value: "1.8%", Delta: "-0.4%", Trend: components.TrendDown},
+		components.Stat{Label: "Uptime", Value: "99.98%", Delta: "No change"},
 	}}
 }
 
 func (view gallery) tabsCard() html.Component {
-	items := make([]shared.Tab, len(tabs))
+	items := make([]components.Tab, len(tabs))
 	for index, item := range tabs {
-		items[index] = shared.Tab{ID: item.ID, Label: item.Label, URL: view.url(item.ID)}
+		items[index] = components.Tab{ID: item.ID, Label: item.Label, URL: view.url(item.ID)}
 	}
-	return card("Tabs", shared.Tabs{
+	return card("Tabs", components.Tabs{
 		ID:     "gallery-tabs",
 		Label:  "Gallery sections",
 		Items:  items,
@@ -105,10 +104,10 @@ func (view gallery) tabsCard() html.Component {
 }
 
 func accordionCard() html.Component {
-	return card("Accordion", shared.Accordion{
+	return card("Accordion", components.Accordion{
 		ID:        "faq",
 		Exclusive: true,
-		Items: []shared.AccordionItem{
+		Items: []components.AccordionItem{
 			{
 				Title: "Does it need JavaScript?",
 				Body:  components.Paragraph("No. It uses native details and summary elements."),
@@ -127,7 +126,7 @@ func accordionCard() html.Component {
 }
 
 func overlaysCard() html.Component {
-	dialog := shared.Dialog{
+	dialog := components.Dialog{
 		ID:             "invite-dialog",
 		Title:          "Invite teammate",
 		TriggerLabel:   "Open dialog",
@@ -144,12 +143,12 @@ func overlaysCard() html.Component {
 			components.Button{Label: "Send invite", Variant: components.ButtonPrimary},
 		},
 	}
-	dropdown := shared.Dropdown{Label: "Actions", Items: []shared.MenuItem{
+	dropdown := components.Dropdown{Label: "Actions", Items: []components.MenuItem{
 		{Label: "Edit profile", URL: "#profile"},
 		{Label: "Duplicate", URL: "#duplicate"},
 		{Label: "Email support", URL: "mailto:support@example.test"},
 	}}
-	tooltip := shared.Tooltip{
+	tooltip := components.Tooltip{
 		ID:      "save-tip",
 		Label:   "Show help",
 		Content: "Tooltips describe their trigger.",
@@ -164,13 +163,13 @@ func overlaysCard() html.Component {
 func avatarsCard() html.Component {
 	return card("Avatars and keys",
 		inline(
-			shared.Avatar{Name: "Ada Lovelace", Size: shared.AvatarSmall},
-			shared.Avatar{Name: "Grace Hopper"},
-			shared.Avatar{Name: "Alan Turing", Size: shared.AvatarLarge},
+			components.Avatar{Name: "Ada Lovelace", Size: components.AvatarSmall},
+			components.Avatar{Name: "Grace Hopper"},
+			components.Avatar{Name: "Alan Turing", Size: components.AvatarLarge},
 		),
-		shared.Separator{Label: "Shortcuts"},
+		components.Separator{Label: "Shortcuts"},
 		inline(
-			shared.Kbd{Keys: []string{"Ctrl", "K"}},
+			components.Kbd{Keys: []string{"Ctrl", "K"}},
 			components.Text("Command palette"),
 		),
 	)
@@ -178,26 +177,26 @@ func avatarsCard() html.Component {
 
 func feedbackCard() html.Component {
 	return card("Feedback",
-		shared.Progress{ID: "upload-progress", Label: "Uploading report", Value: 64, Max: 100},
-		shared.Progress{ID: "sync-progress", Label: "Syncing"},
+		components.Progress{ID: "upload-progress", Label: "Uploading report", Value: 64, Max: 100},
+		components.Progress{ID: "sync-progress", Label: "Syncing"},
 		inline(
-			shared.Spinner{ID: "loading", Label: "Loading results"},
+			components.Spinner{ID: "loading", Label: "Loading results"},
 			components.Text("Loading results"),
 		),
-		shared.Skeleton{Lines: 3},
+		components.Skeleton{Lines: 3},
 	)
 }
 
 func formCard() html.Component {
 	return card("Form controls", components.FormLayout(
-		shared.Switch{Name: "notifications", Label: "Email notifications", Checked: true},
-		shared.Checkbox{
+		components.Switch{Name: "notifications", Label: "Email notifications", Checked: true},
+		components.Checkbox{
 			Name:     "terms",
 			Label:    "I accept the terms",
 			Required: true,
 			Error:    "Accept the terms to continue.",
 		},
-		shared.RadioGroup{
+		components.RadioGroup{
 			Name:   "plan",
 			Legend: "Plan",
 			Value:  "team",
@@ -207,7 +206,7 @@ func formCard() html.Component {
 				{Value: "enterprise", Label: "Enterprise", Disabled: true},
 			},
 		},
-		shared.Textarea{
+		components.Textarea{
 			Name:        "message",
 			Label:       "Message",
 			Placeholder: "Write a short note",
@@ -218,7 +217,7 @@ func formCard() html.Component {
 }
 
 func stepsCard() html.Component {
-	return card("Steps", shared.Steps{
+	return card("Steps", components.Steps{
 		Label:   "Checkout progress",
 		Items:   []string{"Account", "Shipping", "Payment", "Review"},
 		Current: 2,
@@ -226,7 +225,7 @@ func stepsCard() html.Component {
 }
 
 func emptyCard() html.Component {
-	return card("Empty state", shared.EmptyState{
+	return card("Empty state", components.EmptyState{
 		Title:       "No projects yet",
 		Description: "Create a project to start tracking work.",
 		Action:      components.Button{Label: "New project", Variant: components.ButtonPrimary},
@@ -241,5 +240,5 @@ func card(title string, body ...html.Component) html.Component {
 }
 
 func inline(children ...html.Component) html.Component {
-	return shared.Inline{Children: children}
+	return components.Inline{Children: children}
 }

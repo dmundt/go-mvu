@@ -1,22 +1,12 @@
-package shared
+package components
 
 import (
 	"context"
 	"strings"
 	"testing"
 
-	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 )
-
-func render(t *testing.T, component html.Component) string {
-	t.Helper()
-	var output strings.Builder
-	if err := html.Render(context.Background(), &output, component); err != nil {
-		t.Fatalf("render %T: %v", component, err)
-	}
-	return output.String()
-}
 
 func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 	cases := []struct {
@@ -24,11 +14,11 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 		component html.Component
 		expected  []string
 	}{
-		{"accordion", Accordion{ID: "faq", Exclusive: true, Items: []AccordionItem{{Title: "Q", Body: components.Text("A"), Open: true}}},
+		{"accordion", Accordion{ID: "faq", Exclusive: true, Items: []AccordionItem{{Title: "Q", Body: Text("A"), Open: true}}},
 			[]string{`<details class="accordion__item" name="faq" open>`, `<summary class="accordion__trigger">Q</summary>`}},
 		{"tabs", Tabs{ID: "t", Label: "Sections", Active: "b", HTMX: true, Items: []Tab{{ID: "a", Label: "A", URL: "?tab=a"}, {ID: "b", Label: "B", URL: "?tab=b"}}},
 			[]string{`aria-label="Sections"`, `id="t-tab-b" href="?tab=b" aria-current="page"`, `hx-get="?tab=a"`, `hx-select="#t"`, `aria-labelledby="t-tab-b"`}},
-		{"dialog", Dialog{ID: "d", Title: "Title", TriggerLabel: "Open", Body: components.Text("Body")},
+		{"dialog", Dialog{ID: "d", Title: "Title", TriggerLabel: "Open", Body: Text("Body")},
 			[]string{`popovertarget="d">Open</button>`, `class="dialog" popover role="dialog" id="d" aria-labelledby="d-title"`, `popovertargetaction="hide"`, `aria-label="Close"`}},
 		{"dropdown", Dropdown{Label: "Menu", AlignEnd: true, Items: []MenuItem{{Label: "Mail", URL: "mailto:a@example.test"}}},
 			[]string{`<details class="dropdown dropdown--end"><summary>Menu</summary><ul class="dropdown__menu">`, `href="mailto:a@example.test"`}},
@@ -46,7 +36,7 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 		{"skeleton", Skeleton{Lines: 2}, []string{`aria-hidden="true"><span class="skeleton__line"></span><span class="skeleton__line"></span></div>`}},
 		{"separator", Separator{Label: "Or"}, []string{`role="separator" aria-label="Or"`}},
 		{"kbd", Kbd{Keys: []string{"Ctrl", "K"}}, []string{`<kbd class="kbd">Ctrl</kbd><span aria-hidden="true">+</span><kbd class="kbd">K</kbd>`}},
-		{"empty", EmptyState{Title: "None", Action: components.Text("Act")}, []string{`empty-state__title">None`, `empty-state__action">Act`}},
+		{"empty", EmptyState{Title: "None", Action: Text("Act")}, []string{`empty-state__title">None`, `empty-state__action">Act`}},
 		{"stat", Stat{Label: "Users", Value: "5", Delta: "+1", Trend: TrendUp}, []string{`<dt class="stat__label">Users</dt>`, `stat__delta--up">+1`}},
 		{"steps", Steps{Label: "Checkout", Items: []string{"A", "B", "C"}, Current: 1},
 			[]string{`steps__item--complete"><span class="visually-hidden">Completed: </span>A`, `aria-current="step">B`}},
@@ -54,11 +44,11 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 			[]string{`type="checkbox" role="switch" id="alerts" name="alerts" value="on" checked`}},
 		{"checkbox", Checkbox{Name: "terms", Label: "Terms", Error: "Required"},
 			[]string{`aria-invalid="true" aria-describedby="terms-error"`, `id="terms-error">Required`}},
-		{"radio", RadioGroup{Name: "plan", Legend: "Plan", Value: "b", Error: "Pick", Options: []components.Option{{Value: "a", Label: "A"}, {Value: "b", Label: "B"}}},
+		{"radio", RadioGroup{Name: "plan", Legend: "Plan", Value: "b", Error: "Pick", Options: []Option{{Value: "a", Label: "A"}, {Value: "b", Label: "B"}}},
 			[]string{`<fieldset class="radio-group" aria-describedby="plan-error"><legend>Plan</legend>`, `id="plan-1" name="plan" value="b" checked`}},
 		{"textarea", Textarea{Name: "note", Label: "Note", Hint: "Short", Error: "Too long", Value: "\nhi"},
 			[]string{`aria-invalid="true" aria-describedby="note-hint note-error">` + "\n\nhi</textarea>", `id="note-hint">Short`}},
-		{"inline", Inline{Children: []html.Component{components.Text("x")}}, []string{`<div class="inline">x</div>`}},
+		{"inline", Inline{Children: []html.Component{Text("x")}}, []string{`<div class="inline">x</div>`}},
 	}
 
 	for _, test := range cases {
@@ -146,7 +136,7 @@ func TestComponentsRejectInvalidInput(t *testing.T) {
 		"skeleton too many lines":          Skeleton{Lines: 13},
 		"stat invalid trend":               Stat{Label: "L", Value: "V", Trend: "sideways"},
 		"steps current out of range":       Steps{Label: "L", Items: []string{"A"}, Current: 1},
-		"radio option without label":       RadioGroup{Name: "r", Legend: "L", Options: []components.Option{{Value: "a"}}},
+		"radio option without label":       RadioGroup{Name: "r", Legend: "L", Options: []Option{{Value: "a"}}},
 		"textarea without label":           Textarea{Name: "n"},
 		"switch with invalid ID":           Switch{ID: "1x", Name: "n", Label: "L"},
 		"kbd without keys":                 Kbd{},
@@ -156,7 +146,7 @@ func TestComponentsRejectInvalidInput(t *testing.T) {
 		"tabs without label":               Tabs{ID: "t", Active: "a", Items: []Tab{{ID: "a", Label: "A", URL: "/"}}},
 		"dialog without trigger label":     Dialog{ID: "d", Title: "T"},
 		"progress with negative maximum":   Progress{ID: "p", Label: "P", Max: -1},
-		"radio group with unsafe name":     RadioGroup{Name: "a\"b", Legend: "L", Options: []components.Option{{Value: "a", Label: "A"}}},
+		"radio group with unsafe name":     RadioGroup{Name: "a\"b", Legend: "L", Options: []Option{{Value: "a", Label: "A"}}},
 		"checkbox missing name and an ID":  Checkbox{Label: "L"},
 		"dropdown without items":           Dropdown{Label: "M"},
 		"steps without label":              Steps{Items: []string{"A"}},

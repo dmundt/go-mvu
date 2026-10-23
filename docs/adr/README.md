@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 4
+version: 5
 ---
 
 # Architecture Decision Records
@@ -28,7 +28,7 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0007](0007-server-controlled-themes.md) | Provide server-controlled light and dark themes | Accepted |
 | [0008](0008-explicit-validation.md) | Decode and validate forms explicitly without reflection | Accepted |
 | [0009](0009-reusable-components.md) | Keep reusable components optional and application components local | Accepted |
-| [0010](0010-shared-ui-components.md) | Separate shared UI components from core components | Accepted |
+| [0010](0010-shared-ui-components.md) | Separate shared UI components from core components | Package separation superseded by 0023 |
 | [0011](0011-system-theme-mode.md) | System theme mode as default | Accepted |
 | [0012](0012-csp-and-local-htmx.md) | Strict CSP with locally served HTMX | Accepted |
 | [0013](0013-runtime-request-context.md) | Explicit request context, command runners, auto rendering | Accepted |
@@ -41,3 +41,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0020](0020-optional-production-integrations.md) | Example-only JSON persistence and OIDC integration | Accepted |
 | [0021](0021-concise-ui-composition.md) | Small layout constructors and optional UI composition helpers | Accepted |
 | [0022](0022-default-theme-and-deployment-boundaries.md) | One bundled theme and application-owned deployment policies | Accepted |
+| [0023](0023-unified-components.md) | One reusable component package | Accepted |

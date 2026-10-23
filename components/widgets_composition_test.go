@@ -1,17 +1,16 @@
-package shared
+package components
 
 import (
 	"context"
 	"strings"
 	"testing"
 
-	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 )
 
 func TestWidgetTriggersUseCoreButton(t *testing.T) {
-	trigger := components.Button{
-		Label: `Open <details>`, Variant: components.ButtonGhost,
+	trigger := Button{
+		Label: `Open <details>`, Variant: ButtonGhost,
 		Attrs: html.Attrs{html.A("popovertarget", "dialog")},
 	}
 	got := render(t, Dialog{
@@ -21,8 +20,8 @@ func TestWidgetTriggersUseCoreButton(t *testing.T) {
 	if want := render(t, trigger); !strings.HasPrefix(got, want) {
 		t.Fatalf("dialog trigger differs from core Button: %s, want prefix %s", got, want)
 	}
-	tooltipButton := render(t, components.Button{
-		Label: "Info", Variant: components.ButtonSecondary,
+	tooltipButton := render(t, Button{
+		Label: "Info", Variant: ButtonSecondary,
 		Attrs: html.Attrs{
 			html.A("aria-describedby", "info"),
 			html.A("aria-controls", "info"),

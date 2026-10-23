@@ -1,4 +1,4 @@
-package shared
+package components
 
 import (
 	"context"
@@ -35,10 +35,10 @@ func (avatar Avatar) RenderHTML(_ context.Context, out *html.Context) error {
 		size = AvatarMedium
 	}
 	if size != AvatarSmall && size != AvatarMedium && size != AvatarLarge {
-		return fmt.Errorf("shared: invalid avatar size %q", size)
+		return fmt.Errorf("components: invalid avatar size %q", size)
 	}
 	if strings.TrimSpace(avatar.Name) == "" {
-		return errors.New("shared: avatar requires name")
+		return errors.New("components: avatar requires name")
 	}
 	if avatar.Src != "" {
 		if err := validURL(avatar.Src); err != nil {
@@ -48,8 +48,8 @@ func (avatar Avatar) RenderHTML(_ context.Context, out *html.Context) error {
 		out.Static(string(size))
 		out.ExtraClass(avatar.Attrs)
 		out.Static(`"`)
-		attr(out, "src", avatar.Src)
-		attr(out, "alt", avatar.Name)
+		attribute(out, "src", avatar.Src)
+		attribute(out, "alt", avatar.Name)
 		out.PassAttrs(avatar.Attrs, "src", "alt")
 		out.Static(">")
 		return out.Err()
@@ -58,7 +58,7 @@ func (avatar Avatar) RenderHTML(_ context.Context, out *html.Context) error {
 	out.Static(string(size))
 	out.ExtraClass(avatar.Attrs)
 	out.Static(`" role="img"`)
-	attr(out, "aria-label", avatar.Name)
+	attribute(out, "aria-label", avatar.Name)
 	out.PassAttrs(avatar.Attrs, "role", "aria-label")
 	out.Static(`><span aria-hidden="true">`)
 	out.Text(initials(avatar.Name))
@@ -93,17 +93,17 @@ func (progress Progress) RenderHTML(_ context.Context, out *html.Context) error 
 		return err
 	}
 	if progress.Label == "" {
-		return errors.New("shared: progress requires label")
+		return errors.New("components: progress requires label")
 	}
 	if progress.Max < 0 || progress.Max > 0 && (progress.Value < 0 || progress.Value > progress.Max) {
-		return fmt.Errorf("shared: progress value %v outside 0..%v", progress.Value, progress.Max)
+		return fmt.Errorf("components: progress value %v outside 0..%v", progress.Value, progress.Max)
 	}
 	out.Static(`<div class="progress-field`)
 	out.ExtraClass(progress.Attrs)
 	out.Static(`"`)
 	out.PassAttrs(progress.Attrs)
 	out.Static(`><div class="progress-field__header"><label`)
-	attr(out, "for", progress.ID)
+	attribute(out, "for", progress.ID)
 	out.Static(">")
 	out.Text(progress.Label)
 	out.Static("</label>")
@@ -115,7 +115,7 @@ func (progress Progress) RenderHTML(_ context.Context, out *html.Context) error 
 		out.Static("%</span>")
 	}
 	out.Static("</div><progress")
-	attr(out, "id", progress.ID)
+	attribute(out, "id", progress.ID)
 	if progress.Max > 0 {
 		out.Static(` max="`)
 		out.Float64(progress.Max)
@@ -152,7 +152,7 @@ func (spinner Spinner) RenderHTML(_ context.Context, out *html.Context) error {
 	out.Static(`<span class="spinner`)
 	out.ExtraClass(spinner.Attrs)
 	out.Static(`" role="status"`)
-	optionalAttr(out, "id", spinner.ID)
+	optionalAttribute(out, "id", spinner.ID)
 	out.PassAttrs(spinner.Attrs, "role", when(spinner.ID, "id"))
 	out.Static(`><span class="spinner__icon" aria-hidden="true"></span><span class="visually-hidden">`)
 	out.Text(label)
@@ -172,7 +172,7 @@ func (skeleton Skeleton) RenderHTML(_ context.Context, out *html.Context) error 
 		lines = 3
 	}
 	if lines < 1 || lines > 12 {
-		return fmt.Errorf("shared: skeleton lines %d outside 1..12", skeleton.Lines)
+		return fmt.Errorf("components: skeleton lines %d outside 1..12", skeleton.Lines)
 	}
 	out.Static(`<div class="skeleton`)
 	out.ExtraClass(skeleton.Attrs)
@@ -204,7 +204,7 @@ func (separator Separator) RenderHTML(_ context.Context, out *html.Context) erro
 	out.Static(`<div class="separator separator--labelled`)
 	out.ExtraClass(separator.Attrs)
 	out.Static(`" role="separator"`)
-	attr(out, "aria-label", separator.Label)
+	attribute(out, "aria-label", separator.Label)
 	out.PassAttrs(separator.Attrs, "role", "aria-label")
 	out.Static(`><span aria-hidden="true">`)
 	out.Text(separator.Label)
@@ -220,11 +220,11 @@ type Kbd struct {
 
 func (kbd Kbd) RenderHTML(_ context.Context, out *html.Context) error {
 	if len(kbd.Keys) == 0 {
-		return errors.New("shared: kbd requires keys")
+		return errors.New("components: kbd requires keys")
 	}
 	for _, key := range kbd.Keys {
 		if key == "" {
-			return errors.New("shared: kbd key must not be empty")
+			return errors.New("components: kbd key must not be empty")
 		}
 	}
 	out.Static(`<span class="kbd-combo`)
@@ -268,10 +268,10 @@ func (stat Stat) RenderHTML(_ context.Context, out *html.Context) error {
 		trend = TrendNeutral
 	}
 	if trend != TrendNeutral && trend != TrendUp && trend != TrendDown {
-		return fmt.Errorf("shared: invalid trend %q", stat.Trend)
+		return fmt.Errorf("components: invalid trend %q", stat.Trend)
 	}
 	if stat.Label == "" || stat.Value == "" {
-		return errors.New("shared: stat requires label and value")
+		return errors.New("components: stat requires label and value")
 	}
 	out.Static(`<dl class="stat`)
 	out.ExtraClass(stat.Attrs)
@@ -303,15 +303,15 @@ type Steps struct {
 
 func (steps Steps) RenderHTML(_ context.Context, out *html.Context) error {
 	if steps.Label == "" || len(steps.Items) == 0 {
-		return errors.New("shared: steps require label and items")
+		return errors.New("components: steps require label and items")
 	}
 	if steps.Current < 0 || steps.Current >= len(steps.Items) {
-		return fmt.Errorf("shared: current step %d outside 0..%d", steps.Current, len(steps.Items)-1)
+		return fmt.Errorf("components: current step %d outside 0..%d", steps.Current, len(steps.Items)-1)
 	}
 	out.Static(`<ol class="steps`)
 	out.ExtraClass(steps.Attrs)
 	out.Static(`"`)
-	attr(out, "aria-label", steps.Label)
+	attribute(out, "aria-label", steps.Label)
 	out.PassAttrs(steps.Attrs, "aria-label")
 	out.Static(">")
 	for index, item := range steps.Items {

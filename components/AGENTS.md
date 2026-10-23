@@ -21,5 +21,11 @@
 - Test page and fragment output, escaping, labels, validation associations,
   and component variants. Styling tests must include real computed styles
   when changing layout or CSS behavior.
-- Spec §13 components belong here, not in `shared`. Moving one from `shared`:
-  keep a type alias in `shared/aliases.go`; error prefix `components:`.
+- All reusable framework widgets belong here, including native overlays,
+  display widgets, and form controls. No separate `shared` package or aliases.
+  See ADR-0023. Widget errors use prefix `components:`.
+- Native interactions use `details`, `popover`, controls, and links; no scripts.
+  Validate IDs, URLs, variants, and ranges before emitting unsafe markup.
+- Widget styles remain in `theme/default/shared.css`; preserve CSS classes
+  and tokens during package moves. Add gallery entries and browser checks
+  for new widgets; retain computed-style coverage in light/dark at 390px.

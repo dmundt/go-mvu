@@ -36,7 +36,7 @@ Quick edit is **non-modal**, not a blocking modal: native `popover="auto"`
 provides showing, Escape, and light dismissal; the background is not inert.
 The shell uses `role="dialog"` with an accessible name, never `aria-modal`.
 Its rendering composes existing semantic components; it is not a new
-framework modal service or a change to `shared.Dialog`.
+framework modal service or a change to `components.Dialog`.
 
 The shell exists before a request. Native `popovertarget` shows it while HTMX
 loads member content. Cancel hides it immediately and requests draft cleanup.

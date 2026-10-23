@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 6
+version: 7
 ---
 
 # Architecture
@@ -23,8 +23,7 @@ CSS inlined in `<style>`. Source of truth:
 | `session` | signed opaque session ID → model key |
 | `theme` | `Theme` (inline CSS), `Mode` system/light/dark, signed `Preference` cookie |
 | `validation` | explicit field errors, no reflection |
-| `components` | optional layout, controls, forms, tables, pagination, switcher |
-| `shared` | optional native-HTML widgets (accordion, tabs, dialog, …) |
+| `components` | optional layout, controls, forms, tables, pagination, switcher, and native-HTML widgets |
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
 | `middleware` | security headers/CSP, CSRF, recover, request ID, logging, diagnostics |
 | `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
@@ -56,7 +55,6 @@ htmx       → html
 session    → store, httpx
 middleware → html, session, timing, httpx
 components → html, htmx, theme
-shared     → components, html, htmx
 web        → mvu, html, htmx, store, theme, timing, httpx
 ui         → components, html, htmx, middleware, static, validation, web
 examples   → anything
@@ -69,14 +67,17 @@ flowchart BT
   session --> store & httpx
   middleware --> html & session & timing & httpx
   components --> html & htmx & theme
-  shared --> components & html & htmx
   web --> mvu & html & htmx & store & theme & timing & httpx
   ui --> components & html & htmx & middleware & static & validation & web
-  app[application] --> web & components & shared & middleware & session & static
+  app[application] --> web & components & middleware & session & static
 ```
 
 Forbidden: `unsafe`; `reflect` in `html`/`components`; `html/template`,
 `text/template` in library code; `mvu` → anything HTTP/HTML/storage.
+
+Reusable widgets all live in `components`; the former `shared` package is
+removed without forwarding aliases. Dependencies, native interactions, and
+embedded styles remain unchanged. See [ADR-0023](adr/0023-unified-components.md).
 
 `ui` sits above the existing layers; core packages never import it. Apps
 opt in explicitly and still own middleware and asset routing. See

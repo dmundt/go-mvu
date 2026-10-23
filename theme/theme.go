@@ -106,7 +106,7 @@ func (DefaultTheme) Name() string { return "default" }
 //   - open-props.css: generated Open Props token subset
 //   - base.css: neutral palette, public tokens, structure
 //   - default.css: design refinements scoped to data-theme-name="default"
-//   - shared.css: optional shared package widgets
+//   - shared.css: optional component widgets
 var (
 	//go:embed default/open-props.css
 	openPropsCSS string
