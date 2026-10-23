@@ -17,6 +17,7 @@ import (
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
+	"github.com/dmundt/go-mvu/timing"
 )
 
 var (
@@ -313,8 +314,12 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 			return
 		}
 		ctx := r.Context()
+		trace := timing.FromContext(ctx)
 		if route.RequireModel {
-			if _, err := runtime.store.Load(ctx, key); err != nil {
+			done := trace.Start(timing.PhaseLoad)
+			_, err := runtime.store.Load(ctx, key)
+			done()
+			if err != nil {
 				if errors.Is(err, store.ErrNotFound) {
 					http.NotFound(w, r)
 				} else {
@@ -323,17 +328,23 @@ func (runtime *Runtime[K, Model, Msg]) Handle(route Route[Msg]) http.Handler {
 				return
 			}
 		}
+		done := trace.Start(timing.PhaseDecode)
 		message, err := route.Decode.Decode(r)
+		done()
 		if err != nil {
 			runtime.fail(w, r, err)
 			return
 		}
-		dispatch := runtime.dispatcher(key)
-		if err := dispatch(ctx, message); err != nil {
+		done = trace.Start(timing.PhaseDispatch)
+		err = runtime.dispatcher(key)(ctx, message)
+		done()
+		if err != nil {
 			runtime.fail(w, r, err)
 			return
 		}
+		done = trace.Start(timing.PhaseLoad)
 		snapshot, err := runtime.store.Load(ctx, key)
+		done()
 		if err != nil {
 			runtime.fail(w, r, err)
 			return
@@ -360,17 +371,26 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 			runtime.fail(w, r, err)
 			return
 		}
+		trace := timing.FromContext(r.Context())
+		done := trace.Start(timing.PhaseLoad)
 		snapshot, commands, err := runtime.loadOrCreate(r.Context(), key)
+		done()
 		if err != nil {
 			runtime.fail(w, r, err)
 			return
 		}
 		if len(commands) > 0 {
-			if err := runtime.commands.Run(r.Context(), commands, runtime.dispatcher(key)); err != nil {
+			done = trace.Start(timing.PhaseDispatch)
+			err = runtime.commands.Run(r.Context(), commands, runtime.dispatcher(key))
+			done()
+			if err != nil {
 				runtime.fail(w, r, err)
 				return
 			}
-			if snapshot, err = runtime.store.Load(r.Context(), key); err != nil {
+			done = trace.Start(timing.PhaseLoad)
+			snapshot, err = runtime.store.Load(r.Context(), key)
+			done()
+			if err != nil {
 				runtime.fail(w, r, err)
 				return
 			}
@@ -475,6 +495,7 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		htmx.ReplaceURL(w, result.ReplaceURL)
 	}
 	tracked := &trackingWriter{ResponseWriter: w}
+	trace := timing.FromContext(r.Context())
 	var err error
 	switch mode {
 	case RenderNothing:
@@ -482,14 +503,23 @@ func (runtime *Runtime[K, Model, Msg]) writeResult(
 		return
 	case RenderPage:
 		var page html.Page
-		if page, err = runtime.view.Page(r.Context(), model, request); err == nil {
+		done := trace.Start(timing.PhaseView)
+		page, err = runtime.view.Page(r.Context(), model, request)
+		done()
+		if err == nil {
+			done = trace.Start(timing.PhaseRender)
 			err = WritePage(r.Context(), tracked, result.StatusOr(http.StatusOK), page)
+			done()
 		}
 	case RenderFragment:
 		var fragment html.Fragment
+		done := trace.Start(timing.PhaseView)
 		fragment, err = runtime.view.Fragment(r.Context(), result.Fragment, model, request)
+		done()
 		if err == nil {
+			done = trace.Start(timing.PhaseRender)
 			err = WriteFragment(r.Context(), tracked, result.StatusOr(http.StatusOK), fragment)
+			done()
 		}
 	default:
 		err = fmt.Errorf("%w: %d", ErrUnknownRender, mode)

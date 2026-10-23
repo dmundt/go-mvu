@@ -23,10 +23,11 @@ var allowed = map[string][]string{
 	"htmx":       {"html"},
 	"session":    {"store"},
 	"validation": {},
-	"middleware": {"html", "session"},
+	"timing":     {},
+	"middleware": {"html", "session", "timing"},
 	"components": {"html", "htmx", "theme"},
 	"shared":     {"components", "html", "htmx"},
-	"web":        {"mvu", "html", "htmx", "store", "theme"},
+	"web":        {"mvu", "html", "htmx", "store", "theme", "timing"},
 }
 
 func TestPackageBoundaries(t *testing.T) {

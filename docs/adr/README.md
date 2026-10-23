@@ -25,3 +25,4 @@ such as generic multi-format rendering, are not current decisions.
 | [0013](0013-runtime-request-context.md) | Explicit request context, command runners, auto rendering | Accepted |
 | [0014](0014-enforced-package-boundaries.md) | Enforce package boundaries by test | Accepted |
 | [0015](0015-open-props-default-design-system.md) | Open Props default design system | Accepted |
+| [0016](0016-render-timing-diagnostics.md) | Render timing and diagnostics via `timing` trace | Accepted |
