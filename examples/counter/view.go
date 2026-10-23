@@ -6,24 +6,20 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
 const counterRegion ui.Region = "counter"
 
-// CounterControls groups the current value and its no-JavaScript-capable actions.
-type CounterControls struct{ Count int }
-
-func (controls CounterControls) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Component(ctx, components.Column(components.Row(
+func counterControls(count int) html.Component {
+	return components.Column(components.Row(
 		ui.ActionButton{
 			Label:     "-",
 			AriaLabel: "Decrement",
 			Action:    counterDecrement.HTMX(),
 		},
-		components.Output{Value: strconv.Itoa(controls.Count), Live: true},
+		components.Output{Value: strconv.Itoa(count), Live: true},
 		ui.ActionButton{
 			Label:     "+",
 			AriaLabel: "Increment",
@@ -34,37 +30,28 @@ func (controls CounterControls) RenderHTML(ctx context.Context, out *html.Contex
 			Action:  counterReset.HTMX(),
 			Variant: components.ButtonSecondary,
 		},
-	)))
-	return out.Err()
+	))
 }
 
-type CounterView struct {
-	ui.RegionView[CounterModel]
-	Document ui.Document
-}
+type CounterView struct{ Document ui.Document }
 
-func counterContent(
-	_ context.Context, model CounterModel, _ web.RequestContext,
-) (html.Component, error) {
-	return CounterControls{Count: model.Count}, nil
+func (CounterView) Fragment(
+	_ context.Context, name string, model CounterModel, _ web.RequestContext,
+) (html.Fragment, error) {
+	return counterRegion.Select(name, counterControls(model.Count))
 }
 
 func (view CounterView) Page(
-	ctx context.Context,
+	_ context.Context,
 	model CounterModel,
 	request web.RequestContext,
 ) (html.Page, error) {
-	content, err := view.Render(ctx, model, request)
-	if err != nil {
-		return nil, err
-	}
 	shell := components.AppShell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Go MVU counter"},
-			components.ThemeSwitcher{
-				Mode:      request.Mode,
-				Return:    request.CurrentURL,
-				CSRFField: middleware.CSRFInput{},
+			ui.ThemeSwitcher{
+				Mode:   request.Mode,
+				Return: request.CurrentURL,
 			},
 		),
 		Sidebar: components.Navigation{Label: "Main", Items: []components.NavItem{
@@ -72,7 +59,7 @@ func (view CounterView) Page(
 		}},
 		Main: components.Card{
 			Header: components.Heading{Level: 2, Text: "Count"},
-			Body:   content,
+			Body:   counterRegion.Wrap(counterControls(model.Count)),
 		},
 		Footer: components.Paragraph("Server-rendered MVU. No application JavaScript."),
 	}

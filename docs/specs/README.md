@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 7
+version: 8
 ---
 
 # Specs
@@ -56,6 +56,15 @@ UI conveniences: `Select.Placeholder` owns an optional empty-value choice;
 `ui.Document.Validate` rejects HTMX-only flags without HTMX. Form field
 helpers replace supplied errors explicitly. See [forms](../guides/forms.md)
 and [page policy](../guides/components.md#shared-page-policy).
+
+`ui.ActionLink` shares one GET URL between native and enhanced links;
+`ui.ThemeSwitcher` supplies the CSRF field for the standard preference form.
+The optional `ui` layer imports `theme` for its typed mode. Ordinary
+component-returning functions are the default example authoring pattern;
+custom types and `RegionView` remain supported. The counter can be copied
+outside the repository without internal imports. See
+[components](../guides/components.md#action-aware-navigation) and the
+[first-app guide](../guides/first-app.md#3-start-your-own-copy).
 
 Production integrations: optional nested modules `adapters/caskstore` and
 `examples/production` add CASK persistence and generic OIDC without importing

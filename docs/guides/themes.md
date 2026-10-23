@@ -2,7 +2,7 @@
 type: Guide
 title: Themes and CSS
 description: Theme modes, design tokens, CSS integration, and theme switching.
-version: 1
+version: 2
 ---
 
 # Themes and CSS
@@ -245,10 +245,9 @@ func (View) Page(_ context.Context, model Model, request web.RequestContext) (ht
 		Theme: request.Theme,
 		Mode:  request.Mode,
 		Body: middleware.CSRFHTMX{Body: components.AppShell{
-			Header: components.ThemeSwitcher{
-				Mode:      request.Mode,
-				Return:    request.CurrentURL,
-				CSRFField: middleware.CSRFInput{},
+			Header: ui.ThemeSwitcher{
+				Mode:   request.Mode,
+				Return: request.CurrentURL,
 			},
 			Main: dashboard(model),
 		}},
@@ -282,7 +281,12 @@ handler := sessions.Wrap(preference.Wrap(csrf.Wrap(mux)))
 | HTMX request | cookie set, 204 + `HX-Refresh: true` |
 | plain form | cookie set, 303 → `return` if same-origin path, else `fallback` |
 
-`components.ThemeSwitcher` renders one POST form with three submit buttons
+For the standard endpoint, prefer
+`ui.ThemeSwitcher{Mode: request.Mode, Return: request.CurrentURL}`. It supplies
+the CSRF input and rejects missing CSRF context before writing markup.
+Session/CSRF middleware and the preference handler remain explicit.
+
+The lower-level `components.ThemeSwitcher` renders one POST form with three submit buttons
 (`name="mode"`, values `system|light|dark`), `aria-pressed` on the active
 mode, optional CSRF field and hidden `return` path (unsafe values dropped).
 Works without JavaScript; HTMX enhances with `hx-post` + `hx-swap="none"`.

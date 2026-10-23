@@ -71,12 +71,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	if err := document.Validate(); err != nil {
 		return nil, err
 	}
-	view := UsersView{
-		Document: document,
-		RegionView: ui.RegionView[UsersModel]{
-			Region: usersRegion, Content: usersContent,
-		},
-	}
+	view := UsersView{Document: document}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, UsersModel, UsersMessage]{
 		App:    UsersApp{Directory: directory},
 		Store:  store.NewMemory[string, UsersModel](),

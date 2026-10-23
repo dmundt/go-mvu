@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 5
+version: 6
 ---
 
 # Architecture
@@ -60,7 +60,7 @@ middleware → html, session, timing, httpx
 components → html, htmx, theme
 shared     → components, html, htmx
 web        → mvu, html, htmx, store, theme, timing, httpx
-ui         → components, html, htmx, middleware, static, validation, web
+ui         → components, html, htmx, middleware, static, theme, validation, web
 examples   → anything
 ```
 
@@ -73,7 +73,7 @@ flowchart BT
   components --> html & htmx & theme
   shared --> components & html & htmx
   web --> mvu & html & htmx & store & theme & timing & httpx
-  ui --> components & html & htmx & middleware & static & validation & web
+  ui --> components & html & htmx & middleware & static & theme & validation & web
   app[application] --> web & components & shared & middleware & session & static
 ```
 

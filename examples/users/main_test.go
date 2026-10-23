@@ -9,7 +9,6 @@ import (
 
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/htmx"
-	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -95,7 +94,7 @@ func TestUsersActionAndRegionShareTarget(t *testing.T) {
 	if action.Target != "#"+string(usersRegion) || action.Swap != htmx.OuterHTML {
 		t.Fatalf("action = %+v", action)
 	}
-	view := ui.RegionView[UsersModel]{Region: usersRegion, Content: usersContent}
+	view := UsersView{}
 	fragment, err := view.Fragment(context.Background(), usersPageAction.Result.Fragment,
 		UsersModel{}, web.RequestContext{})
 	if err != nil {
@@ -147,7 +146,7 @@ func TestUpdateClampsAndVisibleSlices(t *testing.T) {
 func TestEmptyDirectoryRendersEmptyState(t *testing.T) {
 	model, _, _ := UsersApp{}.Init(context.Background())
 	var output strings.Builder
-	if err := html.Render(context.Background(), &output, UserResults{Model: model}); err != nil {
+	if err := html.Render(context.Background(), &output, userResults(model)); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(output.String(), "No users") || strings.Contains(output.String(), "<table") {

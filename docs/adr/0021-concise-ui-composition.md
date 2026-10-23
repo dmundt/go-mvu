@@ -3,7 +3,7 @@ type: Architecture Decision
 title: Concise UI composition
 status: Accepted
 description: Small layout constructors and optional application-level integration helpers.
-version: 1
+version: 2
 ---
 
 # ADR-0021: Concise UI composition
@@ -22,7 +22,7 @@ return existing concrete components, not a new rendering tree or DSL.
 Keep struct literals available for configuration.
 
 Add optional `ui` package above `components`, `web`, `middleware`, `static`,
-and `validation`. Existing core dependencies do not change.
+`theme`, and `validation`. Existing core dependencies do not change.
 
 - `Document` explicitly configures HTMX, CSRF headers, and validation swaps.
   `Page` uses request-local appearance; it installs no middleware or routes.
@@ -30,6 +30,10 @@ and `validation`. Existing core dependencies do not change.
   It accepts same-origin root-relative GET/POST URLs only. POST requires
   CSRF context; GET omits the token. Unsupported methods return errors.
 - `ActionButton` composes `Form` and a submit button.
+- `ActionLink` derives native and enhanced URLs from one GET action.
+- `ThemeSwitcher` accepts explicit mode and return path and supplies the CSRF
+  field. It requires session/CSRF context; routes remain application-owned.
+  The `theme` dependency provides the existing typed mode, not a new policy.
 - `Region` supplies one fragment identity and an escaped section root.
   Unknown fragments remain errors. Region names are restricted to safe CSS
   identifiers so default action targets need no selector escaping.

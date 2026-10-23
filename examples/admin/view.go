@@ -8,7 +8,6 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/shared"
 	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
@@ -22,10 +21,9 @@ func (view View) Page(
 	return view.Document.Page(request, "Operations dashboard", components.AppShell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Northstar / Operations"},
-			components.ThemeSwitcher{
-				Mode:      request.Mode,
-				Return:    "/admin/view",
-				CSRFField: middleware.CSRFInput{},
+			ui.ThemeSwitcher{
+				Mode:   request.Mode,
+				Return: "/admin/view",
 			},
 		),
 		Sidebar: components.Navigation{Label: "Administration", Items: []components.NavItem{
@@ -179,9 +177,8 @@ func memberTable(members []Member) html.Component {
 				components.TextCell(member.Email),
 				components.TextCell(member.Role),
 				components.TextCell(status),
-				components.TableCell{Body: components.Link{
+				components.TableCell{Body: ui.ActionLink{
 					Label:  "Edit " + member.Name,
-					URL:    action.URL,
 					Action: action,
 				}},
 			}}
