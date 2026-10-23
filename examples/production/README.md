@@ -2,8 +2,9 @@
 
 Single-host production-oriented example, not a turnkey identity platform.
 Generic OpenID Connect authorization-code login using
-[`go-oidc`](https://github.com/coreos/go-oidc) and `oauth2`, CASK-backed models
-and authentication grants, CSRF-protected forms, and explicit rate limits.
+[`go-oidc`](https://github.com/coreos/go-oidc) and `oauth2`, example-only JSON
+file-backed models and authentication grants, CSRF-protected forms, and
+explicit rate limits.
 No framework package imports OIDC. This example's separate module needs
 Go 1.25 or newer.
 
@@ -95,9 +96,9 @@ a synthetic identity automatically; it is never part of the executable.
   These limits are process-local and reset on restart. Behind a proxy, the
   peer limit groups clients under the proxy address. It is not a distributed
   quota, and forwarded identity is deliberately not trusted.
-- CASK directories have one process owner. No horizontal scaling, network
-  filesystem, automatic retention, encrypted storage, or multi-model
-  transactions. See [adapter guarantees](../../adapters/caskstore/README.md).
+- JSON file storage coordinates writers only within one process. No horizontal
+  scaling, network filesystem, automatic retention, encrypted storage, or
+  multi-model transactions. The store is an example, not a framework adapter.
 - SIGINT/SIGTERM stops acceptance and drains HTTP work for up to 15 seconds
   before closing stores. No asynchronous command runner is used.
 

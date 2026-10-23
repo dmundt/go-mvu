@@ -38,7 +38,7 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0017](0017-element-builder-and-attrs.md) | Element builder and attribute passthrough | Accepted |
 | [0018](0018-ui-authoring-boundaries.md) | Semantic composition with scoped authoring boundaries | Accepted |
 | [0019](0019-http-policy-and-runtime-reliability.md) | Explicit HTTP policy, streaming lifecycle, reliable transitions | Accepted |
-| [0020](0020-optional-production-integrations.md) | Optional CASK adapter and OIDC production integration | Accepted |
+| [0020](0020-optional-production-integrations.md) | Example-only JSON persistence and OIDC integration | Accepted |
 | [0021](0021-concise-ui-composition.md) | Small layout constructors and optional UI composition helpers | Accepted |
 | [0022](0022-default-theme-and-deployment-boundaries.md) | One bundled theme and application-owned deployment policies | Accepted |
 | [0023](0023-unified-components.md) | One reusable component package | Accepted |

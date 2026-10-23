@@ -29,7 +29,7 @@ version: 3
 * [ADR-0017](0017-element-builder-and-attrs.md) - use typed element builder and attribute passthrough.
 * [ADR-0018](0018-ui-authoring-boundaries.md) - enforce semantic composition and scoped authoring boundaries.
 * [ADR-0019](0019-http-policy-and-runtime-reliability.md) - define HTTP policies and reliable transition outcomes.
-* [ADR-0020](0020-optional-production-integrations.md) - optional CASK persistence and OIDC application wiring.
+* [ADR-0020](0020-optional-production-integrations.md) - example-only JSON persistence and OIDC application wiring.
 * [ADR-0021](0021-concise-ui-composition.md) - concise layout, page, form, region, and field composition.
 * [ADR-0022](0022-default-theme-and-deployment-boundaries.md) - one bundled theme and explicit deployment boundaries.
 * [ADR-0023](0023-unified-components.md) - one reusable component package.

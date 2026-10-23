@@ -190,29 +190,6 @@ test("shared widgets use semantic spacing, type, and restrained elevation tokens
         nested.nodes.filter(node => node.type === "decl").map(node => [node.prop, node.value]),
       ));
     });
-
-    test("shared tooltip popover is anchored and supports native dismissal", async () => {
-      const css = postcss.parse(await defaultFile("shared.css"));
-      const declarations = rule => Object.fromEntries(
-        rule.nodes.filter(node => node.type === "decl").map(node => [node.prop, node.value]),
-      );
-      const rules = new Map();
-      css.walkRules(rule => rules.set(rule.selector, declarations(rule)));
-      assert.equal(rules.get(".tip")["anchor-scope"], "--tip");
-      assert.equal(rules.get(".tip > button")["anchor-name"], "--tip");
-      assert.equal(rules.get(".tip__content").margin, "auto");
-      let anchoredPopover = false;
-      css.walkAtRules("supports", atRule => {
-        if (atRule.params !== "(position-area: block-end)") return;
-        atRule.walkRules(rule => {
-          if (rule.selector !== ".tip__content:popover-open") return;
-          const values = declarations(rule);
-          anchoredPopover = values["position-anchor"] === "--tip" &&
-            values["position-area"] === "block-end" && values.margin === "0";
-        });
-      });
-      assert.ok(anchoredPopover, "open tooltip popover should anchor to its trigger");
-    });
   });
   assert.equal(reducedMotion.get(".skeleton__line")?.animation, "none");
   assert.equal(reducedMotion.get(".progress-field > progress:indeterminate")?.animation, "none");
@@ -220,6 +197,29 @@ test("shared widgets use semantic spacing, type, and restrained elevation tokens
   assert.equal(rules.get(".switch > input.switch__input")["transition"],
     "background-color var(--shared-motion-normal) ease, border-color var(--shared-motion-normal) ease");
   assert.equal(rules.get(".stat__label")["letter-spacing"], "var(--shared-tracking-label)");
+});
+
+test("shared tooltip popover is anchored and supports native dismissal", async () => {
+  const css = postcss.parse(await defaultFile("shared.css"));
+  const declarations = rule => Object.fromEntries(
+    rule.nodes.filter(node => node.type === "decl").map(node => [node.prop, node.value]),
+  );
+  const rules = new Map();
+  css.walkRules(rule => rules.set(rule.selector, declarations(rule)));
+  assert.equal(rules.get(".tip")["anchor-scope"], "--tip");
+  assert.equal(rules.get(".tip > button")["anchor-name"], "--tip");
+  assert.equal(rules.get(".tip__content").margin, "auto");
+  let anchoredPopover = false;
+  css.walkAtRules("supports", atRule => {
+    if (atRule.params !== "(position-area: block-end)") return;
+    atRule.walkRules(rule => {
+      if (rule.selector !== ".tip__content:popover-open") return;
+      const values = declarations(rule);
+      anchoredPopover = values["position-anchor"] === "--tip" &&
+        values["position-area"] === "block-end" && values.margin === "0";
+    });
+  });
+  assert.ok(anchoredPopover, "open tooltip popover should anchor to its trigger");
 });
 
 test("mobile layout tracks shrink below intrinsic content width", async () => {

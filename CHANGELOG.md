@@ -25,7 +25,7 @@ Initial release.
   and reusable UI components.
 - Explicit HTTP reliability policies, request diagnostics, timing, and
   middleware deployment extensions.
-- Optional CASK-backed durable model storage and atomic outbox example.
+- Example-only stdlib JSON file persistence and atomic outbox example.
 - Production OIDC example with secure sessions and rate limits.
 - Browser-tested UI behaviors, theme contract checks, and HTTP benchmarks.
 - Architecture, security, production, component, theme, and first-app guides.

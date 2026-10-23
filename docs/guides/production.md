@@ -1,7 +1,7 @@
 ---
 type: Guide
 title: Deploy a durable authenticated application
-description: Connect CASK persistence, generic OIDC, middleware, and single-host operations.
+description: Connect example JSON file persistence, generic OIDC, middleware, and single-host operations.
 version: 2
 ---
 
@@ -15,9 +15,10 @@ to the framework core.
 ## 1. Choose deployment scope
 
 This example supports **one Go process on one host with a local persistent
-volume**. [CASK adapter](../../adapters/caskstore/README.md) holds an exclusive
-directory lock; a second owner fails startup instead of racing CAS operations.
-Do not deploy multiple replicas over the same volume.
+volume**. The example-only JSON store coordinates CAS operations within one
+process, but does not lock the directory against another process. Do not run
+multiple writers against the same data directory or deploy multiple replicas
+over the same volume.
 
 For horizontal scaling, supply a genuinely shared, transactional
 `store.Store`, shared authentication/revocation policy, and distributed
@@ -57,11 +58,11 @@ Supply separate random session/CSRF secrets from a secret manager, not source
 control. Keep stable keys and a stable data directory across restarts.
 Set explicit data-directory ACLs; model/authentication history is not encrypted.
 
-The example uses separate Go modules: root and CASK adapter Go 1.24,
-OIDC example Go 1.25. Framework packages retain stdlib-only dependencies; the
-root module also includes CASK for its separate durable outbox example.
-Dependency-module `replace` directives are not inherited;
-the example explicitly replaces both local modules. Nested modules need their
+The example uses separate Go modules: root Go 1.24 and OIDC example Go 1.25.
+Framework packages retain stdlib-only dependencies; JSON persistence lives
+under examples and adds no external library. Dependency-module `replace`
+directives are not inherited; the example explicitly replaces the root module.
+Nested modules need their
 own release tags before independent published consumption.
 
 ## 4. Put HTTPS and abuse controls in front
@@ -96,10 +97,8 @@ not silently turn a full limiter table into unrestricted access.
   latency, and 429/503 responses. Alert on uncertain publication errors.
 - JSON models need explicit application migrations; unknown record schema
   fails rather than initializing an empty model.
-- Deletion is logical. Immutable objects/reflogs retain history; define
-  retention and physical cleanup before storing personal data.
-- No automated CASK GC runs. Do not sweep active repositories without a
-  coordinated reference/root retention protocol.
+- Deletion removes the JSON file. Keep protected backups and define backup
+  retention before storing personal data.
 - A failed HTTP response may follow a committed transition. Reconcile before
   replay; external effects need stable idempotency keys and an outbox.
 
@@ -110,10 +109,6 @@ Run each module independently; root `go test ./...` skips nested modules:
 ```powershell
 go test ./...
 go vet ./...
-Push-Location adapters\caskstore
-go test ./...
-go vet ./...
-Pop-Location
 Push-Location examples\production
 go test ./...
 go vet ./...
