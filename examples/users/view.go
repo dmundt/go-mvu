@@ -6,44 +6,46 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/middleware"
-	"github.com/dmundt/go-mvu/static"
+	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
-type UsersView struct{}
+const usersRegion ui.Region = "users-results"
 
-func (UsersView) Page(
-	_ context.Context,
+type UsersView struct {
+	ui.RegionView[UsersModel]
+	Document ui.Document
+}
+
+func usersContent(
+	_ context.Context, model UsersModel, _ web.RequestContext,
+) (html.Component, error) {
+	return UserResults{Model: model}, nil
+}
+
+func (view UsersView) Page(
+	ctx context.Context,
 	model UsersModel,
 	request web.RequestContext,
 ) (html.Page, error) {
-	return document(request, "Users",
+	content, err := view.Render(ctx, model, request)
+	if err != nil {
+		return nil, err
+	}
+	return view.document(request, "Users",
 		components.Link{
 			Label:   "View reusable user cards",
 			URL:     "/users/cards",
 			Variant: components.ButtonSecondary,
 		},
-		UserResults{Model: model},
+		content,
 	), nil
 }
 
-func (UsersView) Fragment(
-	_ context.Context,
-	name string,
-	model UsersModel,
-	_ web.RequestContext,
-) (html.Fragment, error) {
-	if name != "results" {
-		return nil, web.ErrUnknownFragment
-	}
-	return UserResults{Model: model}, nil
-}
-
 // cardsPage is static: no model, no runtime.
-func cardsPage(request web.RequestContext, users []User) components.Document {
-	return document(request, "User cards",
+func (view UsersView) cardsPage(request web.RequestContext, users []User) html.Page {
+	return view.document(request, "User cards",
 		components.Breadcrumbs{Items: []components.Breadcrumb{
 			{Label: "Users", URL: "/users?page=1"},
 			{Label: "Reusable card example"},
@@ -51,35 +53,26 @@ func cardsPage(request web.RequestContext, users []User) components.Document {
 		userCards(users),
 	)
 }
-func document(
+func (view UsersView) document(
 	request web.RequestContext, title string, body ...html.Component,
-) components.Document {
-	header := components.Inline{Children: []html.Component{
+) html.Page {
+	header := components.Row(
 		components.Heading{Level: 1, Text: title},
 		components.ThemeSwitcher{
 			Mode:      request.Mode,
 			Return:    request.CurrentURL,
 			CSRFField: middleware.CSRFInput{},
 		},
-	}}
+	)
 	shell := components.AppShell{
 		Header: header,
-		Main:   components.Stack{Children: body},
+		Main:   components.Column(body...),
 	}
-	return components.Document{
-		Title:                    title,
-		HTMXSource:               static.HTMXPath,
-		HTMXIntegrity:            static.HTMXIntegrity,
-		HTMXSwapValidationErrors: true,
-		Theme:                    request.Theme,
-		Mode:                     request.Mode,
-		Body:                     middleware.CSRFHTMX{Body: shell},
-	}
+	return view.Document.Page(request, title, shell)
 }
 
-// UserResults is the HTMX swap target: table plus pagination.
+// UserResults renders the table and pagination inside the shared region.
 type UserResults struct {
-	html.FragmentMarker
 	Model UsersModel
 }
 
@@ -102,17 +95,12 @@ func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error
 		URL: func(page int) string {
 			return fmt.Sprintf("%s?page=%d", usersPageAction.Path, page)
 		},
-		Target:  "#users-results",
-		Swap:    htmx.OuterHTML,
+		Target:  usersPageAction.HTMX().Target,
+		Swap:    usersPageAction.HTMX().Swap,
 		PushURL: true,
 		Attrs:   html.Attrs{html.A("hx-sync", "closest main:replace")},
 	}
-	out.Component(ctx, components.Section{
-		ID: "users-results",
-		Children: []html.Component{components.Stack{
-			Children: []html.Component{content, pagination},
-		}},
-	})
+	out.Component(ctx, components.Column(content, pagination))
 	return out.Err()
 }
 
@@ -120,13 +108,12 @@ func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error
 type userTable []User
 
 func (rows userTable) RenderHTML(ctx context.Context, out *html.Context) error {
-	body := make(components.Sequence, len(rows))
-	for i, user := range rows {
-		body[i] = components.TableRow{Cells: []html.Component{
-			components.TableCell{Header: true, Scope: components.ScopeRow, Body: components.Text(user.Name)},
-			components.TableCell{Body: components.Text(user.Email)},
+	body := components.Map(rows, func(user User) html.Component {
+		return components.TableRow{Cells: []html.Component{
+			components.RowHeader(user.Name),
+			components.TextCell(user.Email),
 		}}
-	}
+	})
 	return components.Table{
 		Caption: "Users",
 		Header:  components.HeaderRow{"Name", "Email"},
@@ -137,13 +124,12 @@ func (rows userTable) RenderHTML(ctx context.Context, out *html.Context) error {
 type userCards []User
 
 func (cards userCards) RenderHTML(ctx context.Context, out *html.Context) error {
-	children := make([]html.Component, len(cards))
-	for index, user := range cards {
-		children[index] = UserCard{Name: user.Name, Email: user.Email}
-	}
+	children := components.Map(cards, func(user User) html.Component {
+		return UserCard{Name: user.Name, Email: user.Email}
+	})
 	out.Component(ctx, components.Section{
 		ID:       "users-cards",
-		Children: []html.Component{components.Stack{Children: children}},
+		Children: []html.Component{components.Column(children...)},
 	})
 	return out.Err()
 }

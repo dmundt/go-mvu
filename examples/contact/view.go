@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
@@ -12,33 +13,33 @@ import (
 
 const contactRegion ui.Region = "contact-form"
 
-type ContactView struct{ Document ui.Document }
+type ContactView struct {
+	ui.RegionView[ContactModel]
+	Document ui.Document
+}
+
+func contactContent(
+	_ context.Context, model ContactModel, _ web.RequestContext,
+) (html.Component, error) {
+	return ContactForm{Form: model.Form, Submitted: model.Submitted}, nil
+}
 
 func (view ContactView) Page(
-	_ context.Context,
+	ctx context.Context,
 	model ContactModel,
 	request web.RequestContext,
 ) (html.Page, error) {
+	content, err := view.Render(ctx, model, request)
+	if err != nil {
+		return nil, err
+	}
 	return view.Document.Page(request, "Contact", components.AppShell{
 		Header: components.Heading{Level: 1, Text: "Contact us"},
 		Main: components.Card{
 			Header: components.Heading{Level: 2, Text: "Send a request"},
-			Body: contactRegion.Wrap(ContactForm{
-				Form: model.Form, Submitted: model.Submitted,
-			}),
+			Body:   content,
 		},
 	}), nil
-}
-
-func (ContactView) Fragment(
-	_ context.Context,
-	name string,
-	model ContactModel,
-	_ web.RequestContext,
-) (html.Fragment, error) {
-	return contactRegion.Select(name, ContactForm{
-		Form: model.Form, Submitted: model.Submitted,
-	})
 }
 
 type ContactForm struct {
@@ -67,31 +68,26 @@ func contactFields(form validation.Form[ContactDetails]) []html.Component {
 	details := form.Value
 	fields := ui.Fields(form.Errors)
 	return []html.Component{
-		fields.Text("name", "Your name", details.Name, true),
-		fields.Email("email", "Email address", details.Email, true),
-		fields.Text("company", "Company (optional)", details.Company, false),
+		fields.Text(nameField, "Your name", details.Name, true),
+		fields.Email(emailField, "Email address", details.Email, true),
+		fields.Text(companyField, "Company (optional)", details.Company, false),
 		fields.Select(components.Select{
-			Name:  "topic",
-			Label: "Topic",
-			Value: details.Topic,
-			Options: []components.Option{
-				{Value: "", Label: "Choose one"},
-				{Value: "support", Label: "Support"},
-				{Value: "sales", Label: "Sales"},
-				{Value: "other", Label: "Other"},
-			},
+			Name:     topicField,
+			Label:    "Topic",
+			Value:    details.Topic,
+			Options:  append([]components.Option{{Label: "Choose one"}}, contactTopics()...),
 			Required: true,
 		}),
 		fields.Textarea(components.Textarea{
-			Name:     "message",
+			Name:     messageField,
 			Label:    "How can we help?",
 			Value:    details.Message,
-			Hint:     "20 to 1000 characters.",
+			Hint:     fmt.Sprintf("%d to %d characters.", messageMinLength, messageMaxLength),
 			Required: true,
 		}),
 		fields.Checkbox(components.Checkbox{
-			Name:     "agreement",
-			Value:    "yes",
+			Name:     agreementField,
+			Value:    agreementValue,
 			Label:    "You may reply to my request.",
 			Checked:  details.Agreement,
 			Required: true,

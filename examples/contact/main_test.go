@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode/utf8"
+
+	"github.com/dmundt/go-mvu/validation"
 )
 
 var csrfInput = regexp.MustCompile(`name="_csrf" value="([^"]+)"`)
@@ -138,6 +141,53 @@ func TestContactEmailValidation(t *testing.T) {
 	} {
 		if got := validEmail(email); got != valid {
 			t.Errorf("validEmail(%q) = %v, want %v", email, got, valid)
+		}
+	}
+}
+
+func TestContactChoicesAndLengthBoundaries(t *testing.T) {
+	valid := ContactDetails{
+		Name: "Ada", Email: "ada@example.test", Topic: "support",
+		Message: strings.Repeat("x", messageMinLength), Agreement: true,
+	}
+	for _, option := range contactTopics() {
+		details := valid
+		details.Topic = option.Value
+		errs := validation.Errors{}
+		validateContact(details, errs)
+		if errs.Has(topicField) {
+			t.Errorf("rendered topic %q rejected: %v", option.Value, errs)
+		}
+	}
+	for _, topic := range []string{"", "unknown"} {
+		if validContactTopic(topic) {
+			t.Errorf("invalid topic %q accepted", topic)
+		}
+		details := valid
+		details.Topic = topic
+		errs := validation.Errors{}
+		validateContact(details, errs)
+		if !errs.Has(topicField) {
+			t.Errorf("invalid topic %q missing field error", topic)
+		}
+	}
+	for _, length := range []int{messageMinLength - 1, messageMinLength, messageMaxLength, messageMaxLength + 1} {
+		details := valid
+		details.Message = strings.Repeat("界", length)
+		errs := validation.Errors{}
+		validateContact(details, errs)
+		wantError := length < messageMinLength || length > messageMaxLength
+		if errs.Has(messageField) != wantError || utf8.RuneCountInString(details.Message) != length {
+			t.Errorf("message length %d: errors = %v", length, errs)
+		}
+	}
+	for _, length := range []int{nameMinLength - 1, nameMinLength} {
+		details := valid
+		details.Name = strings.Repeat("界", length)
+		errs := validation.Errors{}
+		validateContact(details, errs)
+		if errs.Has(nameField) != (length < nameMinLength) {
+			t.Errorf("name length %d: errors = %v", length, errs)
 		}
 	}
 }

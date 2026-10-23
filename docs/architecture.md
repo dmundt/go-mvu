@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 3
+version: 4
 ---
 
 # Architecture
@@ -30,7 +30,7 @@ CSS inlined in `<style>`. Source of truth:
 | `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
 | `httpx` | stdlib-only HTTP error policy, request IDs, Vary merging, response commitment |
 | `web` | runtime: `Action`/route → message → Update → store → commands → view |
-| `ui` | optional app composition: document policy, secure action forms, rooted regions, field errors |
+| `ui` | optional app composition: document policy, secure action forms, rooted regions, typed region views, field errors |
 | `internal/arch` | boundary enforcement test |
 | `benchmarks` | render benchmarks vs `html/template` |
 

@@ -19,6 +19,7 @@ import (
 	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
+	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -66,11 +67,17 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	directory := syntheticUsers(42)
+	view := UsersView{
+		Document: ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true},
+		RegionView: ui.RegionView[UsersModel]{
+			Region: usersRegion, Content: usersContent,
+		},
+	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, UsersModel, UsersMessage]{
 		App:    UsersApp{Directory: directory},
 		Store:  store.NewMemory[string, UsersModel](),
 		Keys:   web.KeyResolverFunc[string](sessionKey),
-		View:   UsersView{},
+		View:   view,
 		Theme:  theme.Default,
 		Themes: preference,
 	})
@@ -84,7 +91,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	mux.HandleFunc("GET /users/cards", func(w http.ResponseWriter, r *http.Request) {
 		request := web.NewRequestContext(r, theme.Default, preference)
-		page := cardsPage(request, directory[:6])
+		page := view.cardsPage(request, directory[:6])
 		if err := web.WritePage(r.Context(), w, http.StatusOK, page); err != nil {
 			log.Printf("render user cards: %v", err)
 		}

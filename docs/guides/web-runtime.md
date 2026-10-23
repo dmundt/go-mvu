@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 2
+version: 3
 ---
 
 # Web runtime
@@ -84,6 +84,23 @@ action and mounts its exact path and method.
 For multi-field forms, put `submit.HTMX()` on `ui.Form`, not only on its
 submit button. This keeps keyboard and button submissions consistent.
 See [forms](forms.md) and [shared page policy](components.md#shared-page-policy).
+
+Static-message actions can omit the method and decoder wrapper:
+
+```go
+result := web.Result{Mode: web.RenderAuto, Fragment: "counter", Location: "/"}
+increment := web.PostMessage[Message]("/counter/increment", Increment{}, result)
+reset := web.PostMessage[Message]("/counter/reset", Reset{}, result)
+if err := runtime.RegisterAll(mux, increment, reset); err != nil {
+	return nil, err
+}
+```
+
+`PostMessage` returns a normal configurable `Action`; its response policy
+remains explicit. `RegisterAll` registers in order and stops at the first
+error without undoing earlier registrations. Use it during initialization,
+not to reconfigure a running mux. Like `Register`, overlapping ServeMux
+patterns follow the standard library's panic behavior.
 
 Use `Route` directly when an endpoint has different routing needs or must not
 share its definition with a UI action:
