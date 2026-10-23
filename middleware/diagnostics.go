@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"bufio"
 	"encoding/json"
 	"log/slog"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -45,6 +47,7 @@ type DiagnosticsSnapshot struct {
 	Requests uint64                `json:"requests"`
 	Slow     uint64                `json:"slow"`
 	Errors   uint64                `json:"errors"`
+	Aborted  uint64                `json:"aborted"`
 	Phases   map[string]PhaseStats `json:"phases"`
 }
 
@@ -67,6 +70,7 @@ type Diagnostics struct {
 	requests uint64
 	slowN    uint64
 	errors   uint64
+	aborted  uint64
 	phases   map[string]*phaseTotals
 }
 
@@ -90,26 +94,33 @@ func (d *Diagnostics) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		trace := timing.New()
 		writer := &timingWriter{ResponseWriter: w, trace: trace, serverTiming: d.serverTiming}
+		completed := false
+		defer func() {
+			total := trace.Elapsed()
+			if !writer.started {
+				writer.ttfb = total
+			}
+			phases := trace.Phases()
+			if d.serverTiming && writer.started {
+				w.Header().Set(http.TrailerPrefix+"Server-Timing",
+					serverTiming(after(phases, writer.sent), timing.Phase{Name: PhaseTotal, Duration: total}))
+			}
+			status := writer.status
+			if status == 0 {
+				status = http.StatusOK
+				if !completed {
+					status = http.StatusInternalServerError
+				}
+			}
+			d.record(r, status, writer.bytes, writer.ttfb, total, phases, !completed)
+		}()
 		next.ServeHTTP(writer, r.WithContext(timing.WithTrace(r.Context(), trace)))
-		total := trace.Elapsed()
-		if !writer.started {
-			writer.ttfb = total
-		}
-		phases := trace.Phases()
-		if d.serverTiming && writer.started {
-			w.Header().Set(http.TrailerPrefix+"Server-Timing",
-				serverTiming(after(phases, writer.sent), timing.Phase{Name: PhaseTotal, Duration: total}))
-		}
-		status := writer.status
-		if status == 0 {
-			status = http.StatusOK
-		}
-		d.record(r, status, writer.bytes, writer.ttfb, total, phases)
+		completed = true
 	})
 }
 
 func (d *Diagnostics) record(
-	r *http.Request, status, bytes int, ttfb, total time.Duration, phases []timing.Phase,
+	r *http.Request, status, bytes int, ttfb, total time.Duration, phases []timing.Phase, aborted bool,
 ) {
 	slow := d.slow > 0 && total > d.slow
 	d.mu.Lock()
@@ -117,8 +128,11 @@ func (d *Diagnostics) record(
 	if slow {
 		d.slowN++
 	}
-	if status >= http.StatusInternalServerError {
+	if status >= http.StatusInternalServerError || aborted {
 		d.errors++
+	}
+	if aborted {
+		d.aborted++
 	}
 	for _, phase := range phases {
 		d.add(phase.Name, phase.Duration)
@@ -146,6 +160,7 @@ func (d *Diagnostics) record(
 		slog.Duration("ttfb", ttfb),
 		slog.Duration("total", total),
 		slog.Bool("slow", slow),
+		slog.Bool("aborted", aborted),
 		slog.String("request_id", RequestIDFromContext(r.Context())),
 		slog.Group("phases", attrs...),
 	)
@@ -168,7 +183,7 @@ func (d *Diagnostics) Snapshot() DiagnosticsSnapshot {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	snapshot := DiagnosticsSnapshot{
-		Requests: d.requests, Slow: d.slowN, Errors: d.errors,
+		Requests: d.requests, Slow: d.slowN, Errors: d.errors, Aborted: d.aborted,
 		Phases: make(map[string]PhaseStats, len(d.phases)),
 	}
 	for name, totals := range d.phases {
@@ -187,6 +202,7 @@ func (d *Diagnostics) Reset() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.requests, d.slowN, d.errors = 0, 0, 0
+	d.aborted = 0
 	d.phases = map[string]*phaseTotals{}
 }
 
@@ -201,7 +217,12 @@ func (d *Diagnostics) Handler() http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
-		_ = json.NewEncoder(w).Encode(d.Snapshot())
+		if r.Method == http.MethodHead {
+			return
+		}
+		if err := json.NewEncoder(w).Encode(d.Snapshot()); err != nil {
+			d.logger.ErrorContext(r.Context(), "diagnostics response failed", "error", err)
+		}
 	})
 }
 
@@ -234,6 +255,16 @@ func (w *timingWriter) begin(status int) {
 }
 
 func (w *timingWriter) WriteHeader(status int) {
+	if w.started {
+		return
+	}
+	if status < 100 || status > 999 {
+		panic("invalid HTTP status code")
+	}
+	if status >= 100 && status < 200 && status != http.StatusSwitchingProtocols {
+		w.ResponseWriter.WriteHeader(status)
+		return
+	}
 	w.begin(status)
 	w.ResponseWriter.WriteHeader(status)
 }
@@ -247,6 +278,22 @@ func (w *timingWriter) Write(p []byte) (int, error) {
 
 // Unwrap lets http.ResponseController reach Flush and deadlines.
 func (w *timingWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+func (w *timingWriter) FlushError() error {
+	if !w.started {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	return http.NewResponseController(w.ResponseWriter).Flush()
+}
+
+func (w *timingWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	conn, buffer, err := http.NewResponseController(w.ResponseWriter).Hijack()
+	if err == nil {
+		w.begin(http.StatusSwitchingProtocols)
+	}
+	return conn, buffer, err
+}
 
 // after returns phases first recorded after the first sent ones. Phases
 // already in the header and extended later are not repeated.

@@ -67,12 +67,20 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 | Cookie | Flags |
 | --- | --- |
-| session | signed ID, HttpOnly, SameSite=Lax default, `Secure` option, MaxAge option |
+| session | signed ID and server expiry, HttpOnly, SameSite=Lax default, `Secure`, `MaxAge` options |
 | theme | signed mode, HttpOnly, SameSite=Lax default, `Secure` option |
 
 - Secrets ≥ 32 random bytes; separate secrets per purpose.
 - Production behind HTTPS → `Secure: true`.
 - Tampered cookie → ignored (new session / `System` mode).
+- Session `Lifetime` defaults to 24 hours and is verified server-side;
+  `MaxAge` controls only browser retention. Legacy session cookies are rejected.
+- `VerificationKeys` verifies prior signing keys; only the current key signs.
+- `Rotate` explicitly migrates a session-keyed model through an application
+  callback. Reload the document afterward: old forms carry old CSRF tokens.
+- `Invalidate` revokes copied cookies, not merely the current browser cookie.
+  Its bounded memory backend is single-process and non-durable. Share
+  `Options.Revocations` across middleware instances during key rollover.
 
 ## Redirects
 
@@ -82,7 +90,8 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 ## Errors and logging
 
-- `middleware.Recover`: panic → 500, logged, no stack to client.
+- `middleware.Recover`: uncommitted panic → 500; committed panic aborts.
+  Logged, no stack to client.
 - `web.InternalServerError`: generic body; details only in log.
 - Errors after response start: logged, never appended to body.
 - `middleware.RequestID`: `X-Request-ID` per response; `RequestLogger`
@@ -101,5 +110,10 @@ passes user input as `id` or `hx-target` still owns that choice.
 
 ## Known limits
 
-- No rate limiting, auth, or session revocation store; add at HTTP boundary.
+- Authentication and domain authorization remain application responsibilities.
+  Optional transport limits do not establish identity.
+- In-memory idempotency and session revocation do not survive restart or
+  coordinate multiple processes. Durable effects need application persistence
+  and an outbox or equivalent transaction boundary.
 - Memory store / sessions single-process; multi-instance → shared store.
+- Deployment policies and guarantees: [middleware](middleware.md).

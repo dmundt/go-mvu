@@ -24,11 +24,12 @@ output, built-in database adapter, auth.
 | `validation` | explicit field errors | none |
 | `htmx` | typed actions, request/response headers | `html` |
 | `session` | signed session ID cookie | `store` |
-| `middleware` | CSP/security headers, CSRF, recover, request ID, logging, diagnostics | `html`, `session`, `timing` |
+| `middleware` | HTTP policies, CSP/CSRF, recovery, logging, diagnostics, opt-in deployment extensions | `html`, `session`, `timing`, `httpx` |
 | `timing` | per-request phase trace (render time etc.) | none |
+| `httpx` | shared error policy, request ID context, response tracking, Vary | none |
 | `components` | layout, controls, forms, tables, pagination, switcher | `html`, `htmx`, `theme` |
 | `shared` | native-HTML widgets (accordion, tabs, dialog, …) | `components`, `html`, `htmx` |
-| `web` | HTTP runtime | `mvu`, `html`, `htmx`, `store`, `theme` |
+| `web` | HTTP runtime and transition policies | `mvu`, `html`, `htmx`, `store`, `theme`, `timing`, `httpx` |
 
 Spec view:
 
@@ -169,8 +170,13 @@ server clamps page in `Update`. Example: [users](examples/users/).
 ## Commands
 
 - `web.SyncCommands` (default): run after persist, before render.
-- `web.AsyncCommands{OnError}`: detached goroutines.
+- `web.NewAsyncCommandRunner`: bounded queue/concurrency, per-command timeout,
+  explicit shutdown drain. Legacy `AsyncCommands` is deprecated.
 - Commands dispatch typed follow-up messages through same transition path.
+- Transition authorization runs on every CAS attempt and command follow-up.
+  Optional expected-version checks reject stale intent with 409.
+- Commit-aware outcome observations distinguish persistence from later
+  effect/render failure. See [runtime policies](docs/guides/web-runtime.md).
 
 ## Rendering safety
 
@@ -186,20 +192,38 @@ sessions, err := session.New(secret, session.Options{Secure: true})
 csrf, err := middleware.NewCSRF(secret)
 preference, err := theme.NewPreference(themeSecret, theme.PreferenceOptions{Secure: true})
 
-var handler http.Handler = mux
-handler = csrf.Wrap(handler)
-handler = preference.Wrap(handler)
-handler = sessions.Wrap(handler)
-handler = middleware.RequestLogger(logger)(handler)
-handler = middleware.RequestID(handler)
-handler = middleware.SecurityHeaders(handler)
-handler = middleware.Recover(handler)
+policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
+	MaxBodyBytes: 1 << 20,
+	Timeout:      10 * time.Second,
+})
+handler := middleware.Chain(mux,
+	middleware.RequestID,
+	middleware.SecurityHeaders,
+	middleware.RequestLogger(logger),
+	middleware.Recover,
+	policy,
+	middleware.NoStore,
+	sessions.Wrap,
+	preference.Wrap,
+	csrf.Wrap,
+)
 ```
 
 - `CSRFInput{}` in forms, `CSRFHTMX{Body}` for HTMX header.
 - Default CSP: `script-src 'self'`, `style-src 'self' 'unsafe-inline'`
   (inline CSS), `object-src 'none'`, `frame-ancestors 'none'`.
 - Guide: [security](docs/guides/security.md).
+- Composition order is explicit; recovery handles only uncommitted errors.
+  Late panics abort rather than append an error page.
+- `httpx.Error` and `httpx.ErrorHandler` share a rejection policy across runtime
+  and middleware. Details remain in logs; HTTP error statuses remain intact.
+- `Document.HTMXSwapValidationErrors` opts into 422 validation-fragment swaps.
+- Mount public static assets outside session/CSRF wrappers.
+- Contracts, request bounds, and extensions:
+  [middleware guide](docs/guides/middleware.md).
+- Session cookies now have a server-verified lifetime (default 24 hours);
+  previous cookie format resets. Rotation, revocation, and signing-key rollover
+  are explicit. Memory revocation/idempotency are non-durable and single-process.
 
 ## Run examples
 

@@ -119,10 +119,14 @@ type Document struct {
 	HTMXSource  string
 	// HTMXIntegrity is an SRI hash such as static.HTMXIntegrity.
 	HTMXIntegrity string
-	Head          html.Component
-	Body          html.Component
-	Theme         theme.Theme
-	Mode          theme.Mode
+	// HTMXSwapValidationErrors enables swapping 422 responses. Applications
+	// must return an appropriate validation fragment for the request target.
+	// Other 4xx/5xx responses retain HTMX's no-swap behavior.
+	HTMXSwapValidationErrors bool
+	Head                     html.Component
+	Body                     html.Component
+	Theme                    theme.Theme
+	Mode                     theme.Mode
 }
 
 func (document Document) RenderHTML(ctx context.Context, out *html.Context) error {
@@ -156,6 +160,11 @@ func (document Document) RenderHTML(ctx context.Context, out *html.Context) erro
 	out.Static("<style>")
 	out.Static(selectedTheme.Stylesheet())
 	out.Static("</style>")
+	if document.HTMXSwapValidationErrors {
+		out.Static(`<meta name="htmx-config" content="`)
+		out.Attribute(`{"responseHandling":[{"code":"204","swap":false},{"code":"422","swap":true},{"code":"[23]..","swap":true},{"code":"[45]..","swap":false,"error":true},{"code":"...","swap":false}]}`)
+		out.Static(`">`)
+	}
 	out.Component(ctx, document.Head)
 	if document.HTMXSource != "" {
 		if err := validateURL(document.HTMXSource); err != nil {
