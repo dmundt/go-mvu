@@ -61,6 +61,14 @@ test('pagination swaps results, pushes URL, and styles reusable cards', async ({
   await expect(page.locator('#users-results')).toHaveCount(1);
   await expect(page.locator('#users-results > .stack')).toHaveCSS('display', 'flex');
   await expect(page.locator('th[scope="row"]').first()).toHaveText('Margaret Lovelace');
+  await page.goBack();
+  await expect(page).toHaveURL(`${usersURL}/users?page=1`);
+  await expect(page.locator('#users-results [aria-current="page"]')).toHaveText('1');
+  await expect(page.locator('th[scope="row"]').first()).toHaveText('Ada Lovelace');
+  await page.goForward();
+  await expect(page).toHaveURL(`${usersURL}/users?page=2`);
+  await expect(page.locator('#users-results [aria-current="page"]')).toHaveText('2');
+  await expect(page.locator('th[scope="row"]').first()).toHaveText('Margaret Lovelace');
   await page.reload();
   await expect(page.locator('#users-results [aria-current="page"]')).toHaveText('2');
   await page.getByRole('link', { name: 'View reusable user cards' }).click();
@@ -72,7 +80,115 @@ test('pagination swaps results, pushes URL, and styles reusable cards', async ({
   await expectNoPageOverflow(page);
 });
 
+test('pagination works without JavaScript', async ({ browser }, testInfo) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: testInfo.project.use.viewport,
+    colorScheme: testInfo.project.use.colorScheme,
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${usersURL}/users?page=1`);
+    await page.getByRole('link', { name: 'Next', exact: true }).click();
+    await expect(page).toHaveURL(`${usersURL}/users?page=2`);
+    await expect(page.locator('th[scope="row"]').first()).toHaveText('Margaret Lovelace');
+    await page.reload();
+    await expect(page.locator('#users-results [aria-current="page"]')).toHaveText('2');
+    await page.getByRole('link', { name: 'Previous', exact: true }).click();
+    await expect(page).toHaveURL(`${usersURL}/users?page=1`);
+    await expect(page.locator('th[scope="row"]').first()).toHaveText('Ada Lovelace');
+  } finally {
+    await context.close();
+  }
+});
+
+async function expectVisibleFocus(locator) {
+  await expect(locator).toBeFocused();
+  await expect.poll(() => locator.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return el.matches(':focus-visible') &&
+      ((style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) > 0 &&
+        style.outlineColor !== 'transparent' && style.outlineColor !== 'rgba(0, 0, 0, 0)') ||
+        (style.boxShadow !== 'none' &&
+          !style.boxShadow.startsWith('rgba(0, 0, 0, 0)')));
+  })).toBe(true);
+}
+
 for (const theme of themes) {
+  test(`${theme}: keyboard navigation, activation, dismissal, and focus`, async ({ page }, testInfo) => {
+    await page.goto(`${componentsURL}/?theme=${theme}&mode=${testInfo.project.use.colorScheme}`);
+    const framework = page.getByRole('combobox', { name: 'CSS framework', exact: true });
+    await framework.focus();
+    await page.keyboard.press('Tab');
+    await expectVisibleFocus(page.getByRole('combobox', { name: 'Mode', exact: true }));
+    await page.keyboard.press('Tab');
+    await expectVisibleFocus(page.getByRole('button', { name: 'Apply theme', exact: true }));
+
+    const trigger = page.getByRole('button', { name: 'Open dialog', exact: true });
+    await trigger.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expectVisibleFocus(trigger);
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Invite teammate', exact: true });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Tab');
+    const close = dialog.getByRole('button', { name: 'Close', exact: true });
+    await expectVisibleFocus(close);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Space');
+    await expect(dialog).toBeHidden();
+    await expect(trigger).toBeFocused();
+
+    const tooltip = page.getByRole('button', { name: 'Hover or focus', exact: true });
+    await tooltip.focus();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expectVisibleFocus(tooltip);
+    await expect(tooltip).toHaveAccessibleDescription('Tooltips describe their trigger.');
+    await expect(page.getByRole('tooltip')).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('tooltip')).toBeHidden();
+  });
+
+  test(`${theme}: system palette follows OS changes and reduces motion`, async ({ page }) => {
+    const palette = () => page.locator('body').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { background: style.backgroundColor, color: style.color };
+    });
+    const explicit = {};
+    for (const mode of ['light', 'dark']) {
+      await page.goto(`${componentsURL}/?theme=${theme}&mode=${mode}`);
+      explicit[mode] = await palette();
+    }
+    expect(explicit.light).not.toEqual(explicit.dark);
+    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'no-preference' });
+    await page.goto(`${componentsURL}/?theme=${theme}&mode=system`);
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'system');
+    await expect.poll(palette).toEqual(explicit.light);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect.poll(palette).toEqual(explicit.dark);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect.poll(palette).toEqual(explicit.light);
+
+    const duration = (selector, property) => page.locator(selector).first().evaluate(
+      (el, name) => Math.max(...getComputedStyle(el)[name].split(',').map(parseFloat)),
+      property,
+    );
+    expect(await duration('.tip__content', 'transitionDuration')).toBeGreaterThan(0);
+    expect(await duration('.spinner__icon', 'animationDuration')).toBeGreaterThan(0.01);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => duration('.tip__content', 'transitionDuration')).toBeLessThanOrEqual(0.00001);
+    await expect.poll(() => duration('.spinner__icon', 'animationDuration')).toBeLessThanOrEqual(0.001);
+    await expect(page.locator('.spinner__icon').first()).toHaveCSS('animation-iteration-count', '1');
+  });
+
   test(`${theme}: computed styles, theme form, native dialog, plain table`, async ({ page }, testInfo) => {
     const mode = testInfo.project.use.colorScheme;
     await page.goto(`${componentsURL}/?theme=${theme}&mode=${mode}&tab=activity`);

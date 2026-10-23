@@ -32,6 +32,12 @@ html[data-theme] {
 .button--danger { background: var(--danger); color: var(--on-danger); border-color: var(--danger); }
 .button--ghost { background: transparent; color: var(--pico-primary); border-color: transparent; }
 
+.button:focus-visible,
+.dialog__close:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
 /* Shared dropdown: keep Pico chevron, drop shared border chevron. */
 details.dropdown > summary:not([role])::after { border: 0; }
 details.dropdown[open] > summary:not([role])::after { margin: 0; transform: rotate(180deg); }
@@ -151,7 +157,7 @@ details.dropdown[open] > summary:not([role])::after { margin: 0; transform: rota
 
 @media (max-width: 48rem) {
 	.shell {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 
 	.grid--columns-2,
@@ -165,6 +171,6 @@ details.dropdown[open] > summary:not([role])::after { margin: 0; transform: rota
 	.grid--columns-10,
 	.grid--columns-11,
 	.grid--columns-12 {
-		grid-template-columns: 1fr;
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
