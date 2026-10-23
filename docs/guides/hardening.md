@@ -43,7 +43,7 @@ tests as a substitute for race detection.
 
 ## Durable actions and effects
 
-[Action ledger example](../../examples/actionledger/README.md) keeps model
+[Recovery example](../../examples/recovery/README.md) keeps model
 transition, scoped action receipt, and pending effect in one synced application
 WAL frame. Restart preserves duplicate suppression and pending effects.
 The bounded ledger detects corrupt frames, recovers only incomplete tails,
