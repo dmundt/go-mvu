@@ -7,8 +7,8 @@
 - Use Open Props tokens (`--size-*`, `--gray-*`, `--indigo-*`, `--blue-*`, `--radius-*`,
   `--shadow-*`, `--font-*`, `--ease-*`) over literals. New token → rerun
   build. Never include `props.colors-oklch.css` (defines `--color-*` on `*`).
-- `base.css`: unscoped, plain; adapters inherit. Palette, public `--color-*`
-  tokens, structure, tables, layout.
+- `base.css`: unscoped, plain. Palette, public `--color-*` tokens, structure,
+  tables, layout.
 - `default.css`: every selector scoped to `html[data-theme-name="default"]`
   (`:where(...)` for low specificity). Unwrapped only to beat `base.css` or
   `shared.css`.

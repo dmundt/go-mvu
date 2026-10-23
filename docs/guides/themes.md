@@ -2,14 +2,14 @@
 type: Guide
 title: Themes and CSS
 description: Theme modes, design tokens, CSS integration, and theme switching.
-version: 1
+version: 2
 ---
 
 # Themes and CSS
 
 Themes own presentation; components own semantic structure, accessibility, and
-HTMX behavior. Framework classes are framework-neutral, so applications do not
-need Bootstrap, Tailwind, or another CSS framework.
+HTMX behavior. The framework ships one default design system and supports
+application-defined themes through a small Go interface.
 
 ## Inline theme CSS
 
@@ -28,12 +28,12 @@ classes.
 Built on [Open Props](https://open-props.style) (MIT). Goal: minimal, dense,
 neutral UI for business and technical apps (admin, data browsers, consoles).
 
-| File | Role | Adapters reuse |
-| --- | --- | --- |
-| `open-props.css` | Generated Open Props token subset (`:where(html)`) | yes |
-| `base.css` | Palette, public tokens, structure, tables, layout | yes |
-| `default.css` | Design system, scoped to `html[data-theme-name="default"]` | no |
-| `shared.css` | `shared` widget styles | yes |
+| File | Role |
+| --- | --- |
+| `open-props.css` | Generated Open Props token subset (`:where(html)`) |
+| `base.css` | Palette, public tokens, structure, tables, layout |
+| `default.css` | Design system, scoped to `html[data-theme-name="default"]` |
+| `shared.css` | `shared` widget styles |
 
 Embed order: `open-props.css` → `base.css` → `default.css` → `shared.css`.
 Package stays `theme`; `default` is a Go keyword, so `theme/default/` holds
@@ -71,7 +71,7 @@ Design:
   primary ring. Forced-colors mode uses system highlight colors.
 - Light, dark, system dark palettes; reduced motion honored.
 - Shared components consume the same spacing, typography, radius, and shadow
-  tokens. Framework adapters retain their own token defaults.
+  tokens.
 - State colors maintain WCAG AA contrast for text; loading indicators avoid
   decorative gradients and stop moving under reduced-motion preferences.
 
@@ -86,84 +86,11 @@ borders, shadows, easing); emits only used tokens; copies license to
 `LICENSE-open-props.txt`. No `@import`, no CDN. `open-props` pinned exact in
 `package.json` devDependencies. Run after using a new Open Props token;
 `npm run test:themes` fails on undefined tokens.
-## Plug-and-play CSS framework adapters
 
-Three adapters bundle real upstream framework CSS and map it to the framework's
-existing component markup:
+### Updating bundled tokens
 
-| Import | Theme | Bundled CSS |
-| --- | --- | --- |
-| `github.com/dmundt/go-mvu/theme/bootstrap` | `bootstrap.Theme{}` | Bootstrap 5.3.8 |
-| `github.com/dmundt/go-mvu/theme/bulma` | `bulma.Theme{}` | Bulma 1.0.4 |
-| `github.com/dmundt/go-mvu/theme/pico` | `pico.Theme{}` | Pico 2.1.1 |
-
-Select an adapter by changing only `Document.Theme`:
-
-```go
-import "github.com/dmundt/go-mvu/theme/bootstrap"
-
-doc := components.Document{
-	Title: "Dashboard",
-	Theme: bootstrap.Theme{},
-	Mode:  theme.ModeFromContext(ctx),
-	Body:  dashboard,
-}
-```
-
-Use `bulma.Theme{}` or `pico.Theme{}` in the same way. No manual adapter CSS,
-vendor classes, stylesheet routes, or JavaScript setup is needed. The server
-still writes CSS inline.
-
-### Theme adapter contract
-
-Adapters are interchangeable presentation implementations, not separate
-component APIs. Each adapter must:
-
-- Work by changing only `Document.Theme`; keep component markup and neutral
-  component classes unchanged.
-- Support `data-theme="light"`, `data-theme="dark"`, and
-  `data-theme="system"`. System mode follows `prefers-color-scheme`.
-- Provide computed values for every token in
-  [`theme-contract.json`](../../scripts/theme-contract.json).
-- Render `.stack` as a spaced column, `.grid` and `.shell` as grids,
-  `.button--primary` and `.input` as visible controls at least 40px high.
-  Inputs need visible borders. Semantic tables use collapsed borders,
-  bordered cells, and a non-transparent header surface. Light and dark
-  backgrounds must differ; system mode must follow the emulated OS scheme.
-- Keep body, button, and input text contrast at or above WCAG AA's 4.5:1;
-  muted text, badge, alert, and table-header text must also meet 4.5:1. Provide
-  a visible `:focus-visible` indicator reachable by keyboard. At 390px and
-  320px viewport widths, avoid page-level horizontal overflow and collapse
-  multi-column grids to one column.
-- Bundle self-contained CSS inline, with no external stylesheet requests or
-  JavaScript requirement for built-in components. Vendor CSS may remain
-  available for custom app markup.
-
-Contract coverage lives in `scripts/themes.test.mjs` (bundled CSS requirements)
-and `examples/components/main_test.go` (same component markup across adapters
-and modes). `examples/themes/main_test.go` checks inline output and mode
-selection. `npm run test:themes:browser` builds and starts both gallery servers,
-runs computed-style checks, then stops servers and removes temporary binaries.
-Install the browser once with `npx playwright install chromium`. Set
-`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to use an installed Chromium-based browser.
-Run `npm run test:themes` and `go test ./examples/components ./examples/themes`
-for the fast checks.
-
-The build script clones each vendor dark rule into an
-`@media (prefers-color-scheme: dark)` block for `system`; rules that negate
-dark (`:not([data-theme=dark])`) are skipped.
-Upstream CSS classes also remain available for custom components, but their
-JavaScript-dependent widgets are not included.
-
-Try the gallery with `go run .\examples\themes`, then open
-`http://localhost:8082/?theme=bootstrap&mode=dark`. It uses the same component
-tree for all four themes, including an ordinary semantic table.
-
-### Updating bundled assets
-
-Adapter source files live in `theme/<framework>/adapter.css`. Upstream CSS
-and build tools are pinned in the root `package.json` and lockfile. Maintainers
-can regenerate bundled CSS with:
+Open Props and build tools are pinned in the root `package.json` and lockfile.
+Maintainers can regenerate the token subset with:
 
 ```powershell
 npm ci --ignore-scripts
@@ -171,10 +98,8 @@ npm run build:themes
 npm run test:themes
 ```
 
-The build maps selectors using a CSS parser, includes shared layout overrides,
-and retains upstream MIT license notices in each adapter's `LICENSE.txt`.
-Generated `framework.css` files are shipped with the Go packages, so Go users
-do not need Node.js or npm. Do not edit generated assets manually.
+The generated token file is embedded with the Go package, so Go users do not
+need Node.js or npm. Do not edit generated assets manually.
 
 ## Custom themes
 
@@ -290,7 +215,7 @@ Works without JavaScript; HTMX enhances with `hx-post` + `hx-swap="none"`.
 `hx-target` + `hx-swap="outerHTML"` (handler returns fresh markup).
 
 Optional `theme.DocumentClasser` (`DocumentClass(mode) string`) adds
-`class` on `<html>` for frameworks keyed on classes; resolve via
+`class` on `<html>` for custom themes keyed on classes; resolve via
 `theme.DocumentClass(t, mode)`.
 `ToggleHandler` (light↔dark) remains for legacy single-button switches.
 

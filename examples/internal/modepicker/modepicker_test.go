@@ -1,4 +1,4 @@
-package themepicker
+package modepicker
 
 import (
 	"context"
@@ -9,29 +9,9 @@ import (
 	"github.com/dmundt/go-mvu/theme"
 )
 
-func TestLookup(t *testing.T) {
-	for _, name := range append([]string{""}, Names...) {
-		selected, err := Lookup(name)
-		if err != nil {
-			t.Fatalf("Lookup(%q): %v", name, err)
-		}
-		want := name
-		if want == "" {
-			want = "default"
-		}
-		if selected.Name() != want {
-			t.Errorf("Lookup(%q).Name() = %q", name, selected.Name())
-		}
-	}
-	if _, err := Lookup("tailwind"); err == nil {
-		t.Error("Lookup accepted unknown theme")
-	}
-}
-
-func TestFormSelectsCurrentValuesAndEscapesHidden(t *testing.T) {
+func TestFormSelectsCurrentModeAndEscapesHidden(t *testing.T) {
 	var out strings.Builder
 	form := Form{
-		Theme:  "bulma",
 		Mode:   theme.Dark,
 		Hidden: []Hidden{{Name: "tab", Value: `a"b`}},
 	}
@@ -40,7 +20,6 @@ func TestFormSelectsCurrentValuesAndEscapesHidden(t *testing.T) {
 	}
 	for _, want := range []string{
 		`<form method="get" action="?">`,
-		`<option value="bulma" selected>`,
 		`<option value="dark" selected>`,
 		`<input class="input" id="tab" name="tab" type="hidden" value="a&#34;b">`,
 		`type="submit"`,

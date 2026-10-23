@@ -2,7 +2,7 @@
 type: Guide
 title: HTTP middleware contracts
 description: Composition, response lifecycle, request policies, and optional deployment extensions.
-version: 2
+version: 3
 ---
 
 # HTTP middleware
@@ -157,30 +157,13 @@ error; handle it during startup. Nothing is registered or enabled implicitly.
 
 | Constructor | Required policy |
 | --- | --- |
-| `TrustedProxies([]netip.Prefix)` | Explicit nonempty trust list; universal prefixes rejected |
 | `AdmissionLimit(AdmissionOptions)` | `MaxConcurrent`, `RetryAfter`; immediate 503 on overload |
 | `RateLimit(RateLimitOptions)` | `MaxEntries`, `Requests`, `Window`, application `Key` resolver |
-| `Telemetry(TelemetryOptions)` | Fixed low-cardinality `Route`, `Complete` callback |
-| `Gzip(GzipOptions)` | Explicit `Eligible` predicate; compression `Level`, optional `OnError` |
-| `ResolveLocale(LocaleOptions)` | `Supported`, `Default`, optional `CookieName` and `Precedence` |
 | `CORS(CORSOptions)` | Exact `Origins`, `Methods`, `Headers`; optional `Expose`, `Credentials`, `MaxAge` |
 | `HSTS(HSTSOptions)` | Positive `MaxAge`, explicit `IncludeSubDomains` / `Preload` |
 
 Admission, rate limiting, and CORS accept `ErrorHandler` for the application's
 shared rejection policy.
-
-### Proxy identity
-
-`ClientFromContext(ctx)` returns `(ClientInfo, bool)` with `Address netip.Addr`
-and `Scheme string`. Forwarded metadata is considered only when the direct peer
-matches the configured proxy prefixes. X-Forwarded-For traversal is right to
-left, stopping at the first untrusted hop; malformed chains are ignored.
-A single validated X-Forwarded-Proto value is accepted from a trusted direct
-peer. Never use raw forwarded headers as an identity or authorization source.
-
-Apply proxy resolution before policies using resolved client information.
-An IP is not a principal: authenticated rate-limit keys usually need an
-application account or tenant identifier.
 
 ### Admission and rate limits
 
@@ -193,46 +176,14 @@ avoid untrusted arbitrary header values that create new keys on every request.
 The table and counters belong to this limiter instance in one process. Restart
 resets quotas; replicas do not share them. Fixed windows permit bursts across
 window boundaries. Use gateway or distributed enforcement for global quotas.
-Behind a proxy, direct peer addresses identify the proxy unless explicitly
-resolved through trusted-proxy policy. See the
-[production walkthrough](production.md#4-put-https-and-abuse-controls-in-front).
-
-### Telemetry
-
-`TelemetryOptions.Complete func(context.Context, middleware.Completion)` runs
-once on normal return, cancellation, or panic unwinding. It receives fixed
-route label, request ID, status, accepted bytes, duration, panic value, and error.
-The callback must not panic. Downstream panics are rethrown.
-
-`TraceFromContext` exposes a validated W3C version-00 incoming traceparent as
-`TraceContext{TraceID, ParentID, Sampled}`. This is an adapter hook, not a vendor
-exporter or an automatic distributed tracing implementation. Applications
-create spans and correlate runtime outcomes through their own adapter.
-Do not use full paths, session IDs, or user identifiers as metric labels.
-
-### Compression
-
-Gzip is opt-in per request, not a global default for secret-bearing HTML.
-For example, configure `Eligible` only for explicitly public routes and
-`Level: gzip.DefaultCompression`.
-
-Compression streams and supports `http.ResponseController.Flush`. It merges
-`Vary: Accept-Encoding`, respects negotiation, and excludes HEAD, protocol
-upgrades, bodyless statuses, pre-encoded/ranged responses, SSE, noncompressible
-content, and `Cache-Control: no-transform`. Compression close failures invoke
-`OnError` or default logging; a committed response cannot be replaced.
-
-### Locale and browser deployment
-
-Locale precedence explicitly lists `LocaleCookie` and/or `LocaleAcceptLanguage`.
-Only supported locales are selected. `LocaleFromContext` is available at HTTP
-boundaries; views receive resolved `RequestContext.Locale` directly.
-Localization dictionaries and translation remain application responsibilities.
+Behind a proxy, direct peer addresses identify the proxy. Configure trusted
+forwarding and global quotas at the deployment edge.
 
 CORS validates exact allowlists and preflights, merges `Vary`, and never grants
 wildcard credentialed access. It is normally unnecessary for same-origin SSR.
-HSTS emits only for TLS or a trusted proxy's HTTPS scheme. Enable preload and
-subdomain coverage only when the whole deployment can honor them.
+HSTS emits only for direct TLS connections. Enable preload and subdomain
+coverage only when the whole deployment can honor them; terminate TLS and
+forward trusted headers at a correctly configured deployment edge.
 
 ## In-memory action idempotency
 

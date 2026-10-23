@@ -21,14 +21,6 @@ jobs:
       matrix:
         include:
           - package: middleware
-            target: FuzzProxyTrust
-          - package: middleware
-            target: FuzzTraceparent
-          - package: middleware
-            target: FuzzGzipNegotiation
-          - package: middleware
-            target: FuzzLocaleNegotiation
-          - package: middleware
             target: FuzzActionID
           - package: session
             target: FuzzSessionCookie

@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/internal/themepicker"
+	"github.com/dmundt/go-mvu/examples/internal/modepicker"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/shared"
 	"github.com/dmundt/go-mvu/theme"
@@ -35,18 +35,16 @@ var tabs = []tab{
 }
 
 type gallery struct {
-	Theme string
-	Mode  theme.Mode
-	Tab   tab
+	Mode theme.Mode
+	Tab  tab
 }
 
 func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Component(ctx, components.Main{Children: []html.Component{
 		components.Heading{Level: 1, Text: "Component gallery"},
-		themepicker.Form{
-			Theme:  view.Theme,
+		modepicker.Form{
 			Mode:   view.Mode,
-			Hidden: []themepicker.Hidden{{Name: "tab", Value: view.Tab.ID}},
+			Hidden: []modepicker.Hidden{{Name: "tab", Value: view.Tab.ID}},
 		},
 		view.content(),
 	}})
@@ -71,12 +69,11 @@ func (view gallery) content() html.Component {
 	}
 }
 
-// url links to tab id while keeping the selected theme and mode.
+// url links to tab id while keeping the selected mode.
 func (view gallery) url(id string) string {
 	query := url.Values{
-		"theme": {view.Theme},
-		"mode":  {view.Mode.String()},
-		"tab":   {id},
+		"mode": {view.Mode.String()},
+		"tab":  {id},
 	}
 	return "?" + query.Encode()
 }
@@ -123,7 +120,7 @@ func accordionCard() html.Component {
 			},
 			{
 				Title: "Who styles it?",
-				Body:  components.Paragraph("The selected theme. Markup stays framework neutral."),
+				Body:  components.Paragraph("The selected mode. Markup stays theme neutral."),
 			},
 		},
 	})

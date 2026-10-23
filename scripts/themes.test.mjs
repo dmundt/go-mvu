@@ -7,11 +7,6 @@ const root = new URL("../", import.meta.url);
 
 const defaultFile = name => readFile(new URL(`theme/default/${name}`, root), "utf8");
 
-test("adapter token requirements have one documented source", async () => {
-  const guide = await readFile(new URL("docs/guides/themes.md", root), "utf8");
-  assert.match(guide, /\]\(\.\.\/\.\.\/scripts\/theme-contract\.json\)/);
-});
-
 function contrastRatio(foreground, background = "#ffffff") {
   const luminance = hex => {
     const channels = hex.match(/[a-f\d]{2}/gi).map(value => parseInt(value, 16) / 255)
@@ -258,54 +253,6 @@ test("open props subset defines every token default CSS references", async () =>
   const license = await defaultFile("LICENSE-open-props.txt");
   assert.match(license, /MIT License|Permission is hereby granted/);
 });
-for (const name of ["bootstrap", "bulma", "pico"]) {
-  test(`${name} adapter maps semantic raised, subtle, and muted roles`, async () => {
-    const source = await readFile(new URL(`theme/${name}/adapter.css`, root), "utf8");
-    for (const role of ["--surface-raised", "--subtle", "--muted"]) {
-      assert.match(source, new RegExp(`${role}:\\s*var\\(`), `missing ${role} mapping`);
-    }
-  });
-
-  test(`${name} bundle has inline-safe assets, layout overrides, and upstream license`, async () => {
-    const text = await readFile(new URL(`theme/${name}/framework.css`, root), "utf8");
-    const css = postcss.parse(text);
-    assert.doesNotMatch(text, /<\/style/i);
-    assert.doesNotMatch(text, /sourceMappingURL=/);
-    css.walkAtRules("import", rule => assert.fail(`external import: ${rule.params}`));
-    css.walkDecls(decl => assert.doesNotMatch(decl.value, /url\(\s*["']?(?:https?:|\/\/)/i));
-    const selectors = [];
-    css.walkRules(rule => selectors.push(rule.selector));
-    assert.ok(selectors.some(selector => selector.includes(".button--primary")));
-    if (name === "bootstrap" || name === "pico") {
-      const focus = css.nodes.findLast(node =>
-        node.type === "rule" && node.selectors.includes(".button:focus-visible"));
-      assert.ok(focus, "missing adapter keyboard focus fallback");
-      assert.ok(focus.nodes.some(node =>
-        node.prop === "outline" && node.value === "2px solid var(--primary)"));
-    }
-    if (name === "bootstrap") {
-      assert.ok(selectors.some(selector => selector.includes("select.input")));
-      css.walkRules(rule => {
-        if (rule.selector.includes(".form-select") && rule.selector.includes("select.input")) {
-          assert.ok(!rule.selector.split(",").some(selector => selector.trim() === ".input"),
-            "Bootstrap select rules must not add dropdown arrows to text inputs");
-        }
-      });
-    }
-    assert.ok(selectors.includes(".grid--columns-12"));
-    assert.ok(selectors.some(selector => selector.includes("data-theme")));
-    let systemDark = false;
-    css.walkAtRules("media", rule => {
-      if (rule.params === "(prefers-color-scheme: dark)" && rule.toString().includes('[data-theme="system"]')) systemDark = true;
-    });
-    assert.ok(systemDark, "missing system-mode dark rules");
-    const lastGrid = selectors.lastIndexOf(".grid");
-    assert.ok(lastGrid > 0, "missing final framework-neutral layout");
-    const license = await readFile(new URL(`theme/${name}/LICENSE.txt`, root), "utf8");
-    assert.match(license, /MIT License|Permission is hereby granted/);
-  });
-}
-
 test("shared widget CSS targets only component classes or html tokens", async () => {
   const css = postcss.parse(await defaultFile("shared.css"));
   const offenders = [];

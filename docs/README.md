@@ -2,7 +2,7 @@
 type: Documentation Router
 title: Documentation overview
 description: Entry points and recommended reading order for framework documentation.
-version: 2
+version: 3
 ---
 
 # Documentation
@@ -31,7 +31,7 @@ version: 2
   - [Framework positioning](guides/positioning.md): target use cases and
     adjacent framework alternatives.
   - [Themes and CSS](guides/themes.md): inline CSS, tokens, system/light/dark,
-    `POST /theme`, Bootstrap/Bulma/Pico adapters.
+    custom themes, `POST /theme`.
   - [Security](guides/security.md): escaping, CSP, local HTMX, CSRF, cookies.
   - [Middleware](guides/middleware.md): composition, streaming, request bounds,
     rejection policies, HTMX error handling, optional extensions.

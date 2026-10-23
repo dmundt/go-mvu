@@ -83,7 +83,7 @@ type Theme interface {
 }
 
 // DocumentClasser is optionally implemented by a Theme that needs a class on
-// the root html element (for example a vendor dark-mode class). Document
+// the root html element for mode-specific styling. Document
 // calls it once per page; components never perform theme lookups.
 type DocumentClasser interface {
 	DocumentClass(Mode) string
@@ -104,9 +104,9 @@ func (DefaultTheme) Name() string { return "default" }
 
 // Default design system assets live in theme/default/:
 //   - open-props.css: generated Open Props token subset
-//   - base.css: neutral palette, public tokens, structure (adapters reuse)
+//   - base.css: neutral palette, public tokens, structure
 //   - default.css: design refinements scoped to data-theme-name="default"
-//   - shared.css: optional shared package widgets (adapters reuse)
+//   - shared.css: optional shared package widgets
 var (
 	//go:embed default/open-props.css
 	openPropsCSS string

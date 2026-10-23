@@ -34,6 +34,15 @@ func httpToken(value string) bool {
 	return true
 }
 
+func headerToken(value, token string) bool {
+	for _, part := range strings.Split(value, ",") {
+		if strings.EqualFold(strings.TrimSpace(part), token) {
+			return true
+		}
+	}
+	return false
+}
+
 func validOrigin(origin string) bool {
 	parsed, err := url.Parse(origin)
 	return err == nil && (parsed.Scheme == "http" || parsed.Scheme == "https") &&
@@ -138,7 +147,7 @@ type HSTSOptions struct {
 	Preload           bool
 }
 
-// HSTS trusts TLS or the scheme installed by TrustedProxies, never raw headers.
+// HSTS is emitted only for requests served over a direct TLS connection.
 func HSTS(options HSTSOptions) (Extension, error) {
 	if options.MaxAge < time.Second || options.Preload && (!options.IncludeSubDomains || options.MaxAge < 365*24*time.Hour) {
 		return nil, fmt.Errorf("hsts: positive max age required; preload requires subdomains and at least one year")
@@ -152,11 +161,7 @@ func HSTS(options HSTSOptions) (Extension, error) {
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			secure := r.TLS != nil
-			if client, ok := ClientFromContext(r.Context()); ok {
-				secure = secure || client.Scheme == "https"
-			}
-			if secure {
+			if r.TLS != nil {
 				w.Header().Set("Strict-Transport-Security", value)
 			}
 			next.ServeHTTP(w, r)

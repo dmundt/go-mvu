@@ -3,7 +3,7 @@ import test, { after, before } from "node:test";
 import { chromium } from "playwright";
 import contract from "./theme-contract.json" with { type: "json" };
 
-const themes = ["default", "bootstrap", "bulma", "pico"];
+const themes = ["default"];
 const modes = [
   { name: "light", colorScheme: "light" },
   { name: "dark", colorScheme: "dark" },
@@ -210,7 +210,7 @@ async function readStyles(page, baseURL, theme, mode, viewport = { width: 1280, 
 }
 
 for (const theme of themes) {
-  test(`${theme} adapter computed styles satisfy shared contract`, async () => {
+  test(`${theme} theme computed styles satisfy visual contract`, async () => {
     const themePage = await browser.newPage();
     const componentPage = await browser.newPage();
     const pageStyles = [];
