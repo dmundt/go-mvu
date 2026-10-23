@@ -5,6 +5,27 @@ Applications can combine `components` package elements with local components;
 local, business-specific components should stay with the application. See
 [ADR-0009](../adr/0009-reusable-components.md).
 
+## Authoring levels
+
+| Level | API | Preferred location |
+| --- | --- | --- |
+| Semantic composition | `components`, `shared`, application components | Application views |
+| Generic HTML | `html.El`, `Attrs`, `Text` | Named low-level components; explicit escape-hatch demos |
+| Direct streaming | `Context.Static`, escaped writers, numeric writers | Framework primitives; measured hot paths; explicit low-level components |
+
+All levels share `html.Component`. Interoperability stays supported; ordinary
+views should not alternate between tag emission and semantic composition.
+Keep low-level details behind a named component, not an inline
+`ComponentFunc` in a business view. Use typed properties first; `Attrs` extends
+missing attributes, not layout APIs or component-owned names.
+
+Repository examples enforce this policy with a type-aware architecture test.
+Only [theme markup](../../examples/themes/lowlevel.go) and
+[element interoperability](../../examples/components/lowlevel.go) are exempt.
+Framework component implementations remain free to render directly; no
+mandatory builder layer. Applications may adopt this policy without adopting
+the repository's test. See [ADR-0018](../adr/0018-ui-authoring-boundaries.md).
+
 ## Component contract
 
 Implement `html.Component` to render any HTML subtree. Embed `html.PageMarker`
@@ -17,16 +38,15 @@ type Greeting struct {
 	Name string
 }
 
-func (g Greeting) RenderHTML(_ context.Context, out *html.Context) error {
-	out.Static("<p>Hello, ")
-	out.Text(g.Name)
-	out.Static("</p>")
+func (g Greeting) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Component(ctx, components.Paragraph("Hello, "+g.Name))
 	return out.Err()
 }
 ```
 
-Use `Static` only for developer-controlled markup. `Text` escapes HTML text;
-`Attribute` escapes attribute values. Nested components should be rendered
+Semantic components own escaping. In low-level implementations, use `Static`
+only for developer-controlled markup; `Text` and `Attribute` escape values.
+Nested components should be rendered
 through `out.Component(ctx, child)` so the render context retains its first
 error.
 
@@ -47,7 +67,8 @@ theme classes should describe roles and variants, not a CSS framework.
 
 `html.El` builds any element without hand-written tag strings. Attributes
 are an ordered `html.Attrs` list; text goes through `html.Text`. Elements and
-components nest both ways:
+components nest both ways. This is an explicit low-level example, not the
+default application authoring style:
 
 ```go
 html.El("section", html.Attrs{html.A("class", "panel"), html.A("id", "release")},
@@ -68,7 +89,7 @@ html.El("section", html.Attrs{html.A("class", "panel"), html.A("id", "release")}
 
 ## Attribute passthrough
 
-Every `components` and `shared` component has `Attrs html.Attrs`:
+Root-bearing struct components generally expose `Attrs html.Attrs`:
 
 ```go
 components.Card{
@@ -92,7 +113,16 @@ components.Card{
   when `Action` is set.
 - Same allowlist as `html.El`.
 
-Inside a custom component, use the same helpers:
+Exceptions retained for compatibility:
+
+| API | Reason / alternative |
+| --- | --- |
+| `Document` | Owns document metadata/theme attributes; use typed fields and `Head`/`Body` slots. No arbitrary root passthrough. |
+| `Paragraph` (string), `HeaderRow` (slice) | Convenience APIs, no `Attrs` field. For extra attributes, encapsulate `html.El("p", ...)` in a named component, or compose `TableRow` + `TableCell`. |
+| `Text`, `Empty`, `Sequence`, `html.Optional` | No owned root element. Put attributes on the enclosing component. |
+| `Option`, `NavItem`, `Breadcrumb`, shared item records | Configuration data, not independently rendered components. Parent component owns markup. |
+
+Inside a low-level custom component, use the same helpers:
 
 ```go
 out.Static(`<div class="panel`)
@@ -145,6 +175,7 @@ package usercard
 import (
 	"context"
 
+	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
 )
 
@@ -153,12 +184,14 @@ type Card struct {
 	Email string
 }
 
-func (card Card) RenderHTML(_ context.Context, out *html.Context) error {
-	out.Static(`<article class="user-card"><h2>`)
-	out.Text(card.Name)
-	out.Static(`</h2><p>`)
-	out.Text(card.Email)
-	out.Static(`</p></article>`)
+func (card Card) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Component(ctx, components.Card{
+		Attrs: html.Attrs{html.A("class", "user-card")},
+		Body: components.Stack{Children: []html.Component{
+			components.Heading{Level: 2, Text: card.Name},
+			components.Paragraph(card.Email),
+		}},
+	})
 	return out.Err()
 }
 ```
@@ -174,15 +207,13 @@ components.Stack{
 }
 ```
 
-Put reusable markup in the component package and presentation in the
-application's `theme.Theme.Stylesheet()` implementation:
+Put reusable composition in the component package. `Card` owns the base
+presentation. Additional business-specific styling belongs in the
+application's `theme.Theme.Stylesheet()` implementation, not inline styles:
 
 ```css
 .user-card {
-  border: 1px solid var(--border);
-  border-radius: .5rem;
-  background: var(--surface);
-  padding: 1rem;
+  max-width: 40rem;
 }
 ```
 
@@ -202,7 +233,8 @@ The `components` package currently includes:
 
 - Composition and layout: `Empty`, `Text`, `Sequence`, `Document`, `Shell`
   (alias `AppShell`: `Header`, `Sidebar`, `Main`, `Footer` landmarks),
-  `Stack`, `Grid`, `Inline`. Standalone landmarks: `Header`, `Sidebar{AriaLabel}`,
+  `Section` (`ID`, `Children`, `Attrs`), `Stack`, `Grid`, `Inline`.
+  Standalone landmarks: `Header`, `Sidebar{AriaLabel}`,
   `Main`, `Footer`. `Document.HTMXSource` (`static.HTMXPath`) + `HTMXIntegrity` → local HTMX
   script with SRI.
 - Primitives: `Heading` (level 1–6), `Paragraph`, `Output` (`Live` adds

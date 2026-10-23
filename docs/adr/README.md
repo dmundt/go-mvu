@@ -27,3 +27,4 @@ such as generic multi-format rendering, are not current decisions.
 | [0015](0015-open-props-default-design-system.md) | Open Props default design system | Accepted |
 | [0016](0016-render-timing-diagnostics.md) | Render timing and diagnostics via `timing` trace | Accepted |
 | [0017](0017-element-builder-and-attrs.md) | Element builder and attribute passthrough | Accepted |
+| [0018](0018-ui-authoring-boundaries.md) | Semantic composition with scoped authoring boundaries | Accepted |

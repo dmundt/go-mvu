@@ -39,10 +39,10 @@ func TestFormSelectsCurrentValuesAndEscapesHidden(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		`<form method="get">`,
+		`<form method="get" action="?">`,
 		`<option value="bulma" selected>`,
 		`<option value="dark" selected>`,
-		`<input type="hidden" name="tab" value="a&#34;b">`,
+		`<input class="input" id="tab" name="tab" type="hidden" value="a&#34;b">`,
 		`type="submit"`,
 	} {
 		if !strings.Contains(out.String(), want) {

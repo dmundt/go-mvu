@@ -61,5 +61,9 @@
 | `Runtime.Page(Result)` | + `PageFunc(func(*http.Request) Result)` | per-request result |
 | missing model → always Init | default Init; `Route.RequireModel` → 404 | explicit init policy per route |
 | `Inline`, `EmptyState`, `Checkbox`, `Textarea` in components | in `components`; `shared` keeps type aliases | backward compatibility |
-| `Table` plain | `Table` wrapped in `div.table-scroll` | narrow-screen overflow || no generic element API | + `html.El`, `html.Attrs`, `html.Text` (§4.1) | typed low-level markup with escaping and allowlist |
+| `Table` plain | `Table` wrapped in `div.table-scroll` | narrow-screen overflow |
+| no generic element API | + `html.El`, `html.Attrs`, `html.Text` (§4.1) | typed low-level markup with escaping and allowlist |
 | typed fields only | + `Attrs html.Attrs` passthrough on `components` and `shared` (§13.1) | extra id/class/aria/data/hx attributes without dropping to low level |
+| §13.1 every component has `Attrs` | Root-bearing structs generally support it; `Document`, string/slice conveniences, rootless helpers and item records are exceptions | Preserve public APIs; [guide](../guides/components.md#attribute-passthrough) lists alternatives |
+| §5 free interoperability | Retained; ordinary examples compose semantic components, two exact files demonstrate low-level APIs | Authoring discipline, not an API restriction; [ADR-0018](../adr/0018-ui-authoring-boundaries.md) |
+| §13 layout inventory | + `components.Section` with `ID`, `Children`, `Attrs` | Semantic fragment roots without raw tags; layout remains in `Stack` |

@@ -10,6 +10,9 @@
   hidden persistence.
 - Render HTML directly; do not add templates, reflection-based binding,
   virtual DOM, or application JavaScript. HTMX is the browser behavior layer.
+- Application views compose semantic components. Isolate generic HTML and
+  direct streaming inside named low-level components or explicit demos;
+  framework component implementations may stream directly. See ADR-0018.
 - Keep styling in CSS files, embedded into document style blocks. Do not add
   external stylesheet requests or component style attributes.
 - Preserve dynamic-content escaping and propagate rendering errors.

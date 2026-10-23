@@ -20,14 +20,16 @@ type CounterFragment struct {
 }
 
 func (counter CounterFragment) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<section id="counter" class="stack">`)
-	out.Component(ctx, components.Inline{Children: []html.Component{
+	controls := components.Inline{Children: []html.Component{
 		counterButton("-", "Decrement", "/counter/decrement", ""),
 		components.Output{Value: strconv.Itoa(counter.Count), Live: true},
 		counterButton("+", "Increment", "/counter/increment", ""),
 		counterButton("Reset", "", "/counter/reset", components.ButtonSecondary),
-	}})
-	out.Static(`</section>`)
+	}}
+	out.Component(ctx, components.Section{
+		ID:       "counter",
+		Children: []html.Component{components.Stack{Children: []html.Component{controls}}},
+	})
 	return out.Err()
 }
 

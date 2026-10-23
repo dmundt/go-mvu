@@ -79,17 +79,17 @@ type results struct {
 }
 
 func (view results) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<section id="users-results" class="stack">`)
 	visible := view.Model.Visible()
+	var content html.Component
 	if len(visible) == 0 {
-		out.Component(ctx, components.EmptyState{
+		content = components.EmptyState{
 			Title:       "No users",
 			Description: "The directory is empty.",
-		})
+		}
 	} else {
-		out.Component(ctx, userTable(visible))
+		content = userTable(visible)
 	}
-	out.Component(ctx, components.Pagination{
+	pagination := components.Pagination{
 		Page:       view.Model.Page,
 		PageSize:   view.Model.PageSize,
 		TotalItems: view.Model.TotalItems,
@@ -98,8 +98,13 @@ func (view results) RenderHTML(ctx context.Context, out *html.Context) error {
 		Target:     "#users-results",
 		Swap:       htmx.OuterHTML,
 		PushURL:    true,
+	}
+	out.Component(ctx, components.Section{
+		ID: "users-results",
+		Children: []html.Component{components.Stack{
+			Children: []html.Component{content, pagination},
+		}},
 	})
-	out.Static(`</section>`)
 	return out.Err()
 }
 
@@ -124,10 +129,13 @@ func (rows userTable) RenderHTML(ctx context.Context, out *html.Context) error {
 type userCards []User
 
 func (cards userCards) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<section id="users-cards" class="stack">`)
-	for _, user := range cards {
-		out.Component(ctx, UserCard{Name: user.Name, Email: user.Email})
+	children := make([]html.Component, len(cards))
+	for index, user := range cards {
+		children[index] = UserCard{Name: user.Name, Email: user.Email}
 	}
-	out.Static(`</section>`)
+	out.Component(ctx, components.Section{
+		ID:       "users-cards",
+		Children: []html.Component{components.Stack{Children: children}},
+	})
 	return out.Err()
 }

@@ -56,32 +56,37 @@ type Form struct {
 }
 
 func (form Form) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<form method="get">`)
-	out.Component(ctx, components.Select{
-		ID:      "theme",
-		Name:    "theme",
-		Label:   "CSS framework",
-		Value:   form.Theme,
-		Options: themeOptions,
-	})
-	out.Component(ctx, components.Select{
-		ID:      "mode",
-		Name:    "mode",
-		Label:   "Mode",
-		Value:   form.Mode.String(),
-		Options: modeOptions,
-	})
-	for _, field := range form.Hidden {
-		out.Static(`<input type="hidden" name="`)
-		out.Attribute(field.Name)
-		out.Static(`" value="`)
-		out.Attribute(field.Value)
-		out.Static(`">`)
+	children := []html.Component{
+		components.Select{
+			ID:      "theme",
+			Name:    "theme",
+			Label:   "CSS framework",
+			Value:   form.Theme,
+			Options: themeOptions,
+		},
+		components.Select{
+			ID:      "mode",
+			Name:    "mode",
+			Label:   "Mode",
+			Value:   form.Mode.String(),
+			Options: modeOptions,
+		},
 	}
-	out.Component(ctx, components.Button{
+	for _, field := range form.Hidden {
+		children = append(children, components.Input{
+			Type:  "hidden",
+			Name:  field.Name,
+			Value: field.Value,
+		})
+	}
+	children = append(children, components.Button{
 		Type:  components.ButtonSubmit,
 		Label: "Apply theme",
 	})
-	out.Static(`</form>`)
+	out.Component(ctx, components.Form{
+		Method:   components.FormGet,
+		URL:      "?",
+		Children: children,
+	})
 	return out.Err()
 }

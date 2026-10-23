@@ -31,7 +31,7 @@ func TestUsersCardsPageRendersReusableComponent(t *testing.T) {
 		t.Fatalf("response status = %d", response.Code)
 	}
 	for _, expected := range []string{
-		`class="card user-card"`,
+		`class="card card--default user-card"`,
 		"<h2>Ada Lovelace</h2>",
 		"<h2>Grace Lovelace</h2>",
 		`data-theme="system"`,

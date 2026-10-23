@@ -45,21 +45,21 @@ type gallery struct {
 }
 
 func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<main>`)
-	out.Component(ctx, components.Heading{Level: 1, Text: "Theme gallery"})
-	out.Component(ctx, themepicker.Form{Theme: view.Theme, Mode: view.Mode})
-	out.Component(ctx, components.Stack{Children: []html.Component{
-		buttonCard(),
-		components.Alert{
-			Kind:    components.AlertSuccess,
-			Title:   "Ready",
-			Message: "No markup changes needed.",
-		},
-		components.Badge{Kind: "info", Label: "Information"},
-		components.Input{ID: "sample-input", Name: "name", Label: "Name", Value: "Ada"},
-		usersTable,
+	out.Component(ctx, components.Main{Children: []html.Component{
+		components.Heading{Level: 1, Text: "Theme gallery"},
+		themepicker.Form{Theme: view.Theme, Mode: view.Mode},
+		components.Stack{Children: []html.Component{
+			buttonCard(),
+			components.Alert{
+				Kind:    components.AlertSuccess,
+				Title:   "Ready",
+				Message: "No markup changes needed.",
+			},
+			components.Badge{Kind: "info", Label: "Information"},
+			components.Input{ID: "sample-input", Name: "name", Label: "Name", Value: "Ada"},
+			usersTable,
+		}},
 	}})
-	out.Static(`</main>`)
 	return out.Err()
 }
 
@@ -75,14 +75,3 @@ func buttonCard() html.Component {
 		},
 	}
 }
-
-// usersTable is plain semantic markup; themes style it without classes.
-var usersTable = html.ComponentFunc(func(_ context.Context, out *html.Context) error {
-	out.Static(`<table><caption>Users</caption>`)
-	out.Static(`<thead><tr><th scope="col">Name</th><th scope="col">Email</th></tr></thead>`)
-	out.Static(`<tbody>`)
-	out.Static(`<tr><td>Ada Lovelace</td><td>ada@example.test</td></tr>`)
-	out.Static(`<tr><td>Grace Hopper</td><td>grace@example.test</td></tr>`)
-	out.Static(`</tbody></table>`)
-	return out.Err()
-})
