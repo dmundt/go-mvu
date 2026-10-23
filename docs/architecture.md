@@ -34,7 +34,7 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ```text
 mvu, html, store, theme, static, validation, timing, httpx → stdlib only
 htmx       → html
-session    → store
+session    → store, httpx
 middleware → html, session, timing, httpx
 components → html, htmx, theme
 shared     → components, html, htmx
@@ -46,7 +46,7 @@ examples   → anything
 flowchart BT
   html; mvu; store; theme; static; validation; timing; httpx
   htmx --> html
-  session --> store
+  session --> store & httpx
   middleware --> html & session & timing & httpx
   components --> html & htmx & theme
   shared --> components & html & htmx

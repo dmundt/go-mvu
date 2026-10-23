@@ -10,13 +10,17 @@ permissions:
 jobs:
   go:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CGO_ENABLED: "1"
+      GOMAXPROCS: "4"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: false
-      - run: go test ./...
+      - run: go test -race -count=1 -timeout=5m ./...
       - run: go vet ./...
 
   browser:

@@ -26,7 +26,7 @@ var allowed = map[string][]string{
 	"internal/arch":   {},
 	"static":          {},
 	"htmx":            {"html"},
-	"session":         {"store"},
+	"session":         {"store", "httpx"},
 	"validation":      {},
 	"timing":          {},
 	"httpx":           {},

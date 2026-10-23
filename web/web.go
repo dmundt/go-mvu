@@ -239,6 +239,7 @@ type AsyncCommandRunner[Msg mvu.Message] struct {
 	mu      sync.Mutex
 	closed  bool
 	workers sync.WaitGroup
+	done    chan struct{}
 }
 
 func NewAsyncCommandRunner[Msg mvu.Message](
@@ -249,11 +250,16 @@ func NewAsyncCommandRunner[Msg mvu.Message](
 	}
 	runner := &AsyncCommandRunner[Msg]{
 		queue: make(chan asyncTask[Msg], queueSize), timeout: timeout, onError: onError,
+		done: make(chan struct{}),
 	}
 	runner.workers.Add(concurrency)
 	for range concurrency {
 		go runner.worker()
 	}
+	go func() {
+		runner.workers.Wait()
+		close(runner.done)
+	}()
 	return runner, nil
 }
 
@@ -283,10 +289,12 @@ func (runner *AsyncCommandRunner[Msg]) Run(
 				}:
 					return nil
 				default:
+					httpx.Observe(ctx, httpx.CommandOverload)
 					return ErrCommandOverload
 				}
 			}
 		}
+		httpx.Observe(ctx, httpx.CommandOverload)
 		return ErrCommandOverload
 	}
 	for _, command := range commands {
@@ -307,6 +315,7 @@ func (runner *AsyncCommandRunner[Msg]) worker() {
 		err := task.command.Execute(ctx, task.dispatch)
 		cancel()
 		if err != nil {
+			httpx.Observe(ctx, httpx.CommittedEffectFailure)
 			runner.report(&EffectError{Cause: err})
 		}
 	}
@@ -327,10 +336,13 @@ func (runner *AsyncCommandRunner[Msg]) Close(ctx context.Context) error {
 		close(runner.queue)
 	}
 	runner.mu.Unlock()
-	done := make(chan struct{})
-	go func() { runner.workers.Wait(); close(done) }()
 	select {
-	case <-done:
+	case <-runner.done:
+		return nil
+	default:
+	}
+	select {
+	case <-runner.done:
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
@@ -654,17 +666,16 @@ func (runtime *Runtime[K, Model, Msg]) PageFunc(result func(*http.Request) Resul
 func (runtime *Runtime[K, Model, Msg]) notifyOutcome(
 	r *http.Request, tracked *httpx.Writer, committed bool, err error, panicValue any,
 ) {
-	if runtime.observe == nil {
-		return
-	}
 	state := OutcomeRejected
 	switch {
 	case panicValue != nil && tracked.Started:
 		state = OutcomeResponseAborted
 	case isEffectError(err):
 		state = OutcomeEffectFailed
+		httpx.Observe(r.Context(), httpx.CommittedEffectFailure)
 	case isResponseAbort(err):
 		state = OutcomeResponseAborted
+		httpx.Observe(r.Context(), httpx.ResponseAborted)
 	case committed:
 		state = OutcomeCommitted
 	case err == nil && panicValue == nil:
@@ -673,7 +684,9 @@ func (runtime *Runtime[K, Model, Msg]) notifyOutcome(
 	if panicValue != nil && err == nil {
 		err = fmt.Errorf("request panic: %v", panicValue)
 	}
-	runtime.observe(r, RequestOutcome{State: state, Committed: committed, Err: err})
+	if runtime.observe != nil {
+		runtime.observe(r, RequestOutcome{State: state, Committed: committed, Err: err})
+	}
 }
 
 // dispatcher returns a Dispatch that transitions the model for key and
@@ -764,6 +777,7 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 		}
 		if runtime.authorize != nil {
 			if authErr := runtime.authorize(ctx, key, model, message); authErr != nil {
+				httpx.Observe(ctx, httpx.AuthorizationRejected)
 				return nil, authErr
 			}
 		}
@@ -785,10 +799,12 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			return nil, err
 		}
 		if expected != nil && snapshot.Version != *expected {
+			httpx.Observe(ctx, httpx.StaleAction)
 			return nil, staleVersionError()
 		}
 		if runtime.authorize != nil {
 			if err := runtime.authorize(ctx, key, snapshot.Model, message); err != nil {
+				httpx.Observe(ctx, httpx.AuthorizationRejected)
 				return nil, err
 			}
 		}
@@ -810,6 +826,7 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			return nil, err
 		}
 		if expected != nil {
+			httpx.Observe(ctx, httpx.StaleAction)
 			return nil, staleVersionError()
 		}
 		if err := ctx.Err(); err != nil {

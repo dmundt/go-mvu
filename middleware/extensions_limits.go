@@ -31,6 +31,7 @@ func AdmissionLimit(options AdmissionOptions) (Extension, error) {
 				defer func() { <-slots }()
 				next.ServeHTTP(w, r)
 			default:
+				httpx.Observe(r.Context(), httpx.AdmissionOverload)
 				setRetryAfter(w, options.RetryAfter)
 				rejectExtension(fail, w, r, http.StatusServiceUnavailable)
 			}
@@ -101,6 +102,11 @@ func RateLimit(options RateLimitOptions) (Extension, error) {
 			}
 			mu.Unlock()
 			if status != 0 {
+				if status == http.StatusTooManyRequests {
+					httpx.Observe(r.Context(), httpx.RateLimited)
+				} else {
+					httpx.Observe(r.Context(), httpx.RateCapacity)
+				}
 				setRetryAfter(w, retry)
 				rejectExtension(fail, w, r, status)
 				return

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/dmundt/go-mvu/httpx"
@@ -141,9 +140,9 @@ func matchLanguage(value string, supported map[string]Locale) Locale {
 			if !ok || key != "q" {
 				continue
 			}
-			var err error
-			q, err = strconv.ParseFloat(val, 64)
-			if err != nil || q <= 0 || q > 1 || q != q {
+			var valid bool
+			q, valid = qualityValue(val)
+			if !valid || q == 0 {
 				continue
 			}
 		}

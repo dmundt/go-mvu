@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 
-const counterURL = 'http://127.0.0.1:18080';
-const usersURL = 'http://127.0.0.1:18081';
-const themesURL = 'http://127.0.0.1:18082';
-const componentsURL = 'http://127.0.0.1:18083';
+const basePort = Number(process.env.GOMVU_BROWSER_BASE_PORT ?? 18080);
+const counterURL = `http://127.0.0.1:${basePort}`;
+const usersURL = `http://127.0.0.1:${basePort + 1}`;
+const themesURL = `http://127.0.0.1:${basePort + 2}`;
+const componentsURL = `http://127.0.0.1:${basePort + 3}`;
 const themes = ['default', 'bootstrap', 'bulma', 'pico'];
 
 async function expectNoPageOverflow(page) {

@@ -18,6 +18,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dmundt/go-mvu/httpx"
 )
 
 type contextKey struct{}
@@ -208,6 +210,9 @@ func (middleware *Middleware) Rotate(w http.ResponseWriter, r *http.Request, mig
 		return migrate(rotation.OldID, rotation.NewID)
 	})
 	if err != nil {
+		if errors.Is(err, ErrRevocationCapacity) {
+			httpx.Observe(r.Context(), httpx.RevocationCapacity)
+		}
 		// A failed migration must not cause even an initial pending cookie to
 		// appear in an error response.
 		state.pending = nil
@@ -235,6 +240,9 @@ func (middleware *Middleware) Invalidate(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 	if err := middleware.options.Revocations.transition(state.token, middleware.options.Clock, nil); err != nil {
+		if errors.Is(err, ErrRevocationCapacity) {
+			httpx.Observe(r.Context(), httpx.RevocationCapacity)
+		}
 		state.pending = nil
 		return err
 	}

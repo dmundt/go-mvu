@@ -135,8 +135,10 @@ Jobs retain request context values (principal/correlation) but not request
 cancellation, and receive their own timeout. Follow-up dispatch runs the same
 transition authorization policy. Enqueue never waits on a worker:
 `ErrCommandOverload` signals a full queue, including recursive dispatch;
-`ErrCommandClosed` signals shutdown. A batch may enqueue a prefix before
-returning an error. Neither enqueue nor effects are transactional.
+`ErrCommandClosed` signals shutdown. The bounded runner reserves capacity
+for each whole batch and rejects oversized batches before enqueueing;
+custom runners must document their own partial-acceptance behavior.
+Neither enqueue nor effects are transactional with model persistence.
 
 `Close(ctx)` stops acceptance and drains accepted work. Deadline expiry returns
 `ctx.Err()` without canceling accepted jobs; commands still need to honor their
@@ -189,6 +191,10 @@ because its HTTP response failed.
 Request cancellation is checked at runtime boundaries. Wrapped
 `*http.MaxBytesError` from decoding maps to 413. `RequestContext.Locale` carries
 the locale selected by HTTP middleware; views need no context lookup.
+
+See [hardening](hardening.md) for shutdown integration, transactional action
+ledger example, current replay authorization, operational signals, and
+document-local versus cross-tab response ordering.
 
 ## Middleware order
 

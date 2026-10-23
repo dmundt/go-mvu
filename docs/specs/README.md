@@ -50,6 +50,10 @@
 | packages per §2 | + `shared`, `static`, `internal/arch`, `benchmarks` | widgets, asset, enforcement |
 | middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
 | web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
+| session dependencies | + stdlib-only `httpx` | bounded revocation-capacity event without middleware dependency |
+| diagnostics aggregates | + fixed operational event counters | saturation, stale actions, authorization, effect and stream failures |
+| CAS plus commands | application WAL/outbox example outside runtime | atomic receipt/model/effect descriptor with explicit at-least-once delivery |
+| unspecified response ordering | existing `hx-sync` attributes and two-tab expected-version tests | replace stale navigation responses, reject stale mutation intent |
 | outermost recovery | recovery inside observers, after request ID | completion records survive panics; request ID available to recovery |
 | unspecified HTTP policies | explicit request bounds, no-store HTML, HTMX 422 opt-in | preserve streaming, error statuses, and progressive enhancement |
 | runtime transition/effect failure | commit-aware outcomes and transition policies | distinguish persistence from effect/render failure; authorize command follow-ups |
@@ -60,7 +64,7 @@
 | pagination always rendered | hidden when ≤ 1 page | no empty nav |
 | `POST /theme` only | + `Preference.ToggleHandler` | legacy two-state switches |
 | users cards via runtime | plain handler + `web.NewRequestContext` | demonstrates non-runtime use |
-| race tests (§25.6) | not run locally | cgo disabled on dev machine; run in CI with `CGO_ENABLED=1` |
+| race tests (§25.6) | Linux CGO race CI; locally verified under WSL Debian | native Windows toolchain lacks a C compiler |
 | `Text{Value}` struct | `components.Text` string type | `Text("x")` shorter; same escaping |
 | `Theme.DocumentClass`, `Theme.ComponentClass` | `Theme{Name, Stylesheet}`; optional `theme.DocumentClasser`; no `ComponentClass` | CSS variables + fixed class names; no per-component lookup on hot path |
 | `RequestContext.Theme theme.Mode` | `Theme theme.Theme` + `Mode theme.Mode` | view needs theme identity and mode |
