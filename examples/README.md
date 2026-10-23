@@ -12,6 +12,7 @@ Run commands from the repository root with Go 1.24 or newer.
 | [Themes](themes/) | `go run .\examples\themes` | Default theme and color modes |
 | [Component gallery](components/) | `go run .\examples\components` | Reusable controls and layouts |
 | [Durable app](durable/) | `go run .\examples\durable` | Stored data and a delivery queue |
+| [Recovery](recovery/) | `go run .\examples\recovery -action order-1` | File-backed actions, safe retries, and effect recovery |
 | [Production app](production/) | See its README | Login, persistent storage, and deployment setup |
 
 Start with hello, then counter and contact. Admin combines the pieces into
