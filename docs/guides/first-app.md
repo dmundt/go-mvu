@@ -77,14 +77,33 @@ Copy-Item .\examples\counter .\examples\mycounter -Recurse
 go run .\examples\mycounter
 ```
 
-For a separate Go project, copy the counter's non-test `.go` files into your
-project, then run:
+For a separate Go project, copy only the counter's non-test `.go` files.
+Use your checkout as the framework dependency so the starter and API versions
+match, including changes not released yet:
 
 ```powershell
+$source = (Get-Location).Path
+$project = Join-Path (Split-Path $source -Parent) "mycounter"
+New-Item -ItemType Directory -Path $project
+Get-ChildItem .\examples\counter\*.go |
+    Where-Object { $_.Name -notlike '*_test.go' } |
+    Copy-Item -Destination $project
+Set-Location $project
 go mod init example.com/mycounter
-go get github.com/dmundt/go-mvu
+go mod edit "-replace=github.com/dmundt/go-mvu=$source"
+go mod tidy
 go run .
 ```
+
+Choose a new project directory; do not copy over an existing project.
+The counter uses standard-library HTTP startup and shutdown, with no
+repository-internal imports. Stop the original counter first to free port
+8080, or change the copied server address.
+
+When using a release that contains these APIs, remove the local replacement
+with `go mod edit -dropreplace=github.com/dmundt/go-mvu`, then run
+`go get github.com/dmundt/go-mvu@<version>` with that release's tag and
+`go mod tidy`.
 
 ## 4. Add a form
 

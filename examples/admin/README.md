@@ -55,6 +55,19 @@ Browser checks cover keyboard opening/submission, native focus return on Escape,
 focus after save, computed styles, validation, repeated open, background access,
 delayed responses, cancellation, history, and JavaScript-disabled submission.
 
+## Keeping application code small
+
+`Model.directory` prepares visible members, totals, and page bounds once per
+workspace render. `directoryNavigation` gives the filter and pagination one
+explicit history and request-ordering policy; `Pagination.BaseURL` preserves
+the filters without a page-URL callback. Edit and refresh actions keep their
+own policies.
+
+Role choices and name limits are application-owned facts shared by seed data,
+validation, and controls where relevant. `saveMember` owns copy-before-write
+updates, retained invalid forms, and page clamping. These are ordinary Go
+helpers, not another framework layer.
+
 ## What this demonstrates
 
 | Concern | Implementation |

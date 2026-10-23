@@ -56,7 +56,7 @@ session    → store, httpx
 middleware → html, session, timing, httpx
 components → html, htmx, theme
 web        → mvu, html, htmx, store, theme, timing, httpx
-ui         → components, html, htmx, middleware, static, validation, web
+ui         → components, html, htmx, middleware, static, theme, validation, web
 examples   → anything
 ```
 
@@ -68,7 +68,7 @@ flowchart BT
   middleware --> html & session & timing & httpx
   components --> html & htmx & theme
   web --> mvu & html & htmx & store & theme & timing & httpx
-  ui --> components & html & htmx & middleware & static & validation & web
+  ui --> components & html & htmx & middleware & static & theme & validation & web
   app[application] --> web & components & middleware & session & static
 ```
 

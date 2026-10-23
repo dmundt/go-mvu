@@ -8,7 +8,6 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -21,10 +20,9 @@ func (view View) Page(
 	return view.Document.Page(request, "Operations dashboard", components.AppShell{
 		Header: components.Row(
 			components.Heading{Level: 1, Text: "Northstar / Operations"},
-			components.ThemeSwitcher{
-				Mode:      request.Mode,
-				Return:    "/admin/view",
-				CSRFField: middleware.CSRFInput{},
+			ui.ThemeSwitcher{
+				Mode:   request.Mode,
+				Return: "/admin/view",
 			},
 		),
 		Sidebar: components.Navigation{Label: "Administration", Items: []components.NavItem{
@@ -109,7 +107,7 @@ func overview(model Model) html.Component {
 		if member.Active {
 			active++
 		}
-		if member.Role == "Admin" {
+		if member.Role == roleAdmin {
 			admins++
 		}
 	}
@@ -133,8 +131,36 @@ func overview(model Model) html.Component {
 }
 
 func workspace(model Model, inlineEditor bool) html.Component {
+	directory := model.directory()
+	filter, pagination := directoryNavigation(model, directory)
+	var results html.Component = memberTable(directory.Members)
+	if directory.Total == 0 {
+		results = components.EmptyState{
+			Title: "No matching members", Description: "Try another name or role.",
+		}
+	}
+	body := components.Column(
+		components.Card{
+			Header: components.Heading{Level: 2, Text: "Member directory"},
+			Body: components.Column(
+				filter,
+				components.Paragraph(fmt.Sprintf("%d matching members", directory.Total)),
+				results,
+				pagination,
+			),
+		},
+		memberEditorShell(),
+		html.Optional{Show: inlineEditor && model.Form.Value.ID != 0, Body: editor(model)},
+	)
+	// All requests that can replace this workspace share a cancellation scope.
+	body.Attrs = filter.Attrs
+	return body
+}
+
+func directoryNavigation(model Model, directory directoryPage) (ui.Form, components.Pagination) {
 	action := browseAction.HTMX()
 	action.PushURL = "true"
+	attrs := html.Attrs{html.A("hx-sync", "closest main:replace")}
 	var filterAttrs html.Attrs
 	if model.Notice != "" {
 		filterAttrs = html.Attrs{html.Flag("autofocus")}
@@ -160,44 +186,19 @@ func workspace(model Model, inlineEditor bool) html.Component {
 				Attrs: filterAttrs,
 			},
 		),
-		Attrs: html.Attrs{html.A("hx-sync", "closest main:replace")},
+		Attrs: attrs,
 	}
-	var results html.Component = memberTable(model.Visible())
-	if len(model.Filtered()) == 0 {
-		results = components.EmptyState{
-			Title: "No matching members", Description: "Try another name or role.",
-		}
+	query := url.Values{"q": {model.Query}, "role": {model.Role}}
+	return filter, components.Pagination{
+		Page:       directory.Page,
+		PageSize:   pageSize,
+		TotalItems: directory.Total,
+		BaseURL:    action.URL + "?" + query.Encode(),
+		Target:     action.Target,
+		Swap:       action.Swap,
+		PushURL:    action.PushURL == "true",
+		Attrs:      attrs,
 	}
-	body := components.Column(
-		components.Card{
-			Header: components.Heading{Level: 2, Text: "Member directory"},
-			Body: components.Column(
-				filter,
-				components.Paragraph(fmt.Sprintf("%d matching members", len(model.Filtered()))),
-				results,
-				components.Pagination{
-					Page:       model.Page,
-					PageSize:   pageSize,
-					TotalItems: len(model.Filtered()),
-					URL: func(page int) string {
-						query := url.Values{
-							"q": {model.Query}, "role": {model.Role}, "page": {strconv.Itoa(page)},
-						}
-						return browseAction.Path + "?" + query.Encode()
-					},
-					Target:  browseAction.HTMX().Target,
-					Swap:    browseAction.HTMX().Swap,
-					PushURL: true,
-					Attrs:   html.Attrs{html.A("hx-sync", "closest main:replace")},
-				},
-			),
-		},
-		memberEditorShell(),
-		html.Optional{Show: inlineEditor && model.Form.Value.ID != 0, Body: editor(model)},
-	)
-	// All requests that can replace this workspace share a cancellation scope.
-	body.Attrs = html.Attrs{html.A("hx-sync", "closest main:replace")}
-	return body
 }
 
 func memberEditorShell() html.Component {
@@ -229,11 +230,11 @@ func memberEditorShell() html.Component {
 }
 
 func roleOptions() []components.Option {
-	return []components.Option{
-		{Value: "Admin", Label: "Admin"},
-		{Value: "Editor", Label: "Editor"},
-		{Value: "Viewer", Label: "Viewer"},
+	options := make([]components.Option, len(roles))
+	for index, role := range roles {
+		options[index] = components.Option{Value: role, Label: role}
 	}
+	return options
 }
 
 func memberTable(members []Member) html.Component {

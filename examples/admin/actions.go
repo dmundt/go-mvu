@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -84,7 +86,7 @@ func badInput() error {
 }
 
 func validRole(role string) bool {
-	return role == "Admin" || role == "Editor" || role == "Viewer"
+	return slices.Contains(roles[:], role)
 }
 
 func decodeBrowse(request *http.Request) (Message, error) {
@@ -127,8 +129,8 @@ func decodeSave(request *http.Request) (Message, error) {
 	}
 	errs := validation.Errors{}
 	length := utf8.RuneCountInString(value.Name)
-	if length < 2 || length > 80 {
-		errs.Add("name", "Use 2 to 80 characters.")
+	if length < nameMinLength || length > nameMaxLength {
+		errs.Add("name", fmt.Sprintf("Use %d to %d characters.", nameMinLength, nameMaxLength))
 	}
 	if !validRole(value.Role) {
 		errs.Add("role", "Choose a valid role.")

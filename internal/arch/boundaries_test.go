@@ -29,7 +29,7 @@ var allowed = map[string][]string{
 	"httpx":              {},
 	"middleware":         {"html", "session", "timing", "httpx"},
 	"components":         {"html", "htmx", "theme"},
-	"ui":                 {"components", "html", "htmx", "middleware", "static", "validation", "web"},
+	"ui":                 {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
 	"web":                {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
 }
 

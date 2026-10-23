@@ -29,6 +29,15 @@ test('admin filters, pages, edits and refreshes independent regions', async ({ p
   await expect(page.locator('th[scope="row"]').first()).toHaveText('Donald Example 06');
   const overview = await page.locator('#admin-overview').elementHandle();
   const main = await page.locator('main').elementHandle();
+  await page.getByLabel('Search members').fill('Example');
+  await page.getByLabel('Filter by role').selectOption('Admin');
+  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+  await expect(page.getByText('6 matching members', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Next', exact: true }).click();
+  await expect(page.getByRole('rowheader')).toHaveText(['Margaret Example 16']);
+  expect(new URL(page.url()).searchParams.get('q')).toBe('Example');
+  expect(new URL(page.url()).searchParams.get('role')).toBe('Admin');
+  expect(new URL(page.url()).searchParams.get('page')).toBe('2');
   await page.getByLabel('Search members').fill('Ada');
   await page.getByLabel('Filter by role').selectOption('Admin');
   await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
@@ -198,6 +207,15 @@ test('admin works without JavaScript and keeps validation through redirects', as
   try {
     const page = await context.newPage();
     await page.goto(`${adminURL}/admin`);
+    await page.getByLabel('Search members').fill('Example');
+    await page.getByLabel('Filter by role').selectOption('Admin');
+    await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+    await page.getByRole('link', { name: 'Next', exact: true }).click();
+    await expect(page.getByRole('rowheader')).toHaveText(['Margaret Example 16']);
+    expect(new URL(page.url()).searchParams.get('q')).toBe('Example');
+    expect(new URL(page.url()).searchParams.get('role')).toBe('Admin');
+    expect(new URL(page.url()).searchParams.get('page')).toBe('2');
+    await page.getByLabel('Filter by role').selectOption('');
     await page.getByLabel('Search members').fill('Grace');
     await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await expect(page.getByText('3 matching members', { exact: true })).toBeVisible();

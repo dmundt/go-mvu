@@ -2,44 +2,35 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
 const usersRegion ui.Region = "users-results"
 
-type UsersView struct {
-	ui.RegionView[UsersModel]
-	Document ui.Document
-}
+type UsersView struct{ Document ui.Document }
 
-func usersContent(
-	_ context.Context, model UsersModel, _ web.RequestContext,
-) (html.Component, error) {
-	return UserResults{Model: model}, nil
+func (UsersView) Fragment(
+	_ context.Context, name string, model UsersModel, _ web.RequestContext,
+) (html.Fragment, error) {
+	return usersRegion.Select(name, userResults(model))
 }
 
 func (view UsersView) Page(
-	ctx context.Context,
+	_ context.Context,
 	model UsersModel,
 	request web.RequestContext,
 ) (html.Page, error) {
-	content, err := view.Render(ctx, model, request)
-	if err != nil {
-		return nil, err
-	}
 	return view.document(request, "Users",
 		components.Link{
 			Label:   "View reusable user cards",
 			URL:     "/users/cards",
 			Variant: components.ButtonSecondary,
 		},
-		content,
+		usersRegion.Wrap(userResults(model)),
 	), nil
 }
 
@@ -58,10 +49,9 @@ func (view UsersView) document(
 ) html.Page {
 	header := components.Row(
 		components.Heading{Level: 1, Text: title},
-		components.ThemeSwitcher{
-			Mode:      request.Mode,
-			Return:    request.CurrentURL,
-			CSRFField: middleware.CSRFInput{},
+		ui.ThemeSwitcher{
+			Mode:   request.Mode,
+			Return: request.CurrentURL,
 		},
 	)
 	shell := components.AppShell{
@@ -71,13 +61,8 @@ func (view UsersView) document(
 	return view.Document.Page(request, title, shell)
 }
 
-// UserResults renders the table and pagination inside the shared region.
-type UserResults struct {
-	Model UsersModel
-}
-
-func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error {
-	visible := view.Model.Visible()
+func userResults(model UsersModel) html.Component {
+	visible := model.Visible()
 	var content html.Component
 	if len(visible) == 0 {
 		content = components.EmptyState{
@@ -88,26 +73,20 @@ func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error
 		content = userTable(visible)
 	}
 	pagination := components.Pagination{
-		Page:       view.Model.Page,
-		PageSize:   view.Model.PageSize,
-		TotalItems: view.Model.TotalItems,
+		Page:       model.Page,
+		PageSize:   model.PageSize,
+		TotalItems: model.TotalItems,
 		Window:     1,
-		URL: func(page int) string {
-			return fmt.Sprintf("%s?page=%d", usersPageAction.Path, page)
-		},
-		Target:  usersPageAction.HTMX().Target,
-		Swap:    usersPageAction.HTMX().Swap,
-		PushURL: true,
-		Attrs:   html.Attrs{html.A("hx-sync", "closest main:replace")},
+		BaseURL:    usersPageAction.Path,
+		Target:     usersPageAction.HTMX().Target,
+		Swap:       usersPageAction.HTMX().Swap,
+		PushURL:    true,
+		Attrs:      html.Attrs{html.A("hx-sync", "closest main:replace")},
 	}
-	out.Component(ctx, components.Column(content, pagination))
-	return out.Err()
+	return components.Column(content, pagination)
 }
 
-// userTable is semantic markup; the theme styles it without classes.
-type userTable []User
-
-func (rows userTable) RenderHTML(ctx context.Context, out *html.Context) error {
+func userTable(rows []User) html.Component {
 	body := components.Map(rows, func(user User) html.Component {
 		return components.TableRow{Cells: []html.Component{
 			components.RowHeader(user.Name),
@@ -118,18 +97,15 @@ func (rows userTable) RenderHTML(ctx context.Context, out *html.Context) error {
 		Caption: "Users",
 		Header:  components.HeaderRow{"Name", "Email"},
 		Body:    body,
-	}.RenderHTML(ctx, out)
+	}
 }
 
-type userCards []User
-
-func (cards userCards) RenderHTML(ctx context.Context, out *html.Context) error {
+func userCards(cards []User) html.Component {
 	children := components.Map(cards, func(user User) html.Component {
 		return UserCard{Name: user.Name, Email: user.Email}
 	})
-	out.Component(ctx, components.Section{
+	return components.Section{
 		ID:       "users-cards",
 		Children: []html.Component{components.Column(children...)},
-	})
-	return out.Err()
+	}
 }

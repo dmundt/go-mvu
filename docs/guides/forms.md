@@ -2,7 +2,7 @@
 type: Guide
 title: Forms
 description: Build typed forms with explicit decoding, validation, and errors.
-version: 4
+version: 5
 ---
 
 # Forms
@@ -98,6 +98,20 @@ returned concrete component to customize autocomplete, hints, or attributes.
 `Error`. Use named `Input` fields when positional strings or a required
 boolean make the convenience calls harder to read. `Text` and `Email`
 remain supported; no extra required/optional helper family is needed.
+
+### Named-field authoring
+
+Prefer the named control structs above for form-heavy views. They already
+serve as named arguments; adding a second field configuration struct would
+duplicate control properties or nest the same literal inside another wrapper.
+It would not shorten the form.
+
+An alternative is setting `Error: form.Errors.First(name)` directly on each
+control. For the contact example's six controls, that adds six property lines
+while removing one `fields` declaration: five extra lines with the same
+one-property-per-line layout. Keep `ui.Fields` when several controls share
+errors. Use an explicit `Error` for isolated controls when that reads better.
+No additional public field-helper family is needed.
 
 `Select.Placeholder` prepends an escaped, selectable empty-value option:
 

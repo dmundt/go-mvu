@@ -223,7 +223,7 @@ func TestDashboardUpdatePreservesSnapshotsAndClampsPages(t *testing.T) {
 		t.Fatalf("snapshot mutated or save failed: %v", err)
 	}
 	filtered, _, err := app.Update(context.Background(), next, Browse{Query: "Updated", Page: 999})
-	if err != nil || filtered.Page != 1 || len(filtered.Visible()) != 1 {
+	if err != nil || filtered.Page != 1 || len(filtered.directory().Members) != 1 {
 		t.Fatalf("filtered=%+v error=%v", filtered, err)
 	}
 	invalid, _, err := app.Update(context.Background(), model, Save{

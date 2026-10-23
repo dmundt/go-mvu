@@ -69,6 +69,15 @@ UI conveniences: `Select.Placeholder` owns an optional empty-value choice;
 helpers replace supplied errors explicitly. See [forms](../guides/forms.md)
 and [page policy](../guides/components.md#shared-page-policy).
 
+`ui.ActionLink` shares one GET URL between native and enhanced links;
+`ui.ThemeSwitcher` supplies the CSRF field for the standard preference form.
+The optional `ui` layer imports `theme` for its typed mode. Ordinary
+component-returning functions are the default example authoring pattern;
+custom types and `RegionView` remain supported. The counter can be copied
+outside the repository without internal imports. See
+[components](../guides/components.md#action-aware-navigation) and the
+[first-app guide](../guides/first-app.md#3-start-your-own-copy).
+
 Production integration: optional nested module `examples/production` adds
 generic OIDC and uses example-only JSON file persistence without importing
 those dependencies into framework packages. The JSON store is single-process;

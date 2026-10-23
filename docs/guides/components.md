@@ -43,6 +43,19 @@ browser-server harnesses, are not application authoring surfaces.
 
 ## Component contract
 
+Start with an ordinary function returning `html.Component`:
+
+```go
+func greeting(name string) html.Component {
+	return components.Paragraph("Hello, " + name)
+}
+```
+
+Use it directly in a component slot. No custom render method, adapter, or
+registration is needed. The counter, users, contact, and admin examples use
+this pattern. Custom component types remain useful when callers need reusable
+configuration; the following is an optional lower-level contract.
+
 Implement `html.Component` to render any HTML subtree. Embed `html.PageMarker`
 for a complete document or `html.FragmentMarker` for a subtree returned from
 an HTMX endpoint:
@@ -175,7 +188,7 @@ hyphens; invalid names report `ui.ErrInvalidRegion`. For multiple regions,
 dispatch to the matching region explicitly. Helpers preserve rendering
 errors and escape child content.
 
-### Define region content once
+### Optional context-aware region adapter
 
 `ui.RegionView[Model]` binds a region to a typed content function. Embed it
 in an application view to provide its `Fragment` method automatically:
@@ -199,6 +212,11 @@ view := View{
 }
 ```
 
+For ordinary model-only content, prefer `region.Wrap(content(model))` in
+`Page` and `region.Select(name, content(model))` in `Fragment`. The adapter
+is useful when content construction needs context, request state, or errors;
+do not introduce a forwarding callback solely to use it.
+
 Inside `Page`, call `content, err := view.Render(ctx, model, request)`,
 check the error, and place `content` in the page. The promoted `Fragment`
 method uses the same content function and root. Context and presentation
@@ -217,6 +235,29 @@ Use whichever approach leaves fewer concepts in the application.
 See [forms](forms.md) for secure action forms and explicit field helpers.
 Existing `Document`, `Form`, control structs, and custom fragment types
 remain supported. See [ADR-0021](../adr/0021-concise-ui-composition.md).
+
+### Action-aware navigation
+
+Use `ui.ActionLink` when native and enhanced navigation must use the same
+GET action:
+
+```go
+action := editAction.HTMX()
+action.URL += "?" + url.Values{"id": {strconv.Itoa(member.ID)}}.Encode()
+link := ui.ActionLink{Action: action, Label: "Edit " + member.Name}
+```
+
+It derives `href` and `hx-get` from `Action.URL`, preserves target, swap,
+history, `Variant`, and `Attrs`, and escapes labels and URLs. Non-GET
+actions return `ui.ErrInvalidLink`; invalid GET actions propagate their
+validation error before output. Use `ui.ActionButton` for POST actions.
+Keep `components.Link` when different native and enhanced URLs are deliberate.
+
+For the standard `/theme` endpoint, `ui.ThemeSwitcher` takes explicit `Mode`
+and `Return` fields and supplies the CSRF input. Missing CSRF context returns
+`middleware.ErrCSRFTokenUnset` before output. It does not install protection
+or the preference handler. Use `components.ThemeSwitcher` for custom
+endpoints, targets, or attributes.
 
 ## Low-level element builder
 

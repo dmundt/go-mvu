@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"log"
 	"log/slog"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/static"
@@ -43,12 +43,35 @@ func run() error {
 		return err
 	}
 	log.Println("counter listening on http://localhost:8080")
-	err = server.Run(ctx, server.Config{
-		Server:          server.New("localhost:8080", handler),
-		ShutdownTimeout: 15 * time.Second,
+	err = serve(ctx, &http.Server{
+		Addr:              "localhost:8080",
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	})
 	log.Println("counter stopped")
 	return err
+}
+
+func serve(ctx context.Context, server *http.Server) error {
+	served := make(chan error, 1)
+	go func() { served <- server.ListenAndServe() }()
+	select {
+	case err := <-served:
+		return err
+	case <-ctx.Done():
+	}
+	shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+	defer cancel()
+	err := server.Shutdown(shutdown)
+	if err != nil {
+		err = errors.Join(err, server.Close())
+	}
+	serveErr := <-served
+	if errors.Is(serveErr, http.ErrServerClosed) {
+		serveErr = nil
+	}
+	return errors.Join(err, serveErr)
 }
 
 func newHandler(secret []byte) (http.Handler, error) {
@@ -69,15 +92,10 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
-		App:   CounterApp{},
-		Store: store.NewMemory[string, CounterModel](),
-		Keys:  web.KeyResolverFunc[string](sessionKey),
-		View: CounterView{
-			Document: document,
-			RegionView: ui.RegionView[CounterModel]{
-				Region: counterRegion, Content: counterContent,
-			},
-		},
+		App:    CounterApp{},
+		Store:  store.NewMemory[string, CounterModel](),
+		Keys:   web.KeyResolverFunc[string](sessionKey),
+		View:   CounterView{Document: document},
 		Theme:  theme.Default,
 		Themes: preference,
 	})
