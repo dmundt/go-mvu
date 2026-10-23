@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 2
+version: 3
 ---
 
 # Specs
@@ -22,12 +22,12 @@ version: 2
 | 3 | Rendering model, markers | [html](../../html/) | ADR [0004](../adr/0004-direct-safe-html-rendering.md), [0005](../adr/0005-pages-and-fragments.md) |
 | 4 | HTML context, escaping | [html](../../html/) | [security](../guides/security.md) |
 | 4.1 | Element builder, attribute allowlist | `html.El`, `html.Attrs`, `htmx.Action.Attrs` | [components](../guides/components.md#low-level-element-builder), [security](../guides/security.md), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
-| 5 | Composition, slots | [components](../../components/) | [components](../guides/components.md) |
+| 5 | Composition, slots | [components](../../components/), optional [ui](../../ui/) | [components](../guides/components.md), ADR [0021](../adr/0021-concise-ui-composition.md) |
 | 6 | MVU contracts | [mvu](../../mvu/) | ADR [0003](../adr/0003-mvu-runtime-boundaries.md) |
 | 7 | Versioned store | [store](../../store/), [session](../../session/) | ADR [0006](../adr/0006-versioned-session-models.md) |
 | 8 | Web views, RequestContext | [web](../../web/) | [web runtime](../guides/web-runtime.md), ADR [0013](../adr/0013-runtime-request-context.md) |
 | 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md) |
-| 10 | HTTP runtime, lifecycle | [web](../../web/) | [web runtime](../guides/web-runtime.md) |
+| 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`) | [web runtime](../guides/web-runtime.md) |
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |
 | 13 | Component library | [components](../../components/), [shared](../../shared/) | [components](../guides/components.md), ADR [0009](../adr/0009-reusable-components.md), [0010](../adr/0010-shared-ui-components.md) |
@@ -35,7 +35,7 @@ version: 2
 | 14 | Pagination | `components.Pagination` | [components](../guides/components.md) |
 | 15 | Counter example | [examples/counter](../../examples/counter/) | — |
 | 16 | Users example | [examples/users](../../examples/users/) | — |
-| 17 | Validation | [validation](../../validation/) | ADR [0008](../adr/0008-explicit-validation.md) |
+| 17 | Validation | [validation](../../validation/), [contact example](../../examples/contact/) | [forms](../guides/forms.md), ADR [0008](../adr/0008-explicit-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
 | 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
 | 18 extensions | HTTP policy, lifecycle, deployment middleware | [httpx](../../httpx/), [middleware](../../middleware/), [session](../../session/) | [middleware](../guides/middleware.md), ADR [0019](../adr/0019-http-policy-and-runtime-reliability.md) |
@@ -61,7 +61,7 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | CSP: no unsafe-inline for script | script strict; `style-src 'unsafe-inline'` | inline CSS requirement (ADR 0012) |
 | `AppShell` | `Shell` + `AppShell` alias | backward compatibility |
 | `html.TrustedHTML` | + `html.Trusted` alias | brevity |
-| packages per §2 | + `shared`, `static`, `internal/arch`, `benchmarks` | widgets, asset, enforcement |
+| packages per §2 | + `shared`, `static`, `internal/arch`, `benchmarks`, optional `ui` | widgets, assets, enforcement, and application-level composition without widening core dependencies |
 | middleware deps: html only | middleware → `html`, `session`, `timing`, `httpx` | CSRF bound to session; shared phase trace and transport contracts |
 | web dependencies | + stdlib-only `httpx` | shared rejection policy and streaming commitment |
 | session dependencies | + stdlib-only `httpx` | bounded revocation-capacity event without middleware dependency |

@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 1
+version: 2
 ---
 
 # Web runtime
@@ -57,6 +57,36 @@ type RequestContext struct {
 - Outside the runtime: `web.NewRequestContext(r, theme, resolver)`.
 
 ## Routes
+
+For endpoints that appear in a form or button, define method, path, decoder,
+and response once. Reuse the action in the view:
+
+```go
+var submit = web.Action[Message]{
+	Method: htmx.Post,
+	Path:   "/contact",
+	Decode: web.DecoderFunc[Message](decodeContact),
+	Result: web.Result{Mode: web.RenderAuto, Fragment: "contact-form"},
+}
+
+if err := runtime.Register(mux, submit); err != nil {
+	return nil, err
+}
+
+ui.ActionButton{Action: submit.HTMX(), Label: "Send"}
+```
+
+`HTMX()` uses `#contact-form` and `outerHTML` by default. Plain POSTs redirect
+to `/contact`; set `Result.Location` to choose another destination. Set
+`Target` or `Swap` to override the browser behavior. `Register` checks the
+action and mounts its exact path and method.
+
+For multi-field forms, put `submit.HTMX()` on `ui.Form`, not only on its
+submit button. This keeps keyboard and button submissions consistent.
+See [forms](forms.md) and [shared page policy](components.md#shared-page-policy).
+
+Use `Route` directly when an endpoint has different routing needs or must not
+share its definition with a UI action:
 
 ```go
 mux.Handle("GET /{$}", runtime.Page(web.Result{Mode: web.RenderPage}))

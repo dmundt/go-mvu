@@ -5,6 +5,7 @@ const counterURL = `http://127.0.0.1:${basePort}`;
 const usersURL = `http://127.0.0.1:${basePort + 1}`;
 const themesURL = `http://127.0.0.1:${basePort + 2}`;
 const componentsURL = `http://127.0.0.1:${basePort + 3}`;
+const contactURL = `http://127.0.0.1:${basePort + 4}`;
 const themes = ['default', 'bootstrap', 'bulma', 'pico'];
 
 async function expectNoPageOverflow(page) {
@@ -46,6 +47,72 @@ test('counter plain forms work without JavaScript', async ({ browser }, testInfo
     await expect(page).toHaveURL(`${counterURL}/`);
     await page.reload();
     await expect(page.locator('#counter output')).toHaveText('1');
+  } finally {
+    await context.close();
+  }
+});
+
+test('contact keyboard submit swaps, preserves values, and styles fields', async ({ page }) => {
+  await page.goto(`${contactURL}/contact`);
+  const landmark = await page.locator('main').elementHandle();
+  const name = page.getByLabel('Your name');
+  await expect(name).toHaveCSS('border-top-style', 'solid');
+  await expect(name).toHaveCSS('border-top-width', '1px');
+  const inputWidth = await name.evaluate((element) => element.getBoundingClientRect().width);
+  expect(inputWidth).toBeGreaterThan(await page.evaluate(() => window.innerWidth * 0.4));
+  expect(await name.evaluate((element) => parseFloat(getComputedStyle(element).paddingLeft)))
+    .toBeGreaterThan(0);
+
+  await name.fill('A');
+  await page.getByLabel('Email address').fill('ada@example.test');
+  await page.getByLabel('Company (optional)').fill('Analytical Engines');
+  await page.getByLabel('Topic').selectOption('support');
+  await page.getByLabel('How can we help?').fill('Please help with this request.');
+  await page.getByLabel('You may reply to my request.').check();
+  const invalidSubmission = page.waitForRequest((request) =>
+    request.method() === 'POST' && request.url() === `${contactURL}/contact`,
+  );
+  await name.press('Enter');
+  expect((await invalidSubmission).headers()['hx-request']).toBe('true');
+  await expect(page.locator('#name-error')).toHaveText('Enter at least two characters.');
+  expect(await landmark.evaluate((element) => element.isConnected)).toBe(true);
+  await expect(page.locator('#contact-form')).toHaveCount(1);
+  await expect(page.getByLabel('Your name')).toHaveValue('A');
+  await expect(page.getByLabel('Your name')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByLabel('Company (optional)')).toHaveValue('Analytical Engines');
+  await expect(page.getByLabel('Topic')).toHaveValue('support');
+  await expect(page.getByLabel('How can we help?')).toHaveValue('Please help with this request.');
+  await expect(page.getByLabel('You may reply to my request.')).toBeChecked();
+
+  await page.getByLabel('Your name').fill('Ada Lovelace');
+  await page.getByLabel('Email address').press('Enter');
+  await expect(page.locator('#contact-form')).toContainText('Request received');
+  expect(await landmark.evaluate((element) => element.isConnected)).toBe(true);
+  await expectNoPageOverflow(page);
+});
+
+test('contact keyboard submit uses post-redirect-get without JavaScript', async ({ browser }, testInfo) => {
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    viewport: testInfo.project.use.viewport,
+    colorScheme: testInfo.project.use.colorScheme,
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${contactURL}/contact`);
+    await page.getByLabel('Your name').fill('A');
+    await page.getByLabel('Email address').fill('ada@example.test');
+    await page.getByLabel('Topic').selectOption('support');
+    await page.getByLabel('How can we help?').fill('Please help with this request.');
+    await page.getByLabel('You may reply to my request.').check();
+    await page.getByLabel('Your name').press('Enter');
+    await expect(page).toHaveURL(`${contactURL}/contact`);
+    await expect(page.locator('#name-error')).toHaveText('Enter at least two characters.');
+    await expect(page.getByLabel('Your name')).toHaveValue('A');
+
+    await page.getByLabel('Your name').fill('Ada Lovelace');
+    await page.getByLabel('Email address').press('Enter');
+    await expect(page.locator('#contact-form')).toContainText('Request received');
   } finally {
     await context.close();
   }
@@ -212,6 +279,14 @@ for (const theme of themes) {
       parseFloat(getComputedStyle(body.closest('article')).paddingLeft),
     );
     expect(padding).toBeGreaterThan(0);
+    const formLayout = page.locator('.form-fields');
+    await expect(formLayout).toHaveCSS('display', 'flex');
+    await expect(formLayout).toHaveCSS('align-items', 'stretch');
+    const fieldWidths = await page.getByLabel('Message', { exact: true }).evaluate((element) => ({
+      control: element.getBoundingClientRect().width,
+      layout: element.closest('.form-fields').getBoundingClientRect().width,
+    }));
+    expect(Math.abs(fieldWidths.control - fieldWidths.layout)).toBeLessThanOrEqual(1);
     await expect(page.locator('input[name="tab"]')).toHaveCSS('display', 'none');
     await expectNoPageOverflow(page);
     await page.getByRole('button', { name: 'Show help', exact: true }).click();
