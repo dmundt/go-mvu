@@ -2,7 +2,10 @@ html[data-theme] {
 	--bg: var(--bs-body-bg);
 	--fg: var(--bs-body-color);
 	--surface: var(--bs-tertiary-bg);
+	--surface-raised: var(--bs-body-bg);
+	--subtle: var(--bs-tertiary-bg);
 	--border: var(--bs-border-color);
+	--muted: var(--bs-secondary-color);
 	--primary: var(--bs-primary);
 	--danger: var(--bs-danger);
 	--success: var(--bs-success);

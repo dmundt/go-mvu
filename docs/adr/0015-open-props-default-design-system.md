@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0015: Open Props default design system"
+description: Adopt Open Props as the default design system.
+version: 1
+---
+
 # ADR-0015: Open Props default design system
 
 - Status: Accepted
@@ -6,7 +13,7 @@
 ## Context
 
 Default theme: hand-picked values, roomy spacing, no token scale. Target apps:
-business and technical UIs (admin, data browsers, consoles). Need dense,
+business and technical UIs (admin, data browsers, consoles). Need calm, dense,
 neutral, consistent look; still inline CSS, no runtime assets, no app JS.
 
 ## Decision
@@ -20,13 +27,23 @@ neutral, consistent look; still inline CSS, no runtime assets, no app JS.
 - `open-props` pinned exact as devDependency.
 - `base.css` neutral layer shared with adapters; `default.css` scoped to
   `html[data-theme-name="default"]`.
-- Look: tinted oklch neutrals, Open Props blue accent, 14px body, 2rem
-  controls, compact bordered tables with sticky uppercase headers.
+- Palette: tinted oklch neutrals, one indigo accent, and paired light/dark
+  surface roles.
+- Type: semantic 12px–24px scale, 16px/24px body, 24/20/18px headings,
+  named weights, and explicit compact/body line heights.
+- Spacing: semantic 4/8/16/20/24/28px steps mapped to Open Props sizes;
+  page, shell, form, table, and shared-widget insets use these tokens.
+- Components: 40px minimum interactive controls, flat cards, compact fully
+  bordered tables, pale sticky headers, and restrained overlay elevation.
+- Layout: centered 900px content pages and a 240px application sidebar.
 
 ## Consequences
 
-- Token use consistent; Open Props upgrade = bump version + rebuild.
+- Typography and spacing roles are shared by default-theme and shared
+  components; framework adapters retain adapter-neutral fallback values.
+- Open Props upgrade = bump version + rebuild.
 - New Open Props token in CSS → rerun build; `npm run test:themes` fails on
   undefined tokens.
 - Adapters gain small `:where(html)` token block; no visual change.
-- Denser default; apps needing roomier UI override tokens or ship own theme.
+- Dense, neutral default; apps needing roomier UI override semantic tokens or
+  ship own theme.

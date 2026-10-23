@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Catalog
+title: Architecture Decision Records
+description: Catalog of accepted architectural decisions.
+version: 2
+---
+
 # Architecture Decision Records
 
 This directory records the current architectural decisions for go-mvu. See
@@ -5,6 +12,8 @@ the [architecture overview](../architecture.md) for package responsibilities
 and runtime flow. The [gomvu spec](../specs/gomvu-chat-spec.md) is authoritative; the
 [engineering brief](../engineering-brief.md) is history. Earlier alternatives,
 such as generic multi-format rendering, are not current decisions.
+
+Use the [ADR router](index.md) to browse decisions by identifier.
 
 ## Records
 
@@ -28,3 +37,4 @@ such as generic multi-format rendering, are not current decisions.
 | [0016](0016-render-timing-diagnostics.md) | Render timing and diagnostics via `timing` trace | Accepted |
 | [0017](0017-element-builder-and-attrs.md) | Element builder and attribute passthrough | Accepted |
 | [0018](0018-http-policy-and-runtime-reliability.md) | Explicit HTTP policy, streaming lifecycle, reliable transitions | Accepted |
+| [0019](0019-optional-production-integrations.md) | Optional CASK adapter and OIDC production integration | Accepted |

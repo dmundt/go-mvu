@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0002: Enforce package boundaries"
+description: Define and enforce one-way package dependencies.
+version: 1
+---
+
 # ADR-0002: Enforce package boundaries
 
 - Status: Accepted
@@ -34,4 +41,3 @@ Themes must not depend on components or web.
 - Applications compose the packages at the web boundary.
 - Dependency changes that cross these borders require an explicit architectural
   justification and a revised decision.
-

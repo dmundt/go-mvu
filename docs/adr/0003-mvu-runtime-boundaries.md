@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0003: Keep MVU updates separate from I/O"
+description: Keep state updates pure and isolate side effects in commands.
+version: 1
+---
+
 # ADR-0003: Keep MVU updates separate from I/O
 
 - Status: Accepted
@@ -25,4 +32,3 @@ outside the update function.
 - The web runtime coordinates message decoding, model persistence, commands,
   view selection, and response rendering.
 - Side effects are explicit in the application contract.
-

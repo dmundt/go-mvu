@@ -2,6 +2,7 @@
 type: Guide
 title: HTTP middleware contracts
 description: Composition, response lifecycle, request policies, and optional deployment extensions.
+version: 2
 ---
 
 # HTTP middleware
@@ -188,6 +189,13 @@ Rate limiting uses a bounded, lazily expiring fixed-window table. Exhausting a
 key returns 429; filling the active-key table returns 503. Both return
 `Retry-After`. Supply a stable, validated `Key func(*http.Request) (string, error)`;
 avoid untrusted arbitrary header values that create new keys on every request.
+
+The table and counters belong to this limiter instance in one process. Restart
+resets quotas; replicas do not share them. Fixed windows permit bursts across
+window boundaries. Use gateway or distributed enforcement for global quotas.
+Behind a proxy, direct peer addresses identify the proxy unless explicitly
+resolved through trusted-proxy policy. See the
+[production walkthrough](production.md#4-put-https-and-abuse-controls-in-front).
 
 ### Telemetry
 

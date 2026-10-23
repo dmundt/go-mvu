@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0005: Distinguish pages from fragments"
+description: Define separate response contracts for full pages and fragments.
+version: 1
+---
+
 # ADR-0005: Distinguish pages from fragments
 
 - Status: Accepted
@@ -25,4 +32,3 @@ behavior. The server responds with HTML, not a separate UI protocol.
   application state.
 - Applications own the mapping from incoming routes/messages to named
   fragments.
-

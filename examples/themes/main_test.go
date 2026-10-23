@@ -15,9 +15,9 @@ func get(target string) *httptest.ResponseRecorder {
 	return response
 }
 
-func TestAllThemesRenderInlineInBothModes(t *testing.T) {
+func TestAllThemesRenderInlineInEveryMode(t *testing.T) {
 	for _, name := range themepicker.Names {
-		for _, mode := range []string{"light", "dark"} {
+		for _, mode := range []string{"system", "light", "dark"} {
 			t.Run(name+"/"+mode, func(t *testing.T) {
 				response := get("/?theme=" + name + "&mode=" + mode)
 				if response.Code != http.StatusOK {

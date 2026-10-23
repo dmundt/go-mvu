@@ -33,7 +33,8 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 		{"dropdown", Dropdown{Label: "Menu", AlignEnd: true, Items: []MenuItem{{Label: "Mail", URL: "mailto:a@example.test"}}},
 			[]string{`<details class="dropdown dropdown--end"><summary>Menu</summary><ul class="dropdown__menu">`, `href="mailto:a@example.test"`}},
 		{"tooltip", Tooltip{ID: "tip", Label: "Info", Content: "Details"},
-			[]string{`aria-describedby="tip"`, `role="tooltip" id="tip">Details`}},
+			[]string{`aria-describedby="tip" aria-controls="tip" popovertarget="tip"`,
+				`popover="auto" role="tooltip" id="tip">Details`}},
 		{"avatar initials", Avatar{Name: "ada lovelace byron"},
 			[]string{`class="avatar avatar--md" role="img" aria-label="ada lovelace byron"`, `>AL</span>`}},
 		{"avatar image", Avatar{Name: "Ada", Src: "/ada.png", Size: AvatarLarge},
@@ -59,6 +60,7 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 			[]string{`aria-invalid="true" aria-describedby="note-hint note-error">` + "\n\nhi</textarea>", `id="note-hint">Short`}},
 		{"inline", Inline{Children: []html.Component{components.Text("x")}}, []string{`<div class="inline">x</div>`}},
 	}
+
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
 			rendered := render(t, test.component)
@@ -71,6 +73,41 @@ func TestComponentsRenderAccessibleMarkup(t *testing.T) {
 				t.Errorf("emitted inline style or script: %s", rendered)
 			}
 		})
+	}
+}
+
+func TestTabsUseKeyboardNativeNavigationSemantics(t *testing.T) {
+	rendered := render(t, Tabs{
+		ID: "settings", Label: "Settings sections", Active: "profile",
+		Items: []Tab{
+			{ID: "profile", Label: "Profile", URL: "?tab=profile"},
+			{ID: "security", Label: "Security", URL: "?tab=security"},
+		},
+	})
+	for _, expected := range []string{
+		`<nav class="tabset__list" aria-label="Settings sections">`,
+		`href="?tab=profile" aria-current="page"`,
+		`href="?tab=security"`,
+		`aria-labelledby="settings-tab-profile"`,
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Errorf("missing navigation semantics %q in %s", expected, rendered)
+		}
+	}
+	if strings.Contains(rendered, `role="tab"`) || strings.Contains(rendered, `role="tablist"`) {
+		t.Fatalf("link navigation must not claim scripted tab semantics: %s", rendered)
+	}
+}
+
+func TestTooltipUsesNativePopoverDismissal(t *testing.T) {
+	rendered := render(t, Tooltip{ID: "help", Label: "Help", Content: "More information"})
+	for _, expected := range []string{
+		`aria-describedby="help" aria-controls="help" popovertarget="help"`,
+		`popover="auto" role="tooltip" id="help">More information</span>`,
+	} {
+		if !strings.Contains(rendered, expected) {
+			t.Errorf("missing popover tooltip behavior %q in %s", expected, rendered)
+		}
 	}
 }
 

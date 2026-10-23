@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0013: Explicit runtime request context, command runners, auto rendering"
+description: Make request state explicit and standardize command execution and rendering.
+version: 1
+---
+
 # ADR-0013: Explicit runtime request context, command runners, auto rendering
 
 - Status: Accepted

@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Web runtime
+description: Runtime configuration, routes, request context, and rendering.
+version: 1
+---
+
 # Web runtime
 
 `web` binds an `mvu.Application` to `net/http`: key resolution, message

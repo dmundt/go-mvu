@@ -1,16 +1,22 @@
 # go-mvu
 
-Go framework for server-rendered HTML apps: Model-View-Update on the server,
-typed components streaming escaped HTML, HTMX as progressive enhancement.
+Go-first, server-owned MVU for HTML apps: typed components stream escaped HTML,
+with HTMX as progressive enhancement.
 No templates, no app JavaScript, no virtual DOM, no reflection rendering.
 CSS lives in `.css` files, inlined into one `<style>` block.
 
 Spec: [docs/specs](docs/specs/README.md). Docs index: [docs](docs/README.md).
 
+Start here: [Build your first app](docs/guides/first-app.md).
+
 ## Non-goals
 
 SPA, hydration, client state, JSON UI protocols, template engines, non-HTML
 output, built-in database adapter, auth.
+
+Optional integrations: [CASK model store](adapters/caskstore/README.md) and
+[durable OIDC application](examples/production/README.md). These are not an ORM
+or identity-management platform. [Production walkthrough](docs/guides/production.md).
 
 ## Packages and boundaries
 
@@ -45,6 +51,10 @@ web        HTTP orchestration
 
 Boundaries enforced by `internal/arch` test. See
 [architecture](docs/architecture.md).
+
+go-cask-backed persistence and atomic outbox demonstration:
+[examples/durable](examples/durable/README.md). See
+[framework positioning](docs/guides/positioning.md) for fit and alternatives.
 
 ## MVU lifecycle
 
@@ -239,6 +249,8 @@ Loopback only; random per-process secrets; in-memory state.
 - Memory store = single process; multi-instance → shared `store.Store`
   implementation + sticky or shared sessions.
 - Binary self-contained: CSS + HTMX embedded.
+- Runnable single-host deployment with durable models, OIDC login, local logout,
+  and rate limits: [production example](examples/production/README.md).
 
 ## Validation
 
@@ -253,6 +265,10 @@ npm ci; npm run test:themes      # only for theme CSS changes
 `node_modules` needed only to rebuild adapter CSS and the Open Props subset
 (`npm run build:themes`).
 
+Root Go tests skip nested modules. Also run `go test ./...` and `go vet ./...`
+from `adapters\caskstore` and `examples\production`; see
+[production validation](docs/guides/production.md#6-validate-before-release).
+
 ## Benchmarks
 
 Counter fragment 444 ns, 1 alloc vs `html/template` 645 ns, 8 allocs
@@ -265,8 +281,13 @@ Details: [benchmarks](docs/guides/benchmarks.md).
 - Race tests need cgo (`CGO_ENABLED=1 go test -race ./...`); not run on
   cgo-less dev machine.
 - `style-src 'unsafe-inline'` required.
-- No durable store, auth, rate limiting.
-- Tooltip lacks Escape dismissal; tabs lack ARIA arrow keys.
+- Optional CASK adapter is single-host/single-owner, not a shared database.
+- OIDC example integrates authentication; no built-in user management or RBAC.
+- Rate limiting exists but is process-local; distributed quotas need a gateway
+  or application integration. Cookie revocations are also process-local;
+  production example persists authentication grants for restart-safe local logout.
+- `shared.Tabs` use native navigation links; they are not scripted ARIA tabs.
+- `shared.Tooltip` uses the browser's native dismissible popover.
 
 ## Extension guidelines
 

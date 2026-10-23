@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0009: Keep reusable components optional"
+description: Keep reusable components optional and application components local.
+version: 1
+---
+
 # ADR-0009: Keep reusable components optional
 
 - Status: Accepted

@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Themes and CSS
+description: Theme modes, design tokens, CSS integration, and theme switching.
+version: 1
+---
+
 # Themes and CSS
 
 Themes own presentation; components own semantic structure, accessibility, and
@@ -35,18 +42,38 @@ CSS only. API unchanged: `theme.Default`, `theme.DefaultTheme`.
 Design:
 
 - Neutrals: Open Props oklch grays tinted via `--gray-hue: 250`,
-  `--gray-chroma: .006`. Accent: Open Props blue.
-- Density: 14px body, 13px controls/tables, 12px uppercase table headers,
-  2rem control height, 4–8px radii, 1px borders, minimal shadow.
-- Shell: sticky topbar, bordered sidebar, padded main. Plain pages: centered,
-  max 80rem.
-- Tables: bordered scroll container, sticky muted uppercase header, compact
-  cells, row hover and focus-within.
+  `--gray-chroma: .006`. Accent: Open Props indigo-7 in light mode and
+  indigo-3 in dark mode.
+- Surface roles distinguish page background, regular surface, raised overlay,
+  and subtle surface. Muted text, informational and status colors, inverse
+  action text, borders, and focus ring are exposed as semantic `--color-*`
+  tokens for app CSS.
+- Typography tokens: `--font-size-xs` through `--font-size-2xl` define
+  12/14/16/18/20/24px; body uses 16px/24px, headings use 24/20/18px,
+  semibold weights, and a tight heading line-height. Font stack is Inter,
+  Segoe UI, system UI, sans-serif; no font download or external request.
+- Spacing tokens: `--space-1` through `--space-6` map to Open Props 4/8/16/
+  20/24/28px. Layout, card insets, form gaps, and shared widgets use these
+  semantic tokens instead of one-off spacing values. Dense table cells keep
+  compact vertical padding; interactive controls retain 40px minimum height.
+- Shared tabs, dropdown actions, dialog close buttons, and form-choice labels
+  use the same 40px minimum target. Badges and decorative icons remain compact.
+- Surfaces: flat near-white and gray, 1px borders, restrained radii, no card
+  shadows, and elevation only for overlays.
+- Shell: 240px sidebar, tokenized header, and consistent padded main. Plain
+  content pages: centered, max 900px.
+- Tables: fully bordered cells, pale neutral header in light mode,
+  compact rows, and subtle hover and focus-within states.
 - Buttons: one recipe; variants set `--button-bg/fg/border`; hover/active via
   `color-mix`.
 - Theme switcher: segmented control.
-- Focus: 2px solid primary outline, 2px offset.
+- Focus: 2px solid primary outline, 2px offset; form controls use a 3px
+  primary ring. Forced-colors mode uses system highlight colors.
 - Light, dark, system dark palettes; reduced motion honored.
+- Shared components consume the same spacing, typography, radius, and shadow
+  tokens. Framework adapters retain their own token defaults.
+- State colors maintain WCAG AA contrast for text; loading indicators avoid
+  decorative gradients and stop moving under reduced-motion preferences.
 
 Plain `<table>` and `components.Table` get styling without extra classes.
 
@@ -85,11 +112,46 @@ doc := components.Document{
 
 Use `bulma.Theme{}` or `pico.Theme{}` in the same way. No manual adapter CSS,
 vendor classes, stylesheet routes, or JavaScript setup is needed. The server
-still writes CSS inline. Every adapter supports `data-theme="light"`,
-`data-theme="dark"`, and `data-theme="system"` and retains the shared spacing,
-grid, and shell contract. The build script clones each vendor dark rule into
-an `@media (prefers-color-scheme: dark)` block for `system`; rules that
-negate dark (`:not([data-theme=dark])`) are skipped.
+still writes CSS inline.
+
+### Theme adapter contract
+
+Adapters are interchangeable presentation implementations, not separate
+component APIs. Each adapter must:
+
+- Work by changing only `Document.Theme`; keep component markup and neutral
+  component classes unchanged.
+- Support `data-theme="light"`, `data-theme="dark"`, and
+  `data-theme="system"`. System mode follows `prefers-color-scheme`.
+- Provide computed values for every token in
+  [`theme-contract.json`](../../scripts/theme-contract.json).
+- Render `.stack` as a spaced column, `.grid` and `.shell` as grids,
+  `.button--primary` and `.input` as visible controls at least 40px high.
+  Inputs need visible borders. Semantic tables use collapsed borders,
+  bordered cells, and a non-transparent header surface. Light and dark
+  backgrounds must differ; system mode must follow the emulated OS scheme.
+- Keep body, button, and input text contrast at or above WCAG AA's 4.5:1;
+  muted text, badge, alert, and table-header text must also meet 4.5:1. Provide
+  a visible `:focus-visible` indicator reachable by keyboard. At 390px and
+  320px viewport widths, avoid page-level horizontal overflow and collapse
+  multi-column grids to one column.
+- Bundle self-contained CSS inline, with no external stylesheet requests or
+  JavaScript requirement for built-in components. Vendor CSS may remain
+  available for custom app markup.
+
+Contract coverage lives in `scripts/themes.test.mjs` (bundled CSS requirements)
+and `examples/components/main_test.go` (same component markup across adapters
+and modes). `examples/themes/main_test.go` checks inline output and mode
+selection. `npm run test:themes:browser` builds and starts both gallery servers,
+runs computed-style checks, then stops servers and removes temporary binaries.
+Install the browser once with `npx playwright install chromium`. Set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` to use an installed Chromium-based browser.
+Run `npm run test:themes` and `go test ./examples/components ./examples/themes`
+for the fast checks.
+
+The build script clones each vendor dark rule into an
+`@media (prefers-color-scheme: dark)` block for `system`; rules that negate
+dark (`:not([data-theme=dark])`) are skipped.
 Upstream CSS classes also remain available for custom components, but their
 JavaScript-dependent widgets are not included.
 

@@ -1,3 +1,9 @@
+---
+type: Engineering History
+title: Engineering brief
+description: Original design conversation and project history.
+version: 1
+---
 
 > Current architecture is summarized in [`architecture.md`](architecture.md), with decisions recorded in [`adr/`](adr/README.md). This conversation history records evolving proposals; later decisions supersede earlier alternatives.
 

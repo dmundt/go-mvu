@@ -2,7 +2,10 @@ html[data-theme] {
 	--bg: var(--bulma-scheme-main);
 	--fg: var(--bulma-text);
 	--surface: var(--bulma-scheme-main-bis);
+	--surface-raised: var(--bulma-scheme-main);
+	--subtle: var(--bulma-scheme-main-ter);
 	--border: var(--bulma-border);
+	--muted: var(--bulma-text-weak);
 	--primary: var(--bulma-primary);
 	--danger: var(--bulma-danger);
 	--success: var(--bulma-success);
@@ -20,6 +23,7 @@ html[data-theme] {
 .alert--warning, .badge--warning { background: var(--bulma-warning); color: var(--bulma-warning-invert); }
 .alert--danger, .badge--danger { background: var(--bulma-danger); color: var(--bulma-danger-invert); }
 select.input { appearance: auto; }
+thead th, tfoot th, tfoot td { background-color: var(--surface); }
 
 /* Shared choices: Bulma .checkbox/.radio are inline-block; restore flex gap. */
 .choice > .checkbox, .radio-group > .radio { display: inline-flex; align-items: center; gap: .625rem; }
