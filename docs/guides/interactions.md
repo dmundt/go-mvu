@@ -2,7 +2,7 @@
 type: Guide
 title: Interactive applications without application JavaScript
 description: Native HTML and HTMX interaction patterns, server-owned state, and capability limits.
-version: 1
+version: 2
 ---
 
 # Interactive applications without application JavaScript
@@ -100,6 +100,108 @@ attribute passthrough; no typed fields for these are implied.
    `hx-on*`, `hx-vars`, JavaScript-valued `hx-vals`/`hx-headers`, or
    JavaScript-evaluated `[...]` trigger filters. Do not weaken CSP to make
    these patterns work. See [security](security.md).
+
+## Dialog workflows: temporary pages
+
+Treat dialog content as a temporary page inside another page: forms,
+validation, confirmations, detail views, and wizard steps remain ordinary
+server-rendered components. HTMX transports HTML; it does not supply modal
+semantics or automatically open an inserted native overlay.
+
+### Content lifecycle is not modality
+
+`shared.Dialog` renders a native popover and its trigger. It is non-modal.
+`role="dialog"`, `aria-modal="true"`, CSS backdrops, or `<dialog open>` do not
+make background content inert or implement modal focus containment.
+
+A true modal needs the browser's modal-opening behavior, normally
+`HTMLDialogElement.showModal()`, or a supported declarative browser mechanism.
+The former needs JavaScript and is not an application-script escape hatch;
+the latter needs explicit browser support, component support, and verification.
+Neither is a current `shared.Dialog` guarantee.
+
+For no-application-JavaScript overlays, prefer an existing native popover
+shell with its own trigger and a stable inner content region. Trigger can
+open the shell while HTMX loads that region. If the shell itself arrives in
+the response, insertion alone does not show it; define an accessible native
+opening step or render ordinary visible page content instead. Never promise
+an on-demand blocking modal solely because its HTML is server-rendered.
+
+### Shared target and endpoint contracts
+
+An application can standardize one content host, such as `dialog-content`,
+for create/edit forms, settings, audit details, and confirmations. Start with
+an empty host or loading placeholder; only requested feature content needs
+to be sent. Fetching on open avoids shipping all forms initially, but does
+not guarantee freshness through a later save: recheck authorization and
+model version at submission.
+
+Use feature-owned endpoints, for example:
+
+| Endpoint | Meaning |
+| --- | --- |
+| `GET /users/new` | Create form, or full page without HTMX |
+| `GET /users/{id}/edit` | Authorized edit form with current values/version |
+| `POST /users` | Validate and create user |
+| `POST /users/{id}` | Validate and update user |
+| `GET /users/{id}/delete` | Confirmation page/fragment; never deletes |
+| `POST /users/{id}/delete` | Recheck permission and delete |
+
+Same host also handles read-only detail views and server-owned wizard steps.
+Each wizard submission validates current step; final mutation validates whole
+workflow. No generic route registry or new framework "modal service" is
+required. Full-page GETs and post/redirect/get remain fallback contracts.
+
+For an `InnerHTML` host, make response behavior explicit:
+
+| Outcome | Status and fragment contract |
+| --- | --- |
+| Open/edit/detail/next step | `200` with host contents, not another copy of host root |
+| Invalid form | `422` with submitted values and field errors; enable `components.Document.HTMXSwapValidationErrors` or `ui.Document.SwapValidationErrors` |
+| Successful save; remove visible panel | `200` with empty body clears host contents |
+| Successful save; refresh list too | `200` with empty primary contents plus OOB list/status updates |
+| Cancel/remove panel | Explicit safe GET returning empty contents, or native shell close control |
+
+**`204` does not clear the target.** HTMX skips swapping it. Empty `200` clears
+an `InnerHTML` target; empty `OuterHTML` removes target itself, losing the
+shared host for future opens. Return the empty host root when replacing it
+with `OuterHTML`.
+
+Clearing content removes a panel rendered inside the host, not a persistent
+outer popover/dialog shell. Shell closing is a separate native behavior;
+avoid leaving an empty open overlay. Likewise, replacing an open popover
+root on validation can lose its open state. Swap the inner content to retain
+native shell state; test focus and error announcements after replacement.
+
+### Save and refresh in one response
+
+With request target `#dialog-content`, `innerHTML` swap, and existing
+`#users-list` and `#save-status` targets, this illustrates response shape:
+
+```html
+<section id="users-list" hx-swap-oob="outerHTML">
+  <!-- Server-rendered updated list goes here. -->
+</section>
+<p id="save-status" role="status" hx-swap-oob="outerHTML">User saved.</p>
+```
+
+OOB fragments update their matching targets; remaining empty primary content
+clears `#dialog-content`. Emit updated list and status through escaped Go
+components, not interpolated trusted strings. Keep OOB fragments top-level;
+avoid duplicate IDs or unintended nested OOB processing.
+
+This closes a panel only when clearing that host removes the panel itself.
+It does not call native close on an enclosing shell. A response header event
+alone also does not close anything without a listener; do not add `hx-on`
+handlers to bridge this gap. All affected fragments must reflect the same
+committed result; an HTTP/render failure after commit does not undo the save.
+
+One global target requires request coordination: prevent a slow edit response
+from replacing a newer detail view, and prevent late responses from reopening
+canceled content. Define cancellation, duplicate-submit, back-navigation, focus
+return, Escape, and loading/error behavior. Browser-test repeated open,
+invalid submit, successful save/list refresh, cancel during load, keyboard
+operation, and no-HTMX fallback before claiming a complete modal lifecycle.
 
 ## Live updates and SSE
 
