@@ -1,4 +1,4 @@
-// Package browsertest serves real example handlers for Playwright. It is test
+// Package browsertest serves real HTTP handlers for Playwright. It is test
 // infrastructure, not an application authoring API.
 package browsertest
 

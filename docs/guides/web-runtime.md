@@ -2,7 +2,7 @@
 type: Guide
 title: Web runtime
 description: Runtime configuration, routes, request context, and rendering.
-version: 5
+version: 6
 ---
 
 # Web runtime
@@ -286,26 +286,22 @@ Request execution order (first wrapper outermost):
 
 ```go
 var handler http.Handler = mux
-policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
-	MaxBodyBytes: 1 << 20,
-	Timeout:      10 * time.Second,
+private := sessions.Wrap(preference.Wrap(csrf.Wrap(handler)))
+handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	private.ServeHTTP(w, r)
 })
 handler = middleware.SecurityHeaders(
 	diagnostics.Middleware(
-		middleware.Recover(
-			policy(
-				middleware.NoStore(
-					sessions.Wrap(
-						preference.Wrap(
-							csrf.Wrap(handler),
-						),
-					),
-				),
-			),
-		),
+		middleware.Recover(requestLimits(handler, 10*time.Second)),
 	),
 )
 ```
+
+`requestLimits` is application code from the
+[counter starter](../../examples/counter/policy.go), not a middleware API.
+It bounds body reads before CSRF, checks known oversized bodies, and uses a
+cooperative context deadline without replacing committed responses.
 
 Session before CSRF (token bound to session). Preference before views.
 Security headers on every response, including errors. Recovery inside

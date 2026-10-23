@@ -1,4 +1,4 @@
-package benchmarks
+package httpbench
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/html"
+	"github.com/dmundt/go-mvu/internal/example/jsonstore"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/store"
@@ -110,9 +110,12 @@ func newHTTPBenchmarkServer(
 			Mode: web.RenderFragment, Fragment: "counter",
 		},
 	}))
-	handler := middleware.SecurityHeaders(
-		middleware.Recover(middleware.NoStore(mux)),
-	)
+	handler := middleware.SecurityHeaders(middleware.Recover(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "no-store")
+			mux.ServeHTTP(w, r)
+		}),
+	))
 	server := httptest.NewServer(handler)
 	b.Cleanup(server.Close)
 	return server

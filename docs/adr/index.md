@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 3
+version: 4
 ---
 
 # Architecture Decision Records
@@ -34,3 +34,4 @@ version: 3
 * [ADR-0022](0022-default-theme-and-deployment-boundaries.md) - one bundled theme and explicit deployment boundaries.
 * [ADR-0023](0023-unified-components.md) - one reusable component package.
 * [ADR-0024](0024-ecosystem-owned-generic-middleware.md) - keep generic HTTP middleware in the ecosystem.
+* [ADR-0025](0025-application-owned-request-policy.md) - application-owned request limits and cache policy.

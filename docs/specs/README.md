@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 11
+version: 13
 ---
 
 # Specs
@@ -47,6 +47,12 @@ version: 11
 
 ## Deviations
 
+Request bounds, deadlines, content-type checks, and cache wrappers are
+application-owned rather than public middleware APIs. CSRF, security headers,
+stream-aware recovery including `RecoverWith`, and diagnostics remain in the
+framework. Examples preserve request limits using standard-library handlers.
+See [ADR-0025](../adr/0025-application-owned-request-policy.md).
+
 Reusable native widgets moved from `shared` into `components`; the old package
 and aliases are removed. Markup, styles, and dependency boundaries are retained.
 See [ADR-0023](../adr/0023-unified-components.md) and
@@ -75,6 +81,8 @@ and [page policy](../guides/components.md#shared-page-policy).
 
 `ui.ActionLink` shares one GET URL between native and enhanced links;
 `ui.ThemeSwitcher` supplies the CSRF field for the standard preference form.
+`ui.ModePicker` supplies a GET-only theme preview selector, with explicit
+hidden query fields and no persisted preference or CSRF requirement.
 The optional `ui` layer imports `theme` for its typed mode. Ordinary
 component-returning functions are the default example authoring pattern;
 custom types and `RegionView` remain supported. The counter can be copied

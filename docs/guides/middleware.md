@@ -2,7 +2,7 @@
 type: Guide
 title: HTTP middleware contracts
 description: Standard net/http composition, response lifecycle, and framework-specific HTTP policies.
-version: 6
+version: 8
 ---
 
 # HTTP middleware
@@ -11,6 +11,11 @@ HTTP policies stay outside pure MVU updates. The standard library handler
 signature remains the composition boundary. No registration system, reflection,
 automatic middleware sorting, or application JavaScript.
 
+Framework middleware is limited to CSRF and its rendering helpers, default
+security headers, streaming-aware recovery, and runtime diagnostics.
+Request-size limits, deadlines, accepted content types, and cache policy belong
+to the application. See [ADR-0025](../adr/0025-application-owned-request-policy.md).
+
 ## Composition and lifecycle
 
 go-mvu handlers and middleware use standard `net/http` interfaces. Compose
@@ -18,16 +23,9 @@ wrappers directly or use the router's middleware stack. A rejection returns
 without calling the next handler.
 
 ```go
-policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
-	MaxBodyBytes: 1 << 20,
-	Timeout:      10 * time.Second,
-})
-if err != nil {
-	return err
-}
 router := chi.NewRouter()
 router.Use(existingMiddleware, middleware.SecurityHeaders, middleware.Recover)
-router.Handle("/", policy(mux))
+router.Handle("/", http.MaxBytesHandler(mux, 1<<20))
 ```
 
 Recovery before final response commitment produces a safe 500. A panic after
@@ -80,7 +78,7 @@ an internal cause. `httpx.RespondError` logs the cause and request ID, sets
 Context cancellation maps to 408; deadline exceeded maps to 504.
 
 `httpx.ErrorHandler` can be shared by `middleware.RecoverWith`,
-`csrf.WithErrorHandler`, request policy, and runtime `OnError`.
+`csrf.WithErrorHandler`, application request policy, and runtime `OnError`.
 Applications supply validation fragments or pages in this callback; transport
 middleware does not know field layouts.
 
@@ -90,28 +88,38 @@ reload guidance. Never automatically replay a rejected mutation.
 
 ## Request bounds
 
-`NewRequestPolicy` rejects negative limits. Zero body limit means 1 MiB; zero
-timeout leaves the existing context deadline unchanged.
+Use `http.MaxBytesHandler` or `http.MaxBytesReader` before any parser, including
+CSRF. Applications own configured limits and rejection responses; no framework
+`NewRequestPolicy`, `RequestPolicyOptions`, or `NoStore` API is provided.
 
-- Known oversized `Content-Length`: 413 before downstream execution.
+- Check known oversized `Content-Length` explicitly when 413 must precede
+  downstream execution; `MaxBytesHandler` alone only limits reads.
 - Unknown/chunked length: `http.MaxBytesReader` limits consumption; decoders
-  must propagate read errors. This does not buffer or drain unconsumed bodies.
+  must propagate read errors and map `*http.MaxBytesError` to 413. This does not
+  buffer or drain unconsumed bodies.
 - Limits apply before form parsing, including header-based CSRF.
-- `ContentTypes` optionally restricts unsafe requests with bodies to explicit
-  media types. Parameters such as `charset` are accepted on requests; configured
-  types have no parameters. Rejection: 415.
+- Routes can check `mime.ParseMediaType` against accepted body formats and
+  reject unsupported types with 415.
 - Multipart decoding still needs an explicit application memory/file policy.
 - Deadlines are cooperative. No goroutine races the handler to write a timeout;
   no timeout can roll back a transition already committed.
 
 Configure `http.Server` header/read/idle timeouts separately. Request context
 timeouts do not stop handlers or external clients that ignore cancellation.
+Use `context.WithTimeout`, always cancel it, and do not append timeout errors
+after response commitment. The copyable
+[counter request limits](../../examples/counter/policy.go) demonstrate this.
+Other repository examples share
+[application-owned helpers](../../internal/example/server/policy.go); these are
+example code, not framework APIs.
 
 ## Cache and HTMX policy
 
 Session-bearing HTML defaults to `no-store`. Mount static assets outside session
 and CSRF wrappers; do not issue session cookies on public immutable asset
 responses. Cacheable application routes require an explicit cache policy.
+For non-runtime routes, set `Cache-Control: no-store` in application handlers
+before writing; runtime rendering already defaults to no-store.
 
 `httpx.Vary` merges case-insensitively without replacing existing values.
 Representation-dependent responses must vary on all relevant inputs, including

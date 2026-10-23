@@ -1,5 +1,4 @@
-// Package modepicker renders a GET form for choosing theme mode.
-package modepicker
+package ui
 
 import (
 	"context"
@@ -15,16 +14,17 @@ var modeOptions = []components.Option{
 	{Value: "dark", Label: "Dark"},
 }
 
-// Hidden is a query parameter preserved across mode changes.
-type Hidden struct{ Name, Value string }
+// ModePickerField is a query parameter preserved across mode changes.
+type ModePickerField struct{ Name, Value string }
 
-// Form renders a mode select and submit button.
-type Form struct {
+// ModePicker submits a GET form for previewing a theme mode. The application
+// reads the mode query parameter; no preference cookie or CSRF token is needed.
+type ModePicker struct {
 	Mode   theme.Mode
-	Hidden []Hidden
+	Hidden []ModePickerField
 }
 
-func (form Form) RenderHTML(ctx context.Context, out *html.Context) error {
+func (form ModePicker) RenderHTML(ctx context.Context, out *html.Context) error {
 	children := []html.Component{components.Select{
 		ID:      "mode",
 		Name:    "mode",

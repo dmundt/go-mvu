@@ -4,6 +4,11 @@ Notable changes to go-mvu are documented here.
 
 ## Unreleased
 
+### Added
+
+- `ui.ModePicker` for native GET theme previews, with explicit hidden query
+  fields. Promoted from the example-only helper; gallery behavior is unchanged.
+
 ### Changed
 
 - **Breaking:** consolidate `shared` widgets into `components`. Replace
@@ -19,6 +24,9 @@ Notable changes to go-mvu are documented here.
   request IDs, access logging, CORS, HSTS, admission limits, and rate limits.
 - The `middleware.Extension` API and bounded in-memory idempotency/replay
   middleware; use application-owned durable action ledgers when required.
+- `middleware.NewRequestPolicy`, `RequestPolicyOptions`, and `NoStore`;
+  applications own body limits, deadlines, content-type checks, and cache
+  headers. Examples retain these protections using application-owned code.
 
 Applications can compose existing middleware directly with go-mvu handlers.
 Framework-specific CSRF, stream-aware recovery, security headers, request

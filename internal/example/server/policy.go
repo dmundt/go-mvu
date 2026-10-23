@@ -1,4 +1,4 @@
-package middleware
+package server
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func NewRequestPolicy(options RequestPolicyOptions) (func(http.Handler) http.Han
 		return nil, errors.New("request limits must not be negative")
 	}
 	if options.MaxBodyBytes == 0 {
-		options.MaxBodyBytes = maxFormBytes
+		options.MaxBodyBytes = 1 << 20
 	}
 	types := make(map[string]bool, len(options.ContentTypes))
 	for _, contentType := range options.ContentTypes {
@@ -57,7 +57,9 @@ func NewRequestPolicy(options RequestPolicyOptions) (func(http.Handler) http.Han
 				onError(w, r, &httpx.Error{Status: http.StatusRequestEntityTooLarge})
 				return
 			}
-			if unsafeMethod(r.Method) && r.Body != nil && r.Body != http.NoBody && len(types) != 0 {
+			safe := r.Method == http.MethodGet || r.Method == http.MethodHead ||
+				r.Method == http.MethodOptions || r.Method == http.MethodTrace
+			if !safe && r.Body != nil && r.Body != http.NoBody && len(types) != 0 {
 				contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 				if err != nil || !types[contentType] {
 					onError(w, r, &httpx.Error{Status: http.StatusUnsupportedMediaType, Cause: err})

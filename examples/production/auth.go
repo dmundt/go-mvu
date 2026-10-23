@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
 	"github.com/dmundt/go-mvu/httpx"
+	"github.com/dmundt/go-mvu/internal/example/jsonstore"
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/store"
 	"golang.org/x/oauth2"

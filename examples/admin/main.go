@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dmundt/go-mvu/examples/internal/server"
+	"github.com/dmundt/go-mvu/internal/example/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/static"
@@ -88,7 +88,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	mux.Handle("POST "+saveAction.Path, saveHandler(runtime))
 	mux.Handle("POST /theme", preference.Handler("/admin/view"))
-	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
+	policy, err := server.NewRequestPolicy(server.RequestPolicyOptions{
 		MaxBodyBytes: 1 << 20,
 		Timeout:      10 * time.Second,
 		ContentTypes: []string{"application/x-www-form-urlencoded"},
@@ -98,7 +98,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
-	root.Handle("/", middleware.NoStore(
+	root.Handle("/", server.NoStore(
 		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
 	))
 	return middleware.SecurityHeaders(middleware.Recover(policy(root))), nil

@@ -16,21 +16,24 @@ const module = "github.com/dmundt/go-mvu/"
 // allowed lists permitted in-module imports per package (non-test files).
 // Spec: docs/specs/gomvu-chat-spec.md §2.
 var allowed = map[string][]string{
-	"mvu":                {},
-	"html":               {},
-	"store":              {},
-	"theme":              {},
-	"internal/arch":      {},
-	"static":             {},
-	"htmx":               {"html"},
-	"session":            {"store", "httpx"},
-	"validation":         {},
-	"timing":             {},
-	"httpx":              {},
-	"middleware":         {"html", "session", "timing", "httpx"},
-	"components":         {"html", "htmx", "theme"},
-	"ui":                 {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
-	"web":                {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
+	"mvu":                        {},
+	"html":                       {},
+	"store":                      {},
+	"theme":                      {},
+	"internal/arch":              {},
+	"internal/browsertest":       {},
+	"internal/example/jsonstore": {"store"},
+	"internal/example/server":    {"httpx"},
+	"static":                     {},
+	"htmx":                       {"html"},
+	"session":                    {"store", "httpx"},
+	"validation":                 {},
+	"timing":                     {},
+	"httpx":                      {},
+	"middleware":                 {"html", "session", "timing", "httpx"},
+	"components":                 {"html", "htmx", "theme"},
+	"ui":                         {"components", "html", "htmx", "middleware", "static", "theme", "validation", "web"},
+	"web":                        {"mvu", "html", "htmx", "store", "theme", "timing", "httpx"},
 }
 
 func TestPackageBoundaries(t *testing.T) {
@@ -107,8 +110,15 @@ func TestPackageCoverageIncludesNestedAndNewPackages(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	full := filepath.Join(root, "web", "example.go")
+	if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte("package web\nimport _ \""+module+"internal/example/server\"\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	found := packageViolations(root)
-	if len(found) != 3 {
-		t.Fatalf("got %v, want two undeclared packages and one forbidden import", found)
+	if len(found) != 4 {
+		t.Fatalf("got %v, want two undeclared packages, a template import, and an example helper import", found)
 	}
 }

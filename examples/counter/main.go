@@ -117,20 +117,15 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 
-	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
-		MaxBodyBytes: 1 << 20,
-		Timeout:      10 * time.Second,
-	})
-	if err != nil {
-		return nil, err
-	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
-	root.Handle("/", middleware.NoStore(
-		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
-	))
+	private := sessions.Wrap(preference.Wrap(csrf.Wrap(mux)))
+	root.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		private.ServeHTTP(w, r)
+	}))
 	return middleware.SecurityHeaders(
-		diagnostics.Middleware(middleware.Recover(policy(root))),
+		diagnostics.Middleware(middleware.Recover(requestLimits(root, 10*time.Second))),
 	), nil
 }
 
