@@ -56,6 +56,9 @@ test('contact keyboard submit swaps, preserves values, and styles fields', async
   await page.goto(`${contactURL}/contact`);
   const landmark = await page.locator('main').elementHandle();
   const name = page.getByLabel('Your name');
+  await expect(page.getByLabel('Topic')).toHaveValue('');
+  await expect(page.getByLabel('Topic').locator('option[value=""]')).toHaveCount(1);
+  await expect(page.getByLabel('Topic').locator('option:checked')).toHaveText('Choose one');
   await expect(name).toHaveCSS('border-top-style', 'solid');
   await expect(name).toHaveCSS('border-top-width', '1px');
   const inputWidth = await name.evaluate((element) => element.getBoundingClientRect().width);
@@ -74,7 +77,7 @@ test('contact keyboard submit swaps, preserves values, and styles fields', async
   );
   await name.press('Enter');
   expect((await invalidSubmission).headers()['hx-request']).toBe('true');
-  await expect(page.locator('#name-error')).toHaveText('Enter at least two characters.');
+  await expect(page.locator('#name-error')).toHaveText('Enter at least 2 characters.');
   expect(await landmark.evaluate((element) => element.isConnected)).toBe(true);
   await expect(page.locator('#contact-form')).toHaveCount(1);
   await expect(page.getByLabel('Your name')).toHaveValue('A');
@@ -107,7 +110,7 @@ test('contact keyboard submit uses post-redirect-get without JavaScript', async 
     await page.getByLabel('You may reply to my request.').check();
     await page.getByLabel('Your name').press('Enter');
     await expect(page).toHaveURL(`${contactURL}/contact`);
-    await expect(page.locator('#name-error')).toHaveText('Enter at least two characters.');
+    await expect(page.locator('#name-error')).toHaveText('Enter at least 2 characters.');
     await expect(page.getByLabel('Your name')).toHaveValue('A');
 
     await page.getByLabel('Your name').fill('Ada Lovelace');

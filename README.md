@@ -23,6 +23,7 @@ Open <http://localhost:8080> and try the counter.
 
 - [Build your first app](docs/guides/first-app.md)
 - [Try a form with validation](docs/guides/forms.md)
+- [See a small function-based view](examples/contact/view.go)
 - [Build shorter views and lists](docs/guides/components.md#shorter-composition)
 - [Design interactive apps without application JavaScript](docs/guides/interactions.md)
 - [Browse examples](examples/README.md)

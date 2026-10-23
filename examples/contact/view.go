@@ -13,70 +13,70 @@ import (
 
 const contactRegion ui.Region = "contact-form"
 
-type ContactView struct {
-	ui.RegionView[ContactModel]
-	Document ui.Document
-}
-
-func contactContent(
-	_ context.Context, model ContactModel, _ web.RequestContext,
-) (html.Component, error) {
-	return ContactForm{Form: model.Form, Submitted: model.Submitted}, nil
-}
-
-func (view ContactView) Page(
-	ctx context.Context,
-	model ContactModel,
-	request web.RequestContext,
-) (html.Page, error) {
-	content, err := view.Render(ctx, model, request)
-	if err != nil {
-		return nil, err
-	}
-	return view.Document.Page(request, "Contact", components.AppShell{
-		Header: components.Heading{Level: 1, Text: "Contact us"},
-		Main: components.Card{
-			Header: components.Heading{Level: 2, Text: "Send a request"},
-			Body:   content,
+func contactView(document ui.Document) web.ViewFunctions[ContactModel] {
+	return web.ViewFunctions[ContactModel]{
+		PageFunc: func(
+			_ context.Context, model ContactModel, request web.RequestContext,
+		) (html.Page, error) {
+			return document.Page(request, "Contact", components.AppShell{
+				Header: components.Heading{Level: 1, Text: "Contact us"},
+				Main: components.Card{
+					Header: components.Heading{Level: 2, Text: "Send a request"},
+					Body:   contactRegion.Wrap(contactBody(model)),
+				},
+			}), nil
 		},
-	}), nil
+		FragmentFunc: func(
+			_ context.Context, name string, model ContactModel, _ web.RequestContext,
+		) (html.Fragment, error) {
+			return contactRegion.Select(name, contactBody(model))
+		},
+	}
 }
 
-type ContactForm struct {
-	Form      validation.Form[ContactDetails]
-	Submitted bool
-}
-
-func (view ContactForm) RenderHTML(ctx context.Context, out *html.Context) error {
-	if view.Submitted {
-		out.Component(ctx, components.Column(
+func contactBody(model ContactModel) html.Component {
+	if model.Submitted {
+		return components.Column(
 			components.Heading{Level: 2, Text: "Request received"},
 			components.Paragraph("Thanks. We'll get back to you soon."),
-		))
-		return out.Err()
+		)
 	}
-
-	out.Component(ctx, ui.Form{
+	return ui.Form{
 		Action: submitContact.HTMX(),
 		Attrs:  html.Attrs{html.A("class", "contact-form")},
-		Body:   components.FormLayout(contactFields(view.Form)...),
-	})
-	return out.Err()
+		Body:   components.FormLayout(contactFields(model.Form)...),
+	}
 }
 
 func contactFields(form validation.Form[ContactDetails]) []html.Component {
 	details := form.Value
 	fields := ui.Fields(form.Errors)
 	return []html.Component{
-		fields.Text(nameField, "Your name", details.Name, true),
-		fields.Email(emailField, "Email address", details.Email, true),
-		fields.Text(companyField, "Company (optional)", details.Company, false),
-		fields.Select(components.Select{
-			Name:     topicField,
-			Label:    "Topic",
-			Value:    details.Topic,
-			Options:  append([]components.Option{{Label: "Choose one"}}, contactTopics()...),
+		fields.Input(components.Input{
+			Name:     nameField,
+			Label:    "Your name",
+			Value:    details.Name,
 			Required: true,
+		}),
+		fields.Input(components.Input{
+			Name:     emailField,
+			Label:    "Email address",
+			Type:     "email",
+			Value:    details.Email,
+			Required: true,
+		}),
+		fields.Input(components.Input{
+			Name:  companyField,
+			Label: "Company (optional)",
+			Value: details.Company,
+		}),
+		fields.Select(components.Select{
+			Name:        topicField,
+			Label:       "Topic",
+			Value:       details.Topic,
+			Placeholder: "Choose one",
+			Options:     contactTopics(),
+			Required:    true,
 		}),
 		fields.Textarea(components.Textarea{
 			Name:     messageField,

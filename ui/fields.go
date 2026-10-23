@@ -7,6 +7,7 @@ import (
 
 // Fields attaches errors by explicit control name. Values and validation rules
 // remain application-owned; no reflection or request binding is performed.
+// All methods replace the supplied Error, clearing it when no error matches.
 type Fields validation.Errors
 
 func (fields Fields) Text(name, label, value string, required bool) components.Input {

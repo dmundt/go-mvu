@@ -2,7 +2,7 @@
 type: Guide
 title: Forms
 description: Build typed forms with explicit decoding, validation, and errors.
-version: 3
+version: 4
 ---
 
 # Forms
@@ -54,8 +54,13 @@ fields := ui.Fields(form.Errors)
 body := ui.Form{
 	Action: submit.HTMX(),
 	Body: components.FormLayout(
-		fields.Text("name", "Your name", form.Value.Name, true),
-		fields.Email("email", "Email address", form.Value.Email, true),
+		fields.Input(components.Input{
+			Name: "name", Label: "Your name", Value: form.Value.Name, Required: true,
+		}),
+		fields.Input(components.Input{
+			Name: "email", Label: "Email address", Type: "email",
+			Value: form.Value.Email, Required: true,
+		}),
 		components.Button{Type: components.ButtonSubmit, Label: "Send"},
 	),
 }
@@ -89,6 +94,26 @@ and replace their `Error` with the matching form error. All other properties
 remain unchanged. No values or validation rules are inferred. Use the
 returned concrete component to customize autocomplete, hints, or attributes.
 
+**Error replacement is unconditional:** no matching error clears any supplied
+`Error`. Use named `Input` fields when positional strings or a required
+boolean make the convenience calls harder to read. `Text` and `Email`
+remain supported; no extra required/optional helper family is needed.
+
+`Select.Placeholder` prepends an escaped, selectable empty-value option:
+
+```go
+fields.Select(components.Select{
+	Name: "topic", Label: "Topic", Value: form.Value.Topic,
+	Placeholder: "Choose one", Options: contactTopics(), Required: true,
+})
+```
+
+The placeholder is selected when `Value` is empty. A nonempty value selects
+its matching option. Do not also supply an empty-value option in `Options`;
+that conflict returns an error before rendering. Without `Placeholder`,
+existing option rendering is unchanged. Server validation must still reject
+an empty required value.
+
 ## Share field facts, not a binding schema
 
 The contact example keeps field names, consent value, message-length limits,
@@ -100,7 +125,8 @@ server validation; browser checks are never sufficient.
 
 This is application-owned data, not automatic binding or reflection.
 Validation boundary tests cover accepted choices, rejected placeholders,
-and exact minimum/maximum lengths.
+and exact minimum/maximum lengths. The name error message is formatted from
+the same minimum-length constant used for validation.
 
 The contact example is a learning app: requests are kept in memory for each
 visitor and are not sent or stored as real support tickets. See

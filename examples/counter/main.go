@@ -64,12 +64,16 @@ func newHandler(secret []byte) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
+	if err := document.Validate(); err != nil {
+		return nil, err
+	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
 		App:   CounterApp{},
 		Store: store.NewMemory[string, CounterModel](),
 		Keys:  web.KeyResolverFunc[string](sessionKey),
 		View: CounterView{
-			Document: ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true},
+			Document: document,
 			RegionView: ui.RegionView[CounterModel]{
 				Region: counterRegion, Content: counterContent,
 			},

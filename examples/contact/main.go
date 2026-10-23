@@ -52,16 +52,15 @@ func newHandler(secret []byte) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	document := ui.Document{HTMX: true, CSRF: true}
+	if err := document.Validate(); err != nil {
+		return nil, err
+	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, ContactModel, ContactMessage]{
 		App:   ContactApp{},
 		Store: store.NewMemory[string, ContactModel](),
 		Keys:  web.KeyResolverFunc[string](sessionKey),
-		View: ContactView{
-			Document: ui.Document{HTMX: true, CSRF: true},
-			RegionView: ui.RegionView[ContactModel]{
-				Region: contactRegion, Content: contactContent,
-			},
-		},
+		View:  contactView(document),
 		Theme: contactTheme{},
 	})
 	if err != nil {

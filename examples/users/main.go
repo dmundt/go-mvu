@@ -67,8 +67,12 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	directory := syntheticUsers(42)
+	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
+	if err := document.Validate(); err != nil {
+		return nil, err
+	}
 	view := UsersView{
-		Document: ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true},
+		Document: document,
 		RegionView: ui.RegionView[UsersModel]{
 			Region: usersRegion, Content: usersContent,
 		},

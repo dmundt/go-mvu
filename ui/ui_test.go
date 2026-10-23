@@ -166,7 +166,7 @@ func TestDocumentAppliesExplicitPolicyAndRequestAppearance(t *testing.T) {
 			}
 		}
 	})
-	plain := render(t, Document{SwapValidationErrors: true}.Page(
+	plain := render(t, Document{}.Page(
 		web.RequestContext{}, "Plain", components.Text("body"),
 	))
 	for _, absent := range []string{"<script", "hx-headers", "htmx-config"} {
