@@ -101,6 +101,18 @@ sequenceDiagram
 - Sticky first error; no writes after failure.
 - One allocation per render (context); see [benchmarks](guides/benchmarks.md).
 - Composition via struct fields and slots (`Body`, `Header`, `Children`).
+- Application views compose semantic components. Generic HTML and direct
+  streaming stay inside named low-level components or explicit demos;
+  framework component implementations can stream without a builder.
+- `internal/arch/authoring_test.go` type-checks production example files and
+  rejects low-level HTML APIs outside two named demo files. It permits
+  `Context.Component`, `Components`, `Err`, `Fail` for composition adapters.
+- Package checks recursively discover production Go files (excluding examples,
+  benchmarks, testdata and dependency/hidden directories); undeclared packages
+  fail, including new subpackages. Theme adapters declare their own boundaries.
+- Shared `html.Component` contract remains; no new UI language, virtual DOM,
+  package relocation or compulsory rendering layer. See
+  [ADR-0018](adr/0018-ui-authoring-boundaries.md).
 
 ## Themes
 

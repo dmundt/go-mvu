@@ -14,9 +14,12 @@ type UserCard struct {
 }
 
 func (card UserCard) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<article class="card user-card">`)
-	out.Component(ctx, components.Heading{Level: 2, Text: card.Name})
-	out.Component(ctx, components.Paragraph(card.Email))
-	out.Static(`</article>`)
+	out.Component(ctx, components.Card{
+		Attrs: html.Attrs{html.A("class", "user-card")},
+		Body: components.Stack{Children: []html.Component{
+			components.Heading{Level: 2, Text: card.Name},
+			components.Paragraph(card.Email),
+		}},
+	})
 	return out.Err()
 }

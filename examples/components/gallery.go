@@ -41,28 +41,28 @@ type gallery struct {
 }
 
 func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
-	out.Static(`<main>`)
-	out.Component(ctx, components.Heading{Level: 1, Text: "Component gallery"})
-	out.Component(ctx, themepicker.Form{
-		Theme:  view.Theme,
-		Mode:   view.Mode,
-		Hidden: []themepicker.Hidden{{Name: "tab", Value: view.Tab.ID}},
-	})
-	out.Component(ctx, components.Stack{Gap: "1.5rem", Children: []html.Component{
-		stats(),
-		components.Grid{Columns: 2, Gap: "1.5rem", Children: []html.Component{
-			view.tabsCard(),
-			accordionCard(),
-			overlaysCard(),
-			avatarsCard(),
-			feedbackCard(),
-			formCard(),
-			stepsCard(),
-			emptyCard(),
-			mixedCard(),
+	out.Component(ctx, components.Main{Children: []html.Component{
+		components.Heading{Level: 1, Text: "Component gallery"},
+		themepicker.Form{
+			Theme:  view.Theme,
+			Mode:   view.Mode,
+			Hidden: []themepicker.Hidden{{Name: "tab", Value: view.Tab.ID}},
+		},
+		components.Stack{Gap: "1.5rem", Children: []html.Component{
+			stats(),
+			components.Grid{Columns: 2, Gap: "1.5rem", Children: []html.Component{
+				view.tabsCard(),
+				accordionCard(),
+				overlaysCard(),
+				avatarsCard(),
+				feedbackCard(),
+				formCard(),
+				stepsCard(),
+				emptyCard(),
+				mixedCard(),
+			}},
 		}},
 	}})
-	out.Static(`</main>`)
 	return out.Err()
 }
 
@@ -228,28 +228,6 @@ func emptyCard() html.Component {
 		Description: "Create a project to start tracking work.",
 		Action:      components.Button{Label: "New project", Variant: components.ButtonPrimary},
 	})
-}
-
-// mixedCard combines high-level components with the html.El builder and
-// passes extra attributes to components through Attrs.
-func mixedCard() html.Component {
-	release := html.El("p", nil,
-		html.Text("Released "),
-		html.El("time", html.Attrs{html.A("datetime", "2025-01-15")}, html.Text("Jan 15")),
-		html.Text(" after "),
-		html.El("abbr", html.Attrs{html.A("title", "Continuous integration")}, html.Text("CI")),
-		html.Text(" passed."),
-	)
-	badge := components.Badge{
-		Kind:  "success",
-		Label: "Stable",
-		Attrs: html.Attrs{html.A("title", "No open incidents"), html.A("data-channel", "stable")},
-	}
-	return card("Mixing levels", release, inline(badge, components.Button{
-		Label:   "Release notes",
-		Variant: components.ButtonGhost,
-		Attrs:   html.Attrs{html.A("aria-describedby", "save-tip")},
-	}))
 }
 
 func card(title string, body ...html.Component) html.Component {

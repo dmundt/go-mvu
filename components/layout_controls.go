@@ -15,6 +15,25 @@ type NavigationItem = NavItem
 // BreadcrumbItem is the spec name for Breadcrumb.
 type BreadcrumbItem = Breadcrumb
 
+// Section groups related content. Include a heading or an accessible name
+// when the section should be exposed as a landmark.
+type Section struct {
+	ID       string
+	Children []html.Component
+	Attrs    html.Attrs
+}
+
+func (section Section) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Static("<section")
+	optionalAttribute(out, "id", section.ID)
+	out.Class("", section.Attrs)
+	out.PassAttrs(section.Attrs, when(section.ID, "id"))
+	out.Static(">")
+	out.Components(ctx, section.Children)
+	out.Static("</section>")
+	return out.Err()
+}
+
 // Header renders a <header> landmark. Use inside Shell slots or standalone.
 type Header struct {
 	Children []html.Component

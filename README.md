@@ -103,10 +103,8 @@ type Greeting struct {
 	Name string
 }
 
-func (g Greeting) RenderHTML(_ context.Context, out *html.Context) error {
-	out.Static("<p>Hello, ")
-	out.Text(g.Name)
-	out.Static("</p>")
+func (g Greeting) RenderHTML(ctx context.Context, out *html.Context) error {
+	out.Component(ctx, components.Paragraph("Hello, "+g.Name))
 	return out.Err()
 }
 ```
@@ -115,14 +113,20 @@ func (g Greeting) RenderHTML(_ context.Context, out *html.Context) error {
   `Trusted(TrustStatic(...))`: audited server HTML only.
 - Sticky first error; return `out.Err()`.
 - Slots = `html.Component` fields (`Header`, `Body`, `Footer`, `Children`).
-- Prefer primitives (`Button`, `Heading`, `Paragraph`, `Form`, `TableRow`)
+- Prefer primitives (`Button`, `Heading`, `Paragraph`, `Section`, `Form`, `TableRow`)
   over raw tags. Guide: [components](docs/guides/components.md).
 - No component fits? `html.El("time", html.Attrs{html.A("datetime", d)},
-  html.Text(label))`: typed, escaped, allowlisted. Mixes with components.
-- Extra attributes on any component: `Attrs: html.Attrs{html.A("class",
+  html.Text(label))`: typed, escaped, allowlisted. Encapsulate it in a named
+  low-level component; ordinary views stay composition-only. Direct streaming
+  remains supported inside framework primitives and low-level components.
+- Extra attributes on root-bearing struct components: `Attrs: html.Attrs{html.A("class",
   "wide"), html.A("hx-get", "/stats")}`. Class merges; owned names win;
   `on*`, `style`, `javascript:` rejected. ADR
   [0017](docs/adr/0017-element-builder-and-attrs.md).
+- Authoring policy and scoped enforcement:
+  [ADR-0018](docs/adr/0018-ui-authoring-boundaries.md).
+  `Document`, `Paragraph`, `HeaderRow` and rootless helpers are explicit
+  `Attrs` exceptions; see [guide](docs/guides/components.md#attribute-passthrough).
 
 ## HTMX enhancement and no-HTMX fallback
 

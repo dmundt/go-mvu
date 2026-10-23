@@ -21,7 +21,9 @@ Two gaps between high-level components and low-level `html.Context` code:
   `html.ValidateURL`) for builder and passthrough. Rejects event handlers,
   `style`, `srcdoc`, htmx JavaScript evaluation (`hx-on*`, `hx-vars`,
   `js:` values, trigger filters), unsafe URL schemes, active tags.
-- Every `components` and `shared` component gets `Attrs html.Attrs`.
+- Root-bearing struct components generally get `Attrs html.Attrs`.
+  `Document`, string/slice conveniences and rootless helpers are exceptions;
+  see [guide](../guides/components.md#attribute-passthrough).
   `class` merges; component-owned names win and are skipped.
 - `Context.Class`, `ExtraClass`, `PassAttrs` let custom components do the
   same. `htmx.Action.Attrs()` bridges actions to `El`.
@@ -30,7 +32,9 @@ Two gaps between high-level components and low-level `html.Context` code:
 
 ## Consequences
 
-- High-level and low-level code mix without dropping to raw strings.
+- High-level and low-level code interoperate without dropping to raw strings.
+  [ADR-0018](0018-ui-authoring-boundaries.md) defines preferred authoring
+  separation without removing interoperability.
 - Silent skip of owned names can hide a mistake (`type` on `Button`);
   documented, tested.
 - Allowlist is syntactic. It blocks script execution vectors, not

@@ -58,7 +58,7 @@ func TestGalleryTabsPreserveThemeAndSelectPanel(t *testing.T) {
 	for _, expected := range []string{
 		`href="?mode=dark&amp;tab=activity&amp;theme=bulma" aria-current="page"`,
 		`aria-labelledby="gallery-tabs-tab-activity"`,
-		`<input type="hidden" name="tab" value="activity">`,
+		`<input class="input" id="tab" name="tab" type="hidden" value="activity">`,
 		"Three deployments finished today.",
 	} {
 		if !strings.Contains(content, expected) {

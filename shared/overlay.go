@@ -173,18 +173,16 @@ func (dialog Dialog) RenderHTML(ctx context.Context, out *html.Context) error {
 	if dialog.Title == "" || dialog.TriggerLabel == "" {
 		return errors.New("shared: dialog requires title and trigger label")
 	}
-	if err := validButtonVariant(dialog.TriggerVariant); err != nil {
-		return err
-	}
 	closeLabel := dialog.CloseLabel
 	if closeLabel == "" {
 		closeLabel = "Close"
 	}
-	buttonOpen(out, dialog.TriggerVariant)
-	attr(out, "popovertarget", dialog.ID)
-	out.Static(">")
-	out.Text(dialog.TriggerLabel)
-	out.Static(`</button><div class="dialog`)
+	out.Component(ctx, components.Button{
+		Label:   dialog.TriggerLabel,
+		Variant: dialog.TriggerVariant,
+		Attrs:   html.Attrs{html.A("popovertarget", dialog.ID)},
+	})
+	out.Static(`<div class="dialog`)
 	out.ExtraClass(dialog.Attrs)
 	out.Static(`" popover role="dialog"`)
 	attr(out, "id", dialog.ID)
@@ -266,7 +264,7 @@ type Tooltip struct {
 	Attrs html.Attrs
 }
 
-func (tooltip Tooltip) RenderHTML(_ context.Context, out *html.Context) error {
+func (tooltip Tooltip) RenderHTML(ctx context.Context, out *html.Context) error {
 	if err := validID(tooltip.ID); err != nil {
 		return err
 	}
@@ -278,34 +276,15 @@ func (tooltip Tooltip) RenderHTML(_ context.Context, out *html.Context) error {
 	out.Static(`"`)
 	out.PassAttrs(tooltip.Attrs)
 	out.Static(">")
-	buttonOpen(out, components.ButtonSecondary)
-	attr(out, "aria-describedby", tooltip.ID)
-	out.Static(">")
-	out.Text(tooltip.Label)
-	out.Static(`</button><span class="tip__content" role="tooltip"`)
+	out.Component(ctx, components.Button{
+		Label:   tooltip.Label,
+		Variant: components.ButtonSecondary,
+		Attrs:   html.Attrs{html.A("aria-describedby", tooltip.ID)},
+	})
+	out.Static(`<span class="tip__content" role="tooltip"`)
 	attr(out, "id", tooltip.ID)
 	out.Static(">")
 	out.Text(tooltip.Content)
 	out.Static("</span></span>")
 	return out.Err()
-}
-
-func validButtonVariant(variant components.ButtonVariant) error {
-	switch variant {
-	case "", components.ButtonPrimary, components.ButtonSecondary, components.ButtonDanger, components.ButtonGhost:
-		return nil
-	default:
-		return fmt.Errorf("shared: invalid button variant %q", variant)
-	}
-}
-
-// buttonOpen writes an unterminated button start tag so callers can add
-// attributes before closing it.
-func buttonOpen(out *html.Context, variant components.ButtonVariant) {
-	out.Static(`<button type="button" class="button`)
-	if variant != "" {
-		out.Static(" button--")
-		out.Static(string(variant))
-	}
-	out.Static(`"`)
 }

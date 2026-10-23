@@ -1,6 +1,14 @@
 # Example rules
 
 - Demonstrate public framework APIs and keep examples runnable using `go run`.
+- Ordinary example files compose `components`, `shared`, and application
+  components. Context calls: `Component`, `Components`, `Err`, `Fail` only;
+  no `html.El`, `Element`, `ComponentFunc`, raw/trusted output, or writers.
+- Explicit low-level demos live only in `themes/lowlevel.go` and
+  `components/lowlevel.go`, declared in `internal/arch/authoring_test.go`.
+  Do not add an exception to avoid composing an existing semantic component.
+- Prefer typed properties over `Attrs`; use `Attrs` for genuine extensions,
+  not to reimplement layout classes or override owned names.
 - Preserve full-page navigation alongside HTMX fragments. Use page/fragment
   writers for HTML content type and report rendering failures.
 - Tables must be visibly styled by the selected theme, including plain
