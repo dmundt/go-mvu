@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 5
+version: 6
 ---
 
 # Architecture
@@ -21,7 +21,7 @@ CSS inlined in `<style>`. Source of truth:
 | `htmx` | typed `Action` attrs, `Request` metadata, response headers |
 | `store` | `Snapshot[M]` (`Version`), `Load`/`Create`/`CompareAndSwap`, memory store |
 | `session` | signed opaque session ID → model key |
-| `theme` | `Theme` (inline CSS), `Mode` system/light/dark, signed `Preference` cookie, adapters |
+| `theme` | `Theme` (inline CSS), `Mode` system/light/dark, signed `Preference` cookie |
 | `validation` | explicit field errors, no reflection |
 | `components` | optional layout, controls, forms, tables, pagination, switcher |
 | `shared` | optional native-HTML widgets (accordion, tabs, dialog, …) |
@@ -155,7 +155,7 @@ appending a replacement body. HTTP failure after CAS does not undo persistence.
   Browser-server Go tests are test infrastructure, not production views.
 - Package checks recursively discover production Go files (excluding examples,
   benchmarks, testdata and dependency/hidden directories); undeclared packages
-  fail, including new subpackages. Theme adapters declare their own boundaries.
+  fail, including new subpackages.
 - Shared `html.Component` contract remains; no new UI language, virtual DOM,
   package relocation or compulsory rendering layer. See
   [ADR-0018](adr/0018-ui-authoring-boundaries.md).
@@ -164,7 +164,7 @@ appending a replacement body. HTTP failure after CAS does not undo persistence.
 
 - `Theme.CSS()` inlined by `Document`. Mode → `data-theme`.
 - `system` resolved by CSS media query; no JS.
-- Adapters (Bootstrap, Bulma, Pico) built offline into `framework.css`.
+- Default design system CSS is embedded in the `theme` package.
   See [themes](guides/themes.md).
 
 ## Constraints

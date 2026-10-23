@@ -6,7 +6,7 @@ const usersURL = `http://127.0.0.1:${basePort + 1}`;
 const themesURL = `http://127.0.0.1:${basePort + 2}`;
 const componentsURL = `http://127.0.0.1:${basePort + 3}`;
 const contactURL = `http://127.0.0.1:${basePort + 4}`;
-const themes = ['default', 'bootstrap', 'bulma', 'pico'];
+const themes = ['default'];
 
 async function expectNoPageOverflow(page) {
   expect(await page.evaluate(() =>
@@ -187,10 +187,11 @@ async function expectVisibleFocus(locator) {
 for (const theme of themes) {
   test(`${theme}: keyboard navigation, activation, dismissal, and focus`, async ({ page }, testInfo) => {
     await page.goto(`${componentsURL}/?theme=${theme}&mode=${testInfo.project.use.colorScheme}`);
-    const framework = page.getByRole('combobox', { name: 'CSS framework', exact: true });
-    await framework.focus();
+    const mode = page.getByRole('combobox', { name: 'Mode', exact: true });
+    await mode.focus();
+    await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Tab');
-    await expectVisibleFocus(page.getByRole('combobox', { name: 'Mode', exact: true }));
+    await expectVisibleFocus(mode);
     await page.keyboard.press('Tab');
     await expectVisibleFocus(page.getByRole('button', { name: 'Apply theme', exact: true }));
 
@@ -296,15 +297,13 @@ for (const theme of themes) {
     await expect(page.getByRole('tooltip')).toBeVisible();
     await expectNoPageOverflow(page);
 
-    const nextTheme = themes[(themes.indexOf(theme) + 1) % themes.length];
     const nextMode = mode === 'dark' ? 'light' : 'dark';
-    await page.getByLabel('CSS framework').selectOption(nextTheme);
     await page.getByLabel('Mode', { exact: true }).selectOption(nextMode);
     await page.getByRole('button', { name: 'Apply theme' }).click();
     await expect(page).toHaveURL(
-      `${componentsURL}/?theme=${nextTheme}&mode=${nextMode}&tab=activity`,
+      `${componentsURL}/?mode=${nextMode}&tab=activity`,
     );
-    await expect(page.locator('html')).toHaveAttribute('data-theme-name', nextTheme);
+    await expect(page.locator('html')).toHaveAttribute('data-theme-name', 'default');
     await expect(page.locator('html')).toHaveAttribute('data-theme', nextMode);
     await expect(page.locator('#gallery-tabs-panel')).toContainText('Three deployments');
 

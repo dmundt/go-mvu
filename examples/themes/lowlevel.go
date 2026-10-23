@@ -6,7 +6,7 @@ import (
 	"github.com/dmundt/go-mvu/html"
 )
 
-// Explicit low-level demo: class-free semantic HTML is styled by every theme.
+// Explicit low-level demo: class-free semantic HTML uses default theme styles.
 // Keep direct markup here, not in the gallery's application composition.
 var usersTable = html.ComponentFunc(func(_ context.Context, out *html.Context) error {
 	out.Static(`<table><caption>Users</caption>`)

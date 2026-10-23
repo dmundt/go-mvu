@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 8
+version: 9
 ---
 
 # Specs
@@ -46,6 +46,13 @@ version: 8
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+The framework now bundles only the Open Props default theme; application-owned
+themes still implement `theme.Theme`. Bootstrap, Bulma, and Pico adapters are
+removed. Trusted-proxy, compression, locale-negotiation, and traceparent
+middleware are no longer shipped. HSTS uses direct TLS only; deployments own
+trusted-edge policies. See [ADR-0022](../adr/0022-default-theme-and-deployment-boundaries.md)
+and [middleware](../guides/middleware.md).
 
 Additional learning examples: [hello](../../examples/hello/) uses only
 document composition and an HTTP page writer; [admin](../../examples/admin/)

@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
+	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
 	"github.com/dmundt/go-mvu/static"
@@ -31,43 +33,46 @@ type service struct {
 }
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	dataDir := os.Getenv("GOMVU_DATA_DIR")
 	if dataDir == "" {
 		dataDir = "data"
 	}
 	app, err := newService(dataDir)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	defer func() {
-		if err := app.store.Close(); err != nil {
-			log.Printf("close durable store: %v", err)
-		}
-	}()
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	go app.worker.Run(ctx, app.wakes)
-
-	server := &http.Server{
-		Addr:              "localhost:8084",
-		Handler:           app.handler,
-		ReadHeaderTimeout: 5 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
+	workerCtx, stopWorker := context.WithCancel(context.Background())
+	defer stopWorker()
+	workerDone := make(chan struct{})
 	go func() {
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			log.Printf("shutdown server: %v", err)
-		}
+		defer close(workerDone)
+		app.worker.Run(workerCtx, app.wakes)
 	}()
 
-	log.Printf("durable counter listening on http://%s (data: %s)", server.Addr, dataDir)
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatal(err)
-	}
+	httpServer := server.New("localhost:8084", app.handler)
+	log.Printf("durable counter listening on http://%s (data: %s)", httpServer.Addr, dataDir)
+	return server.Run(ctx, server.Config{
+		Server:          httpServer,
+		ShutdownTimeout: 5 * time.Second,
+		Drain: []func(context.Context) error{func(ctx context.Context) error {
+			stopWorker()
+			select {
+			case <-workerDone:
+				return nil
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}},
+		Dependencies: []io.Closer{app.store},
+	})
 }
 
 func newService(dataDir string) (*service, error) {
@@ -99,7 +104,7 @@ func newService(dataDir string) (*service, error) {
 	}
 	sink, err := NewFileSink(filepath.Join(dataDir, "delivered"))
 	if err != nil {
-		return nil, err
+		return nil, closeStoreAfterError(modelStore, err)
 	}
 	wakes := make(chan string, 64)
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
@@ -117,8 +122,7 @@ func newService(dataDir string) (*service, error) {
 		Themes: preference,
 	})
 	if err != nil {
-		modelStore.Close()
-		return nil, fmt.Errorf("create web runtime: %w", err)
+		return nil, closeStoreAfterError(modelStore, fmt.Errorf("create web runtime: %w", err))
 	}
 
 	mux := http.NewServeMux()
@@ -143,8 +147,7 @@ func newService(dataDir string) (*service, error) {
 		Timeout:      10 * time.Second,
 	})
 	if err != nil {
-		modelStore.Close()
-		return nil, fmt.Errorf("create request policy: %w", err)
+		return nil, closeStoreAfterError(modelStore, fmt.Errorf("create request policy: %w", err))
 	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
@@ -162,6 +165,13 @@ func newService(dataDir string) (*service, error) {
 		worker:  &outboxWorker{store: modelStore, sink: sink},
 		wakes:   wakes,
 	}, nil
+}
+
+func closeStoreAfterError(modelStore *jsonstore.Store[CounterModel], cause error) error {
+	if err := modelStore.Close(); err != nil {
+		return errors.Join(cause, fmt.Errorf("close durable store: %w", err))
+	}
+	return cause
 }
 
 func loadSecret(path string) ([]byte, error) {

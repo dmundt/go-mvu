@@ -2,12 +2,15 @@
 type: Architecture Decision Record
 title: "ADR-0010: Separate shared UI components from core components"
 description: Separate shared UI components from the core component package.
-version: 1
+version: 2
 ---
 
 # ADR-0010: Separate shared UI components from core components
 
 - Status: Accepted
+
+Bundled-adapter support superseded by
+[ADR-0022](0022-default-theme-and-deployment-boundaries.md).
 
 ## Context
 
@@ -23,8 +26,7 @@ with client JS. Framework forbids app JS; core `components` must stay small.
 - Struct props, `RenderHTML`, sticky errors; same contract as `components`.
 - Validate IDs, URLs (relative/http/https; explicit extras), variants, ranges;
   invalid input returns error, not markup.
-- Styles in `theme/default/shared.css`, embedded into `DefaultTheme`; adapters inherit.
-  Vendor conflicts fixed in `theme/<adapter>/adapter.css`.
+- Styles in `theme/default/shared.css`, embedded into `DefaultTheme`.
 - Class names avoid vendor collisions (`tabset`, `tip`, `progress-field`).
 
 ## Consequences
@@ -35,4 +37,4 @@ with client JS. Framework forbids app JS; core `components` must stay small.
   an auto popover with native Escape and light-dismiss behavior.
 - `popover` needs current browsers.
 - New widget: semantic HTML first, CSS in `theme/default/shared.css`, gallery entry,
-  tests, adapter browser check.
+  tests and browser check.

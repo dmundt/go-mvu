@@ -2,7 +2,7 @@
 type: Architecture Decision Index
 title: Architecture Decision Records
 description: Links to accepted architecture decisions.
-version: 1
+version: 2
 ---
 
 # Architecture Decision Records
@@ -31,3 +31,4 @@ version: 1
 * [ADR-0019](0019-http-policy-and-runtime-reliability.md) - define HTTP policies and reliable transition outcomes.
 * [ADR-0020](0020-optional-production-integrations.md) - example-only JSON persistence and OIDC application wiring.
 * [ADR-0021](0021-concise-ui-composition.md) - concise layout, page, form, region, and field composition.
+* [ADR-0022](0022-default-theme-and-deployment-boundaries.md) - one bundled theme and explicit deployment boundaries.

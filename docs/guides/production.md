@@ -2,7 +2,7 @@
 type: Guide
 title: Deploy a durable authenticated application
 description: Connect example JSON file persistence, generic OIDC, middleware, and single-host operations.
-version: 1
+version: 2
 ---
 
 # Deploy a durable authenticated application
@@ -85,10 +85,9 @@ Key-table saturation is 503. Per-process limits reset on restart and allow
 boundary bursts. Behind a proxy, peer identity is the proxy, not the browser.
 
 Use gateway/WAF controls for login attacks and distributed/global quotas.
-If resolving forwarded clients in an application, configure `TrustedProxies`
-with explicit trusted prefixes before using `ClientFromContext`; never trust
-arbitrary `X-Forwarded-For`. Tune quotas and admission limits from measured
-traffic; do not silently turn a full limiter table into unrestricted access.
+Configure trusted forwarding at the deployment edge; never trust arbitrary
+`X-Forwarded-For`. Tune quotas and admission limits from measured traffic; do
+not silently turn a full limiter table into unrestricted access.
 
 ## 5. Operate durable storage
 

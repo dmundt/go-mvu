@@ -1,4 +1,4 @@
-// Command themes serves one set of framework components in every bundled theme.
+// Command themes demonstrates the default theme in each color mode.
 package main
 
 import (
@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/examples/internal/themepicker"
+	"github.com/dmundt/go-mvu/examples/internal/modepicker"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
@@ -21,17 +21,11 @@ func main() {
 func newHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query()
-		selected, err := themepicker.Lookup(query.Get("theme"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 		mode := theme.Parse(query.Get("mode"))
 		document := components.Document{
-			Title: "Theme gallery",
-			Theme: selected,
+			Title: "Default theme modes",
 			Mode:  mode,
-			Body:  gallery{Theme: selected.Name(), Mode: mode},
+			Body:  gallery{Mode: mode},
 		}
 		if err := web.WritePage(r.Context(), w, http.StatusOK, document); err != nil {
 			log.Printf("render theme gallery: %v", err)
@@ -40,14 +34,13 @@ func newHandler() http.Handler {
 }
 
 type gallery struct {
-	Theme string
-	Mode  theme.Mode
+	Mode theme.Mode
 }
 
 func (view gallery) RenderHTML(ctx context.Context, out *html.Context) error {
 	out.Component(ctx, components.Main{Children: []html.Component{
-		components.Heading{Level: 1, Text: "Theme gallery"},
-		themepicker.Form{Theme: view.Theme, Mode: view.Mode},
+		components.Heading{Level: 1, Text: "Default theme modes"},
+		modepicker.Form{Mode: view.Mode},
 		components.Stack{Children: []html.Component{
 			buttonCard(),
 			components.Alert{

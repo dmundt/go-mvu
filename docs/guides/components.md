@@ -352,7 +352,7 @@ shared.Dialog{
 ```
 
 - Invalid IDs, URLs, variants, ranges → render error.
-- Styles: `theme/default/shared.css`, included in every theme.
+- Styles: `theme/default/shared.css`, embedded in the default theme.
 - `Tabs` are labelled navigation links with `aria-current`, not scripted ARIA
   tabs; browser link keyboard behavior and full-page fallback remain native.
 - `Tooltip` uses an auto popover tied to its button with `aria-describedby`;

@@ -2,7 +2,7 @@
 type: Engineering Summary
 title: Engineering summary
 description: Project direction, implementation status, and technical summary.
-version: 2
+version: 3
 ---
 
 # Engineering Summary
@@ -38,7 +38,7 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 | --- | --- |
 | `mvu`, `html`, `htmx`, `store`, `session`, `validation` | done, tested |
 | `web` runtime: RequestContext, ThemeResolver, CommandRunner, RenderAuto | done, tested |
-| `theme`: tokens, system mode, signed preference, 3 adapters | done; Go + node tests |
+| `theme`: default tokens, system mode, signed preference | done; Go + node tests |
 | `components`, `shared` | done; gallery example |
 | `middleware`: CSP, CSRF, recover, request ID, logging | done, tested |
 | `static`: local HTMX 2.0.4 + SRI | done |
@@ -63,7 +63,7 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 - New abstraction only for concrete HTML/HTMX need.
 - New package → allowlist in `internal/arch` + architecture doc.
 - New hot-path component → benchmark.
-- New theme → system variant + `npm run test:themes`.
+- Default-theme CSS changes → computed-style browser checks + `npm run test:themes`.
 
 ## Related
 

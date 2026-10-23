@@ -5,8 +5,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/dmundt/go-mvu/examples/internal/themepicker"
 )
 
 func get(target string) *httptest.ResponseRecorder {
@@ -25,38 +23,36 @@ var componentMarkers = []string{
 	`class="stat"`, `class="steps"`,
 }
 
-func TestGalleryRendersSharedComponentsInEveryThemeAndMode(t *testing.T) {
-	for _, name := range themepicker.Names {
-		for _, mode := range []string{"system", "light", "dark"} {
-			t.Run(name+"/"+mode, func(t *testing.T) {
-				response := get("/?theme=" + name + "&mode=" + mode)
-				if response.Code != http.StatusOK {
-					t.Fatalf("status = %d: %s", response.Code, response.Body)
+func TestGalleryRendersSharedComponentsInEveryMode(t *testing.T) {
+	for _, mode := range []string{"system", "light", "dark"} {
+		t.Run(mode, func(t *testing.T) {
+			response := get("/?mode=" + mode)
+			if response.Code != http.StatusOK {
+				t.Fatalf("status = %d: %s", response.Code, response.Body)
+			}
+			content := response.Body.String()
+			expected := append([]string{
+				`data-theme="` + mode + `"`,
+				`data-theme-name="default"`,
+			}, componentMarkers...)
+			for _, marker := range expected {
+				if !strings.Contains(content, marker) {
+					t.Errorf("output missing %q", marker)
 				}
-				content := response.Body.String()
-				expected := append([]string{
-					`data-theme="` + mode + `"`,
-					`data-theme-name="` + name + `"`,
-				}, componentMarkers...)
-				for _, marker := range expected {
-					if !strings.Contains(content, marker) {
-						t.Errorf("output missing %q", marker)
-					}
+			}
+			for _, forbidden := range []string{`rel="stylesheet"`, ` style="`, "<script"} {
+				if strings.Contains(content, forbidden) {
+					t.Errorf("output contains %q", forbidden)
 				}
-				for _, forbidden := range []string{`rel="stylesheet"`, ` style="`, "<script"} {
-					if strings.Contains(content, forbidden) {
-						t.Errorf("output contains %q", forbidden)
-					}
-				}
-			})
-		}
+			}
+		})
 	}
 }
 
-func TestGalleryTabsPreserveThemeAndSelectPanel(t *testing.T) {
-	content := get("/?theme=bulma&mode=dark&tab=activity").Body.String()
+func TestGalleryTabsPreserveModeAndSelectPanel(t *testing.T) {
+	content := get("/?mode=dark&tab=activity").Body.String()
 	for _, expected := range []string{
-		`href="?mode=dark&amp;tab=activity&amp;theme=bulma" aria-current="page"`,
+		`href="?mode=dark&amp;tab=activity" aria-current="page"`,
 		`aria-labelledby="gallery-tabs-tab-activity"`,
 		`<input class="input" id="tab" name="tab" type="hidden" value="activity">`,
 		"Three deployments finished today.",
@@ -68,9 +64,7 @@ func TestGalleryTabsPreserveThemeAndSelectPanel(t *testing.T) {
 }
 
 func TestGalleryRejectsUnknownInput(t *testing.T) {
-	for _, query := range []string{"?theme=unknown", "?tab=unknown"} {
-		if response := get("/" + query); response.Code != http.StatusBadRequest {
-			t.Errorf("%s status = %d, want 400", query, response.Code)
-		}
+	if response := get("/?tab=unknown"); response.Code != http.StatusBadRequest {
+		t.Errorf("unknown tab status = %d, want 400", response.Code)
 	}
 }

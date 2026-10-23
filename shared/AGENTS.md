@@ -7,9 +7,8 @@
   unsafe markup. Escape via `Text`/`Attribute`.
 - Expose `Attrs html.Attrs` like `components` (ExtraClass + PassAttrs with
   owned names). See ADR-0017.
-- Styles live in `theme/default/shared.css`. Vendor conflicts: fix in
-  `theme/<adapter>/adapter.css`, then `npm run build:themes`.
+- Styles live in `theme/default/shared.css`; verify computed styles in browser.
 - New widget: add tests in `shared_test.go`, entry in `examples/components`,
-  browser check across default/Bootstrap/Bulma/Pico, light/dark, 390px.
+  browser check in light/dark modes at 390px.
 - Spec components (`Inline`, `EmptyState`, `Checkbox`, `Textarea`) live in
   `components`; `shared/aliases.go` keeps type aliases. Never redefine them here.
