@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 4
+version: 5
 ---
 
 # Specs
@@ -26,7 +26,7 @@ version: 4
 | 6 | MVU contracts | [mvu](../../mvu/) | ADR [0003](../adr/0003-mvu-runtime-boundaries.md) |
 | 7 | Versioned store | [store](../../store/), [session](../../session/) | ADR [0006](../adr/0006-versioned-session-models.md) |
 | 8 | Web views, RequestContext | [web](../../web/) | [web runtime](../guides/web-runtime.md), ADR [0013](../adr/0013-runtime-request-context.md) |
-| 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md) |
+| 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md), [interactions](../guides/interactions.md) |
 | 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`) | [web runtime](../guides/web-runtime.md) |
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |

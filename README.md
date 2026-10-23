@@ -24,6 +24,7 @@ Open <http://localhost:8080> and try the counter.
 - [Build your first app](docs/guides/first-app.md)
 - [Try a form with validation](docs/guides/forms.md)
 - [Build shorter views and lists](docs/guides/components.md#shorter-composition)
+- [Design interactive apps without application JavaScript](docs/guides/interactions.md)
 - [Browse examples](examples/README.md)
 - [Prepare for launch](docs/guides/production.md)
 - [Security guide](docs/guides/security.md)

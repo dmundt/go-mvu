@@ -1,9 +1,17 @@
+---
+type: Guide Catalog
+title: Guides
+description: Framework guides and application design guidance.
+version: 1
+---
+
 # Guides
 
 ## Framework guides
 
 * [Build your first app](first-app.md) - run and customize a complete counter.
 * [Forms](forms.md) - collect, validate, and show typed form data.
+* [Interactive applications](interactions.md) - native HTML, HTMX fragments, and no-application-JavaScript boundaries.
 * [Production walkthrough](production.md) - CASK, OIDC, limits, and single-host operations.
 * [Benchmarks](benchmarks.md) - measured performance and benchmark rules.
 * [Components and pagination](components.md) - reusable UI component contracts.
