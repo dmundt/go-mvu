@@ -134,3 +134,12 @@ tail length, fail-closed corruption, exclusive/stale locks, cancellation/retries
 and capacity including reserved completion space. Each test invocation creates a
 unique `.test-ledger-*` directory inside this example and cleans only its own
 directory. Concurrent test processes (including Windows and WSL) share no fixtures.
+
+`TestProcessCrashRecovery` additionally kills owned subprocesses at ten real
+file append/sync, consumer-commit, and completion boundaries. Parent waits for
+process exit before removing that child's stale locks. Recovery verifies model
+and receipt consistency, stable effect IDs, durable consumer deduplication, and
+completion across another reopen. Consumer inbox in this fixture is a separate
+ledger, atomically recording its deduplication key and business count.
+Process termination leaves the OS/filesystem running: this does not simulate
+power loss or establish directory-entry durability.

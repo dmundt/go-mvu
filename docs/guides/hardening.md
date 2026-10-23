@@ -27,6 +27,8 @@ lifecycle. The test uses real example handlers and gated browser interception,
 not timing guesses. It holds the page-2 response, requests page 9, then releases page 2 and verifies
 that page 9 remains visible and full-page reload works. No application
 JavaScript is introduced; browser automation lives only in the test runner.
+The test observes the canceled old request and the newer HTMX settle event;
+network-idle delays are not used as proof of response ordering.
 
 For local Windows browser runs with installed Chrome:
 
@@ -95,6 +97,11 @@ including joined errors. A timed-out HTTP drain force-closes connections;
 dependency closure is withheld when active work may still use them.
 `ErrDependenciesOpen` explicitly reports that ownership remains with the caller.
 Do not call a timeout-shaped return "clean shutdown".
+The budget bounds HTTP shutdown and supplies drain deadlines, not arbitrary
+cleanup execution. Drain hooks must honor context cancellation. Dependency
+`Close` calls are synchronous and have no enforceable deadline; an uncooperative
+hook or closer can delay return indefinitely. Run does not abandon cleanup in
+background goroutines. Process-level termination remains deployment-owned.
 
 The bounded runner uses one shared worker-completion channel. Repeated timed-out
 `Close` calls do not create more waiter goroutines. `Close` stops acceptance and
@@ -129,6 +136,16 @@ deployment-owned monitoring. Alert on counter increases and saturation:
 repeated 503s are not the only indication of dropped work.
 Choose thresholds from workload budgets; do not bake universal alert thresholds
 or a telemetry vendor into the framework.
+
+### Saturated idempotency costs
+
+`go test ./middleware -run='^$' -bench=BenchmarkIdempotencySaturation -benchmem -cpu=4`
+measures parallel replay and rejected new reservations against full tables of
+128, 4096, and 16384 entries. Prefill is outside the timed region; an explicit
+benchmark error handler avoids measuring expected-503 logging overhead.
+Expiry scans run only when the earliest completed receipt expires, not on every
+request. Pending actions remain unevictable. Expiry-boundary scans are still
+O(entries); steady-state benchmark results do not describe that tail latency.
 
 ## Response ordering and multiple tabs
 

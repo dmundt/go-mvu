@@ -118,6 +118,7 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 	fail := extensionError(options.ErrorHandler)
 	entries := make(map[[32]byte]*idempotencyEntry)
 	var mu sync.Mutex
+	var nextExpiry time.Time
 	waiters := 0
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -200,9 +201,17 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 			mu.Lock()
 			// Pending entries have zero expires and cannot be evicted: doing so
 			// would allow a still-running mutation to execute twice.
-			for key, entry := range entries {
-				if !entry.expires.IsZero() && !now.Before(entry.expires) {
-					delete(entries, key)
+			if !nextExpiry.IsZero() && !now.Before(nextExpiry) {
+				nextExpiry = time.Time{}
+				for key, entry := range entries {
+					if entry.expires.IsZero() {
+						continue
+					}
+					if !now.Before(entry.expires) {
+						delete(entries, key)
+					} else if nextExpiry.IsZero() || entry.expires.Before(nextExpiry) {
+						nextExpiry = entry.expires
+					}
 				}
 			}
 			entry, duplicate := entries[key]
@@ -292,6 +301,9 @@ func Idempotency(options IdempotencyOptions) (Extension, error) {
 					entry.response.header = safe
 				}
 				entry.expires = time.Now().Add(options.TTL)
+				if nextExpiry.IsZero() || entry.expires.Before(nextExpiry) {
+					nextExpiry = entry.expires
+				}
 				close(entry.done)
 				mu.Unlock()
 			}()
