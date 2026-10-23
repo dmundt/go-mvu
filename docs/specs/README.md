@@ -27,6 +27,7 @@
 | 16 | Users example | [examples/users](../../examples/users/) | — |
 | 17 | Validation | [validation](../../validation/) | ADR [0008](../adr/0008-explicit-validation.md) |
 | 18 | Middleware | [middleware](../../middleware/), [static](../../static/) | [security](../guides/security.md), ADR [0012](../adr/0012-csp-and-local-htmx.md) |
+| 18.1 | Render timing, diagnostics | [timing](../../timing/), `middleware.Diagnostics`, [web](../../web/) | [web runtime](../guides/web-runtime.md#diagnostics), ADR [0016](../adr/0016-render-timing-diagnostics.md) |
 | 19 | CSS | [theme/*.css](../../theme/), [scripts](../../scripts/) | [themes](../guides/themes.md) |
 | 20 | Testing | `*_test.go`, `scripts/themes.test.mjs` | [README](../../README.md#validation) |
 | 21 | Benchmarks | [benchmarks](../../benchmarks/) | [benchmarks](../guides/benchmarks.md) |
@@ -44,7 +45,7 @@
 | `AppShell` | `Shell` + `AppShell` alias | backward compatibility |
 | `html.TrustedHTML` | + `html.Trusted` alias | brevity |
 | packages per §2 | + `shared`, `static`, `internal/arch`, `benchmarks` | widgets, asset, enforcement |
-| middleware deps: html only | middleware → `html`, `session` | CSRF bound to session |
+| middleware deps: html only | middleware → `html`, `session`, `timing` | CSRF bound to session; shared phase trace |
 | `NewRuntime` | + `MustRuntime` | startup convenience |
 | pagination always rendered | hidden when ≤ 1 page | no empty nav |
 | `POST /theme` only | + `Preference.ToggleHandler` | legacy two-state switches |

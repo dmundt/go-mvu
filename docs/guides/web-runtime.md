@@ -121,6 +121,7 @@ var handler http.Handler = mux
 handler = csrf.Wrap(handler)
 handler = preference.Wrap(handler)
 handler = sessions.Wrap(handler)
+handler = diagnostics.Middleware(handler) // optional
 handler = middleware.RequestLogger(logger)(handler)
 handler = middleware.RequestID(handler)
 handler = middleware.SecurityHeaders(handler)
@@ -131,9 +132,45 @@ Session before CSRF (token bound to session). Preference before views.
 Security headers on every response, including errors. See
 [security](security.md).
 
+## Diagnostics
+
+Opt-in render timing and request diagnostics. Spec §18.1,
+[ADR-0016](../adr/0016-render-timing-diagnostics.md).
+
+```go
+diagnostics := middleware.NewDiagnostics(middleware.DiagnosticsOptions{
+	Logger:        logger,                // nil → slog.Default()
+	SlowThreshold: 50 * time.Millisecond, // Warn log above
+	ServerTiming:  true,                  // dev / trusted networks only
+})
+mux.Handle("GET /debug/diagnostics", diagnostics.Handler()) // internal only
+handler = diagnostics.Middleware(handler)                    // inside RequestID
+```
+
+| Phase | Measures |
+| --- | --- |
+| `decode` | `Decoder.Decode` |
+| `dispatch` | Update + store CAS + sync commands |
+| `load` | store load, Init |
+| `view` | `View.Page`/`Fragment` |
+| `render` | HTML streaming |
+| `ttfb`, `total` | added by middleware |
+
+- Per request: slog `request diagnostics` (Debug; Warn when slow) with phases
+  and request ID.
+- Aggregates: count/total/mean/max per phase; requests, slow, 5xx.
+  `Snapshot()`, `Reset()`, JSON `Handler()`.
+- `Server-Timing` header: phases done before first byte + `ttfb`. Trailer:
+  `render` + `total` (streaming → render ends after headers). Browser
+  devtools show the header; trailers need chunked HTTP/1.1 or HTTP/2 and
+  client support.
+- Custom phases: `defer timing.FromContext(ctx).Start("db")()`.
+- No trace in context → no-op, zero allocations.
+
 ## Examples
 
 - [counter](../../examples/counter/): `Page` + `Handle`, `RenderAuto`,
-  AppShell, three-mode switcher, local HTMX.
+  AppShell, three-mode switcher, local HTMX, diagnostics +
+  `GET /debug/diagnostics`.
 - [users](../../examples/users/): `DecoderFunc` from query, clamped page in
   `Update`, fragment/page by HTMX header, `EmptyState`.

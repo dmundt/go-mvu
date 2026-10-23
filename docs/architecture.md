@@ -19,7 +19,8 @@ CSS inlined in `<style>`. Source of truth:
 | `components` | optional layout, controls, forms, tables, pagination, switcher |
 | `shared` | optional native-HTML widgets (accordion, tabs, dialog, …) |
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
-| `middleware` | security headers/CSP, CSRF, recover, request ID, logging |
+| `middleware` | security headers/CSP, CSRF, recover, request ID, logging, diagnostics |
+| `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
 | `web` | runtime: route → message → Update → store → commands → view |
 | `internal/arch` | boundary enforcement test |
 | `benchmarks` | render benchmarks vs `html/template` |
@@ -30,25 +31,25 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ([ADR-0014](adr/0014-enforced-package-boundaries.md)).
 
 ```text
-mvu, html, store, theme, static, validation → stdlib only
+mvu, html, store, theme, static, validation, timing → stdlib only
 htmx       → html
 session    → store
-middleware → html, session
+middleware → html, session, timing
 components → html, htmx, theme
 shared     → components, html, htmx
-web        → mvu, html, htmx, store, theme
+web        → mvu, html, htmx, store, theme, timing
 examples   → anything
 ```
 
 ```mermaid
 flowchart BT
-  html; mvu; store; theme; static; validation
+  html; mvu; store; theme; static; validation; timing
   htmx --> html
   session --> store
-  middleware --> html & session
+  middleware --> html & session & timing
   components --> html & htmx & theme
   shared --> components & html & htmx
-  web --> mvu & html & htmx & store & theme
+  web --> mvu & html & htmx & store & theme & timing
   app[application] --> web & components & shared & middleware & session & static
 ```
 

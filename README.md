@@ -24,7 +24,8 @@ output, built-in database adapter, auth.
 | `validation` | explicit field errors | none |
 | `htmx` | typed actions, request/response headers | `html` |
 | `session` | signed session ID cookie | `store` |
-| `middleware` | CSP/security headers, CSRF, recover, request ID, logging | `html`, `session` |
+| `middleware` | CSP/security headers, CSRF, recover, request ID, logging, diagnostics | `html`, `session`, `timing` |
+| `timing` | per-request phase trace (render time etc.) | none |
 | `components` | layout, controls, forms, tables, pagination, switcher | `html`, `htmx`, `theme` |
 | `shared` | native-HTML widgets (accordion, tabs, dialog, …) | `components`, `html`, `htmx` |
 | `web` | HTTP runtime | `mvu`, `html`, `htmx`, `store`, `theme` |

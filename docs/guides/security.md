@@ -68,6 +68,9 @@ Defaults safe; opt-out explicit.
 - `middleware.RequestID`: `X-Request-ID` per response; `RequestLogger`
   logs method, path, status, bytes, duration, request ID, htmx flag via
   `slog`.
+- `middleware.Diagnostics`: `Server-Timing` off by default; enable only for
+  development or trusted networks. Mount `Diagnostics.Handler()` on internal
+  or authenticated routes only (timing data aids side-channel probing).
 
 ## Validation
 

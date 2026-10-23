@@ -54,6 +54,7 @@ gomvu/
 ├── theme/
 ├── components/
 ├── middleware/
+├── timing/
 ├── examples/
 │   ├── counter/
 │   └── users/
@@ -64,13 +65,15 @@ gomvu/
 Enforce this dependency direction:
 
 components -> html, htmx, theme
-web        -> mvu, html, htmx, store, theme
+web        -> mvu, html, htmx, store, theme, timing
+middleware -> html, session, timing
 session    -> store
 htmx       -> html
 theme      -> standard library only
 mvu        -> standard library only
 html       -> standard library only
 store      -> standard library only
+timing     -> standard library only
 
 Forbidden dependencies:
 
@@ -978,6 +981,7 @@ Implement:
 - Security headers
 - CSRF protection
 - Request ID
+- Rendering time measurement and diagnostics
 - Optional response compression only if it does not compromise streaming correctness
 
 Security headers should include documented defaults for:
@@ -994,6 +998,47 @@ Prefer serving HTMX locally from `/static/htmx.min.js`.
 
 Do not depend on a production CDN.
 
+## 18.1 Rendering time measurement and diagnostics
+
+Package `timing` (standard library only) carries a per-request `Trace` in
+the request context. All methods are nil-safe: without a trace, instrumented
+code costs one context lookup and no allocation.
+
+The web runtime records these phases:
+
+| Phase | Measures |
+| --- | --- |
+| `decode` | `Decoder.Decode` |
+| `dispatch` | Update, store compare-and-swap, synchronous commands |
+| `load` | store load, Init for missing models |
+| `view` | `View.Page` / `View.Fragment` (component tree construction) |
+| `render` | HTML streaming (`html.Render` into the response) |
+
+Repeated phases are summed. Applications may record their own phases with
+`timing.FromContext(ctx).Start("name")`.
+
+`middleware.NewDiagnostics(DiagnosticsOptions)` returns a collector with:
+
+- `Middleware`: attaches a trace; measures time to first byte (`ttfb`)
+  and `total`; records status and bytes.
+- Per-request `log/slog` record `request diagnostics`: Debug level; Warn
+  when `SlowThreshold` is exceeded. Includes request ID and phases.
+- In-memory aggregates per phase: count, total, mean, max; request, slow,
+  and 5xx counters. `Snapshot`, `Reset`.
+- `Handler`: `GET`/`HEAD` JSON snapshot, `Cache-Control: no-store`.
+  Mount only on internal or authenticated routes.
+- Optional `ServerTiming` (default off): `Server-Timing` header with phases
+  finished before the first byte plus `ttfb`; `Server-Timing` trailer with
+  later phases (`render`) plus `total`. Rendering streams, so render time
+  cannot be a header. Metric names sanitized to HTTP token characters.
+
+Rules:
+
+- Measurement must not buffer or delay streaming output.
+- The runtime must not import `middleware`; both depend on `timing`.
+- Diagnostics are opt-in; Server-Timing exposes server timings to clients and
+  is for development or trusted networks.
+- Place `Diagnostics.Middleware` inside `RequestID`.
 # 19. CSS
 
 Create a complete stylesheet.

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
@@ -63,7 +64,15 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 
+	// Development diagnostics: Server-Timing + GET /debug/diagnostics.
+	// Keep the endpoint internal or authenticated in production.
+	diagnostics := middleware.NewDiagnostics(middleware.DiagnosticsOptions{
+		SlowThreshold: 50 * time.Millisecond,
+		ServerTiming:  true,
+	})
+
 	mux := http.NewServeMux()
+	mux.Handle("GET /debug/diagnostics", diagnostics.Handler())
 	mux.Handle("GET "+static.Prefix, static.Handler())
 	mux.Handle("GET /{$}", runtime.Page(web.Result{Mode: web.RenderPage}))
 	mux.Handle("POST /theme", preference.Handler("/"))
@@ -82,6 +91,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	handler = csrf.Wrap(handler)
 	handler = preference.Wrap(handler)
 	handler = sessions.Wrap(handler)
+	handler = diagnostics.Middleware(handler)
 	handler = middleware.RequestLogger(logger)(handler)
 	handler = middleware.RequestID(handler)
 	handler = middleware.SecurityHeaders(handler)
