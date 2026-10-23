@@ -25,7 +25,7 @@ func (UsersView) Page(
 			URL:     "/users/cards",
 			Variant: components.ButtonSecondary,
 		},
-		results{Model: model},
+		UserResults{Model: model},
 	), nil
 }
 
@@ -38,7 +38,7 @@ func (UsersView) Fragment(
 	if name != "results" {
 		return nil, web.ErrUnknownFragment
 	}
-	return results{Model: model}, nil
+	return UserResults{Model: model}, nil
 }
 
 // cardsPage is static: no model, no runtime.
@@ -51,7 +51,21 @@ func cardsPage(request web.RequestContext, users []User) components.Document {
 		userCards(users),
 	)
 }
-func document(request web.RequestContext, title string, body ...html.Component) components.Document {
+func document(
+	request web.RequestContext, title string, body ...html.Component,
+) components.Document {
+	header := components.Inline{Children: []html.Component{
+		components.Heading{Level: 1, Text: title},
+		components.ThemeSwitcher{
+			Mode:      request.Mode,
+			Return:    request.CurrentURL,
+			CSRFField: middleware.CSRFInput{},
+		},
+	}}
+	shell := components.AppShell{
+		Header: header,
+		Main:   components.Stack{Children: body},
+	}
 	return components.Document{
 		Title:                    title,
 		HTMXSource:               static.HTMXPath,
@@ -59,27 +73,17 @@ func document(request web.RequestContext, title string, body ...html.Component) 
 		HTMXSwapValidationErrors: true,
 		Theme:                    request.Theme,
 		Mode:                     request.Mode,
-		Body: middleware.CSRFHTMX{Body: components.AppShell{
-			Header: components.Inline{Children: []html.Component{
-				components.Heading{Level: 1, Text: title},
-				components.ThemeSwitcher{
-					Mode:      request.Mode,
-					Return:    request.CurrentURL,
-					CSRFField: middleware.CSRFInput{},
-				},
-			}},
-			Main: components.Stack{Children: body},
-		}},
+		Body:                     middleware.CSRFHTMX{Body: shell},
 	}
 }
 
-// results is the HTMX swap target: table plus pagination.
-type results struct {
+// UserResults is the HTMX swap target: table plus pagination.
+type UserResults struct {
 	html.FragmentMarker
 	Model UsersModel
 }
 
-func (view results) RenderHTML(ctx context.Context, out *html.Context) error {
+func (view UserResults) RenderHTML(ctx context.Context, out *html.Context) error {
 	visible := view.Model.Visible()
 	var content html.Component
 	if len(visible) == 0 {

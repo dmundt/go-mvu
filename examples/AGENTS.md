@@ -9,6 +9,11 @@
   Do not add an exception to avoid composing an existing semantic component.
 - Prefer typed properties over `Attrs`; use `Attrs` for genuine extensions,
   not to reimplement layout classes or override owned names.
+- Keep deep composition readable with domain components (`CounterControls`,
+  `UserResults`) and local values. Do not invent a generic composition DSL.
+- UI changes: run `npm run test:browser`; servers bind loopback ports
+  18080–18083. `browser_test.go` harnesses are opt-in and skipped by ordinary
+  `go test`; never expose test-server controls in production handlers.
 - Preserve full-page navigation alongside HTMX fragments. Use page/fragment
   writers for HTML content type and report rendering failures.
 - Tables must be visibly styled by the selected theme, including plain

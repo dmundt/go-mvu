@@ -83,7 +83,7 @@ func TestExampleAuthoringBoundaries(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if _, exempt := lowLevelExamples[filepath.ToSlash(name)]; exempt {
+				if !checkExampleAuthoring(filepath.ToSlash(name)) {
 					continue
 				}
 				for _, violation := range authoringViolations(file, fset, info) {
@@ -96,9 +96,47 @@ func TestExampleAuthoringBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for path := range lowLevelExamples {
+	for path, reason := range lowLevelExamples {
 		if !seen[path] {
 			t.Errorf("stale low-level example exception: %s", path)
+		}
+		if strings.TrimSpace(reason) == "" {
+			t.Errorf("low-level example exception needs a review rationale: %s", path)
+		}
+	}
+}
+
+// Repository convention only: never apply this check to framework code or
+// external applications. Exceptions name exact production example files.
+func checkExampleAuthoring(path string) bool {
+	if !strings.HasPrefix(path, "examples/") || !strings.HasSuffix(path, ".go") ||
+		strings.HasSuffix(path, "_test.go") {
+		return false
+	}
+	_, exempt := lowLevelExamples[path]
+	return !exempt
+}
+
+func TestAuthoringPolicyStaysScoped(t *testing.T) {
+	for _, tc := range []struct {
+		path string
+		want bool
+	}{
+		{"examples/counter/view.go", true},
+		{"examples/newapp/view.go", true},
+		{"examples/internal/themepicker/themepicker.go", true},
+		{"examples/themes/lowlevel.go", false},
+		{"examples/components/lowlevel.go", false},
+		{"examples/newapp/lowlevel.go", true},
+		{"examples/themes/another_lowlevel.go", true},
+		{"examples/counter/browser_test.go", false},
+		{"components/components.go", false},
+		{"shared/overlay.go", false},
+		{"html/element.go", false},
+		{"external/app/view.go", false},
+	} {
+		if got := checkExampleAuthoring(tc.path); got != tc.want {
+			t.Errorf("%s: check=%v, want %v", tc.path, got, tc.want)
 		}
 	}
 }

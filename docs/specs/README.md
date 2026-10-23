@@ -75,3 +75,5 @@
 | §13.1 every component has `Attrs` | Root-bearing structs generally support it; `Document`, string/slice conveniences, rootless helpers and item records are exceptions | Preserve public APIs; [guide](../guides/components.md#attribute-passthrough) lists alternatives |
 | §5 free interoperability | Retained; ordinary examples compose semantic components, two exact files demonstrate low-level APIs | Authoring discipline, not an API restriction; [ADR-0018](../adr/0018-ui-authoring-boundaries.md) |
 | §13 layout inventory | + `components.Section` with `ID`, `Children`, `Attrs` | Semantic fragment roots without raw tags; layout remains in `Stack` |
+| §4.1 ordered attributes / §13.1 ownership | Case-insensitive first duplicate wins; class values merge; `hx-*` and `data-hx-*` share identity and ownership | Deterministic valid output; only emitted attributes validated; [guide](../guides/components.md#attribute-passthrough) |
+| §20 UI checks | Persistent Playwright suite + CI projects: desktop/mobile, light/dark, four themes | Real computed styles, HTMX swaps, fallback forms and native dialogs; [guide](../guides/components.md#browser-regression-checks) |

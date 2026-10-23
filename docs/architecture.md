@@ -113,6 +113,9 @@ appending a replacement body. HTTP failure after CAS does not undo persistence.
 - `internal/arch/authoring_test.go` type-checks production example files and
   rejects low-level HTML APIs outside two named demo files. It permits
   `Context.Component`, `Components`, `Err`, `Fail` for composition adapters.
+- Scope tests keep this authoring convention out of framework code and
+  external applications; exact demo exceptions require review rationales.
+  Browser-server Go tests are test infrastructure, not production views.
 - Package checks recursively discover production Go files (excluding examples,
   benchmarks, testdata and dependency/hidden directories); undeclared packages
   fail, including new subpackages. Theme adapters declare their own boundaries.

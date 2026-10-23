@@ -150,10 +150,18 @@ func voidElement(tag string) bool {
 	return false
 }
 
-// Attrs writes every attribute as ` name="value"` (or ` name` for flags),
-// recording ErrUnsafeAttribute for names or values outside the allowlist.
+// Attrs writes attributes in order. Class values merge; other duplicate names
+// are first-wins (case-insensitive, including hx-*/data-hx-* aliases).
+// Emitted attributes outside the allowlist record ErrUnsafeAttribute.
 func (c *Context) Attrs(attrs Attrs) {
-	for _, attr := range attrs {
+	for index, attr := range attrs {
+		if earlierAttr(attrs, index) {
+			continue
+		}
+		if strings.EqualFold(attr.Name, "class") && attrs.hasClass() {
+			c.Class("", attrs)
+			continue
+		}
 		c.attr(attr)
 	}
 }
@@ -199,10 +207,12 @@ func classAttr(attr Attr) bool {
 // it with Class or ExtraClass) and every name in owned, which the component
 // already wrote: component-owned attributes win over passthrough values.
 // An owned entry ending in "*" matches a prefix, e.g. "hx-*". Empty owned
-// entries match nothing.
+// entries match nothing. Duplicate names are first-wins, and hx-* ownership
+// also covers data-hx-* aliases.
 func (c *Context) PassAttrs(attrs Attrs, owned ...string) {
-	for _, attr := range attrs {
-		if strings.EqualFold(attr.Name, "class") || ownedName(attr.Name, owned) {
+	for index, attr := range attrs {
+		if strings.EqualFold(attr.Name, "class") || ownedName(attr.Name, owned) ||
+			earlierAttr(attrs, index) {
 			continue
 		}
 		c.attr(attr)
@@ -210,10 +220,12 @@ func (c *Context) PassAttrs(attrs Attrs, owned ...string) {
 }
 
 func ownedName(name string, owned []string) bool {
+	name = canonicalAttrName(name)
 	for _, candidate := range owned {
 		if candidate == "" {
 			continue
 		}
+		candidate = canonicalAttrName(candidate)
 		if prefix, ok := strings.CutSuffix(candidate, "*"); ok {
 			if len(name) >= len(prefix) && strings.EqualFold(name[:len(prefix)], prefix) {
 				return true
@@ -221,6 +233,23 @@ func ownedName(name string, owned []string) bool {
 			continue
 		}
 		if strings.EqualFold(name, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func canonicalAttrName(name string) string {
+	if len(name) >= len("data-hx-") && strings.EqualFold(name[:len("data-hx-")], "data-hx-") {
+		return name[len("data-"):]
+	}
+	return name
+}
+
+func earlierAttr(attrs Attrs, index int) bool {
+	name := canonicalAttrName(attrs[index].Name)
+	for _, previous := range attrs[:index] {
+		if strings.EqualFold(canonicalAttrName(previous.Name), name) {
 			return true
 		}
 	}
