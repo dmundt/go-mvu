@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -22,7 +22,7 @@ type ContactModel struct {
 }
 
 type ContactMessage interface {
-	mvu.Message
+	core.Message
 	isContactMessage()
 }
 
@@ -35,7 +35,7 @@ func (SubmitContact) isContactMessage()   {}
 
 type ContactApp struct{}
 
-func (ContactApp) Init(context.Context) (ContactModel, []mvu.Command[ContactMessage], error) {
+func (ContactApp) Init(context.Context) (ContactModel, []core.Command[ContactMessage], error) {
 	return ContactModel{}, nil, nil
 }
 
@@ -43,7 +43,7 @@ func (ContactApp) Update(
 	_ context.Context,
 	model ContactModel,
 	message ContactMessage,
-) (ContactModel, []mvu.Command[ContactMessage], error) {
+) (ContactModel, []core.Command[ContactMessage], error) {
 	switch message := message.(type) {
 	case SubmitContact:
 		model.Form = message.Form

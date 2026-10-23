@@ -12,10 +12,9 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/html"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -27,7 +26,7 @@ type httpBenchModel struct{ Count int }
 
 type httpBenchApp struct{}
 
-func (httpBenchApp) Init(context.Context) (httpBenchModel, []mvu.Command[httpBenchMessage], error) {
+func (httpBenchApp) Init(context.Context) (httpBenchModel, []core.Command[httpBenchMessage], error) {
 	return httpBenchModel{}, nil, nil
 }
 
@@ -35,7 +34,7 @@ func (httpBenchApp) Update(
 	_ context.Context,
 	model httpBenchModel,
 	message httpBenchMessage,
-) (httpBenchModel, []mvu.Command[httpBenchMessage], error) {
+) (httpBenchModel, []core.Command[httpBenchMessage], error) {
 	model.Count += message.Delta
 	return model, nil, nil
 }
@@ -79,11 +78,11 @@ func (fragment httpBenchFragment) RenderHTML(_ context.Context, out *html.Contex
 
 func newHTTPBenchmarkServer(
 	b *testing.B,
-	modelStore store.Store[string, httpBenchModel],
+	modelStore core.Store[string, httpBenchModel],
 ) *httptest.Server {
 	b.Helper()
 	if modelStore == nil {
-		modelStore = store.NewMemory[string, httpBenchModel]()
+		modelStore = core.NewMemory[string, httpBenchModel]()
 	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, httpBenchModel, httpBenchMessage]{
 		App:   httpBenchApp{},
@@ -209,7 +208,7 @@ func BenchmarkHTTPParallelJSONFile(b *testing.B) {
 
 func benchmarkHTTPParallel(
 	b *testing.B,
-	modelStore store.Store[string, httpBenchModel],
+	modelStore core.Store[string, httpBenchModel],
 ) {
 	server := newHTTPBenchmarkServer(b, modelStore)
 	client := server.Client()

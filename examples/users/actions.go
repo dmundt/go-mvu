@@ -4,12 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/web"
 )
 
 var usersPageAction = web.Action[UsersMessage]{
-	Method: htmx.Get,
+	Method: web.Get,
 	Path:   "/users",
 	Decode: decodeShowPage,
 	Result: web.Result{Mode: web.RenderAuto, Fragment: string(usersRegion)},

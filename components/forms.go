@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 type InputType string
@@ -198,7 +198,7 @@ type Form struct {
 	Method    FormMethod
 	URL       string
 	CSRFField html.Component
-	Action    htmx.Action
+	Action    web.BrowserAction
 	Children  []html.Component
 	Attrs     html.Attrs
 }

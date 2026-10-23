@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/internal/example/server"
-	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -71,7 +71,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	view := UsersView{Document: document}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, UsersModel, UsersMessage]{
 		App:   UsersApp{Directory: directory},
-		Store: store.NewMemory[string, UsersModel](),
+		Store: core.NewMemory[string, UsersModel](),
 		Keys:  sessionKey,
 		View:  view,
 		Theme: theme.Default,

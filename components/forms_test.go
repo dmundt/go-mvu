@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func pageLabels(rendered string) []string {
@@ -74,7 +74,7 @@ func TestPaginationCurrentAndPages(t *testing.T) {
 func TestFormRendersCSRFAndHTMX(t *testing.T) {
 	rendered := render(t, Form{
 		ID: "f", URL: "/users", CSRFField: Text("<csrf>"),
-		Action:   htmx.Action{Method: htmx.Post, URL: "/users", Target: "#list"},
+		Action:   web.BrowserAction{Method: web.Post, URL: "/users", Target: "#list"},
 		Children: []html.Component{Label{For: "name", Text: "Name"}, FieldError{ID: "name-error", Message: "Required"}},
 	})
 	for _, expected := range []string{

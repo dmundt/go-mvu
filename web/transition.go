@@ -4,17 +4,16 @@ import (
 	"context"
 	"errors"
 
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 )
 
 // dispatcher returns a Dispatch that transitions the model for key and
 // hands follow-up commands to the CommandRunner. Commands never run while
 // the store holds a lock: CAS completes before Run.
 func (runtime *Runtime[K, Model, Msg]) dispatcher(
-	key K, expected *store.Version, onCommit func(),
-) mvu.Dispatch[Msg] {
-	var followup mvu.Dispatch[Msg]
+	key K, expected *core.Version, onCommit func(),
+) core.Dispatch[Msg] {
+	var followup core.Dispatch[Msg]
 	followup = func(ctx context.Context, message Msg) error {
 		return runtime.dispatchMessage(ctx, key, message, nil, onCommit, followup)
 	}
@@ -24,8 +23,8 @@ func (runtime *Runtime[K, Model, Msg]) dispatcher(
 }
 
 func (runtime *Runtime[K, Model, Msg]) dispatchMessage(
-	ctx context.Context, key K, message Msg, expected *store.Version,
-	onCommit func(), followup mvu.Dispatch[Msg],
+	ctx context.Context, key K, message Msg, expected *core.Version,
+	onCommit func(), followup core.Dispatch[Msg],
 ) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -48,45 +47,45 @@ func (runtime *Runtime[K, Model, Msg]) dispatchMessage(
 
 func (runtime *Runtime[K, Model, Msg]) loadOrCreate(
 	ctx context.Context, key K,
-) (store.Snapshot[Model], []mvu.Command[Msg], bool, error) {
+) (core.Snapshot[Model], []core.Command[Msg], bool, error) {
 	for range runtime.maxRetries {
 		if err := ctx.Err(); err != nil {
-			return store.Snapshot[Model]{}, nil, false, err
+			return core.Snapshot[Model]{}, nil, false, err
 		}
 		snapshot, err := runtime.store.Load(ctx, key)
 		if err == nil {
 			return snapshot, nil, false, nil
 		}
-		if !errors.Is(err, store.ErrNotFound) {
-			return store.Snapshot[Model]{}, nil, false, err
+		if !errors.Is(err, core.ErrNotFound) {
+			return core.Snapshot[Model]{}, nil, false, err
 		}
 		model, commands, err := runtime.app.Init(ctx)
 		if err != nil {
-			return store.Snapshot[Model]{}, nil, false, err
+			return core.Snapshot[Model]{}, nil, false, err
 		}
 		if err := ctx.Err(); err != nil {
-			return store.Snapshot[Model]{}, nil, false, err
+			return core.Snapshot[Model]{}, nil, false, err
 		}
 		snapshot, err = runtime.store.Create(ctx, key, model)
 		if err == nil {
 			return snapshot, commands, true, nil
 		}
-		if !errors.Is(err, store.ErrAlreadyExists) {
-			return store.Snapshot[Model]{}, nil, false, err
+		if !errors.Is(err, core.ErrAlreadyExists) {
+			return core.Snapshot[Model]{}, nil, false, err
 		}
 	}
-	return store.Snapshot[Model]{}, nil, false, store.ErrConflict
+	return core.Snapshot[Model]{}, nil, false, core.ErrConflict
 }
 
 func (runtime *Runtime[K, Model, Msg]) transition(
-	ctx context.Context, key K, message Msg, expected *store.Version, onCommit func(),
-) ([]mvu.Command[Msg], error) {
+	ctx context.Context, key K, message Msg, expected *core.Version, onCommit func(),
+) ([]core.Command[Msg], error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	snapshot, err := runtime.store.Load(ctx, key)
-	var initCommands []mvu.Command[Msg]
-	if errors.Is(err, store.ErrNotFound) {
+	var initCommands []core.Command[Msg]
+	if errors.Is(err, core.ErrNotFound) {
 		model, commands, initErr := runtime.app.Init(ctx)
 		if initErr != nil {
 			return nil, initErr
@@ -101,7 +100,7 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			}
 		}
 		snapshot, err = runtime.store.Create(ctx, key, model)
-		if errors.Is(err, store.ErrAlreadyExists) {
+		if errors.Is(err, core.ErrAlreadyExists) {
 			snapshot, err = runtime.store.Load(ctx, key)
 		} else if err == nil {
 			initCommands = commands
@@ -141,7 +140,7 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			}
 			return append(initCommands, commands...), nil
 		}
-		if !errors.Is(err, store.ErrConflict) {
+		if !errors.Is(err, core.ErrConflict) {
 			return nil, err
 		}
 		if expected != nil {
@@ -155,5 +154,5 @@ func (runtime *Runtime[K, Model, Msg]) transition(
 			return nil, err
 		}
 	}
-	return nil, store.ErrConflict
+	return nil, core.ErrConflict
 }

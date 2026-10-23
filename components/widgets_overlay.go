@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 // AccordionItem is one collapsible section of an Accordion.
@@ -130,9 +130,9 @@ func (tabs Tabs) RenderHTML(ctx context.Context, out *html.Context) error {
 			out.Static(` aria-current="page"`)
 		}
 		if tabs.HTMX {
-			action := htmx.Action{
-				Method: htmx.Get, URL: tab.URL, Target: "#" + tabs.ID,
-				Select: "#" + tabs.ID, Swap: htmx.OuterHTML, PushURL: "true",
+			action := web.BrowserAction{
+				Method: web.Get, URL: tab.URL, Target: "#" + tabs.ID,
+				Select: "#" + tabs.ID, Swap: web.OuterHTML, PushURL: "true",
 			}
 			if err := action.RenderAttributes(out); err != nil {
 				return err

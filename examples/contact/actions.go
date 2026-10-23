@@ -7,12 +7,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/web"
 )
 
 var submitContact = web.Action[ContactMessage]{
-	Method: htmx.Post,
+	Method: web.Post,
 	Path:   "/contact",
 	Decode: decodeContact,
 	Result: web.Result{Mode: web.RenderAuto, Fragment: string(contactRegion)},

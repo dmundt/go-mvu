@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/internal/example/server"
-	"github.com/dmundt/go-mvu/mvu"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -120,7 +120,7 @@ func newFixture(t *testing.T) *fixture {
 		drainStarted:   make(chan struct{}),
 		closed:         make(chan struct{}),
 	}
-	command := mvu.CommandFunc[message](func(ctx context.Context, _ mvu.Dispatch[message]) error {
+	command := core.CommandFunc[message](func(ctx context.Context, _ core.Dispatch[message]) error {
 		f.effectCtx <- ctx
 		f.events.add("effect started")
 		close(f.effectStarted)
@@ -131,7 +131,7 @@ func newFixture(t *testing.T) *fixture {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		close(f.entered)
 		<-f.releaseRequest
-		err := f.runner.Run(r.Context(), []mvu.Command[message]{command}, nil)
+		err := f.runner.Run(r.Context(), []core.Command[message]{command}, nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
@@ -238,8 +238,8 @@ func TestRunTimeoutKeepsDependenciesOpen(t *testing.T) {
 	if effectCtx.Err() != nil {
 		t.Fatalf("shutdown timeout cancelled accepted command: %v", effectCtx.Err())
 	}
-	if err := f.runner.Run(context.Background(), []mvu.Command[message]{
-		mvu.CommandFunc[message](func(context.Context, mvu.Dispatch[message]) error { return nil }),
+	if err := f.runner.Run(context.Background(), []core.Command[message]{
+		core.CommandFunc[message](func(context.Context, core.Dispatch[message]) error { return nil }),
 	}, nil); !errors.Is(err, web.ErrCommandClosed) {
 		t.Fatalf("runner accepts work after shutdown: %v", err)
 	}

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type Model struct {
@@ -19,8 +19,8 @@ type Add struct {
 func (Add) MessageName() string { return "add" }
 
 // Persistence belongs to Ledger.Apply, not this pure application.
-var application = mvu.Functions[Model, Add]{
-	UpdateFunc: func(ctx context.Context, model Model, msg Add) (Model, []mvu.Command[Add], error) {
+var application = core.Functions[Model, Add]{
+	UpdateFunc: func(ctx context.Context, model Model, msg Add) (Model, []core.Command[Add], error) {
 		if err := ctx.Err(); err != nil {
 			return model, nil, err
 		}

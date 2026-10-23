@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
-	"github.com/dmundt/go-mvu/store"
 )
 
 type FileSink struct {
@@ -78,7 +78,7 @@ func (worker *outboxWorker) Drain(ctx context.Context, key string) error {
 		}
 		snapshot, err := worker.store.Load(ctx, key)
 		if err != nil {
-			if errors.Is(err, store.ErrNotFound) {
+			if errors.Is(err, core.ErrNotFound) {
 				return nil
 			}
 			return err
@@ -93,7 +93,7 @@ func (worker *outboxWorker) Drain(ctx context.Context, key string) error {
 		next := snapshot.Model
 		next.Outbox = append([]OutboxEvent(nil), next.Outbox[1:]...)
 		if _, err := worker.store.CompareAndSwap(ctx, key, snapshot.Version, next); err != nil {
-			if errors.Is(err, store.ErrConflict) {
+			if errors.Is(err, core.ErrConflict) {
 				continue
 			}
 			return err

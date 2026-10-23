@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 15
+version: 16
 ---
 
 # Architecture
@@ -16,20 +16,18 @@ CSS inlined in `<style>`. Source of truth:
 
 | Package | Responsibility |
 | --- | --- |
-| `mvu` | `Application[Model, Msg]`: `Init`, `Update`, `Command`; no HTTP/HTML/storage |
+| `core` | MVU contracts (`Application`, `Message`, `Command`) and versioned storage (`Store`, `Snapshot`, `Version`, memory implementation); updates remain pure |
 | `html` | `Component`, `Page`, `Fragment`, `Context` (escaping, sticky error, streaming), `El` builder, `Attrs` allowlist |
-| `htmx` | typed `Action` attrs, `Request` metadata, response headers |
-| `store` | `Snapshot[M]` (`Version`), `Load`/`Create`/`CompareAndSwap`, memory store |
 | `theme` | `Theme` (inline CSS), `Mode` system/light/dark, signed `Preference` cookie |
-| `web` | runtime and typed forms; signed sessions, CSRF, security headers, recovery, HTTP errors, request metadata, events, diagnostics, traces, and response commitment |
+| `web` | runtime and typed forms; HTMX browser actions, metadata, and headers; signed sessions, CSRF, security headers, recovery, HTTP errors, events, diagnostics, traces, and response commitment |
 | `components` | optional semantic controls/widgets, page policy, secure action forms, regions, field feedback, and embedded HTMX assets |
 | `internal/arch` | boundary enforcement test |
 | `internal/example` | private example support: server lifecycle, request policy, JSON storage, and HTTP benchmarks |
 | `benchmarks` | render benchmarks vs `html/template` |
 
-Exactly seven public framework packages. Examples, benchmarks, and private
+Exactly five public framework packages. Examples, benchmarks, and private
 support packages are outside this count. See
-[ADR-0029](adr/0029-seven-public-packages.md).
+[ADR-0030](adr/0030-five-public-packages.md).
 
 The [durable example](../examples/durable/README.md) demonstrates an
 example-only JSON file store and an outbox embedded in each model record. Its
@@ -54,26 +52,26 @@ Enforced by [internal/arch](../internal/arch/boundaries_test.go)
 ([ADR-0014](adr/0014-enforced-package-boundaries.md)).
 
 ```text
-mvu, html, store, theme → stdlib only
-htmx       → html
-web        → mvu, html, htmx, store, theme
-components → html, htmx, theme, web
-internal/example/jsonstore → store
+core, html, theme → stdlib only
+web        → core, html, theme
+components → html, theme, web
+internal/example/jsonstore → core
 internal/example/server    → web
 examples   → framework packages and internal/example; never other examples
 ```
 
 ```mermaid
 flowchart BT
-  html; mvu; store; theme
-  htmx --> html
-  web --> mvu & html & htmx & store & theme
-  components --> html & htmx & theme & web
+  core; html; theme
+  web --> core & html & theme
+  components --> html & theme & web
   app[application] --> web & components
 ```
 
 Forbidden: `unsafe`; `reflect` in `html`/`components`; `html/template`,
-`text/template` in library code; `mvu` → anything HTTP/HTML/storage.
+`text/template` in library code; `core` → HTTP/rendering/framework integration.
+Application updates must not access storage, even though the persistence
+contracts now share `core`; package separation no longer enforces that distinction.
 
 Reusable widgets all live in `components`; the former `shared` package is
 removed without forwarding aliases. Native interactions and embedded styles
@@ -81,7 +79,9 @@ remain unchanged. See [ADR-0023](adr/0023-unified-components.md).
 
 `components` sits above the existing layers; core packages never import it. Apps
 opt in explicitly and still own middleware and asset routing. See
-[ADR-0029](adr/0029-seven-public-packages.md), which supersedes the separate
+[ADR-0030](adr/0030-five-public-packages.md), which retains the one-way
+integration boundary from [ADR-0029](adr/0029-seven-public-packages.md) and
+supersedes the separate
 `ui` layer in [ADR-0021](adr/0021-concise-ui-composition.md).
 
 ## Source organization
@@ -104,6 +104,8 @@ does not resolve cookies again. See
 
 Focused files preserve responsibility boundaries within the larger packages.
 
+- `core`: [MVU contracts](../core/mvu.go) and
+  [versioned storage](../core/store.go).
 - `web`: [configuration](../web/web.go),
   [request and view contracts](../web/request.go),
   [HTTP orchestration and outcomes](../web/handler.go),
@@ -111,8 +113,9 @@ Focused files preserve responsibility boundaries within the larger packages.
   [command execution](../web/commands.go), and
   [response rendering](../web/response.go),
   [sessions](../web/session.go), [CSRF](../web/csrf.go),
-  [security and recovery](../web/security.go), and
-  [diagnostics](../web/diagnostics.go).
+  [security and recovery](../web/security.go),
+  [diagnostics](../web/diagnostics.go), and
+  [HTMX browser contracts](../web/htmx.go).
 - `components`: [primitives and feedback](../components/components.go),
   [documents](../components/document.go), [layout](../components/layout.go),
   [buttons and links](../components/controls.go), [forms](../components/forms.go),
@@ -135,8 +138,8 @@ sequenceDiagram
   participant B as Browser
   participant M as Middleware
   participant R as web.Runtime
-  participant S as store
-  participant A as mvu.App
+  participant S as core.Store
+  participant A as core.Application
   participant V as View
   B->>M: GET/POST (+HX-Request)
   M->>R: session, theme mode, CSRF checked

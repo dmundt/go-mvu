@@ -6,7 +6,6 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -28,11 +27,11 @@ func (counter Counter) RenderHTML(ctx context.Context, out *html.Context) error 
 				Children: []html.Component{components.Button{
 					Label: "Increment",
 					Type:  components.ButtonSubmit,
-					Action: htmx.Action{
-						Method: htmx.Post,
+					Action: web.BrowserAction{
+						Method: web.Post,
 						URL:    "/increment",
 						Target: "#counter",
-						Swap:   htmx.OuterHTML,
+						Swap:   web.OuterHTML,
 					},
 				}},
 			},

@@ -2,7 +2,7 @@
 type: Guide
 title: Framework positioning
 description: Scope, strengths, tradeoffs, and adjacent framework choices.
-version: 2
+version: 3
 ---
 
 # Framework positioning
@@ -45,7 +45,7 @@ cross-framework speed ranking is justified by go-mvu's current benchmarks.
   of scope.
 - **Explicit rendering:** streaming escaped HTML and typed component contracts;
   unlike templ, there is no HTML template DSL or generated view code.
-- **Persistence is pluggable:** `store.Memory` is process-local. The
+- **Persistence is pluggable:** `core.Memory` is process-local. The
   [JSON outbox example](../../examples/durable/README.md) demonstrates a
   simple file-backed store outside framework packages; distributed production
   stores remain application infrastructure.

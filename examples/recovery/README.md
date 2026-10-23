@@ -1,7 +1,7 @@
 # File-backed action recovery and outbox
 
 Small application-owned persistence example. Standard library only, plus public
-`mvu.Functions` for the pure counter transition. No framework API changes, HTTP,
+`core.Functions` for the pure counter transition. No framework API changes, HTTP,
 UI, database, or dependency additions.
 
 From this directory, in PowerShell:
@@ -29,7 +29,7 @@ protocol, not a general-purpose consumer database.
 ## Wiring and transaction boundary
 
 `Ledger.Apply(ctx, scope, actionID, Add)` invokes the pure
-`mvu.Functions[Model, Add].Update`, then writes **one** fixed-size WAL frame
+`core.Functions[Model, Add].Update`, then writes **one** fixed-size WAL frame
 containing the new model, scoped action ID, SHA-256 payload fingerprint, and
 pending effect descriptor. The frame is synced before publishing any in-memory
 model/dedup/outbox changes or returning success. IDs are caller-supplied and must
@@ -41,7 +41,7 @@ Duplicate actions return their original result, even if later actions advanced
 the model; `Snapshot` returns the current model.
 
 Persistence is outside `Update`, not a command or a hidden side effect. This
-example deliberately does not use `web.Runtime`/ordinary `store.CompareAndSwap`:
+example deliberately does not use `web.Runtime`/ordinary `core.CompareAndSwap`:
 separate CAS and command calls cannot provide this transaction. An HTTP adapter
 would call `Apply` as its application service and only render after success.
 Authentication must bind the scope; client-supplied IDs are not authorization.

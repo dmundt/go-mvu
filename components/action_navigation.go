@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -14,14 +13,14 @@ var ErrInvalidLink = errors.New("components: action link requires a GET action")
 
 // ActionLink uses one GET action for both native and enhanced navigation.
 type ActionLink struct {
-	Action  htmx.Action
+	Action  web.BrowserAction
 	Label   string
 	Variant ButtonVariant
 	Attrs   html.Attrs
 }
 
 func (link ActionLink) RenderHTML(ctx context.Context, out *html.Context) error {
-	if link.Action.Method != htmx.Get {
+	if link.Action.Method != web.Get {
 		return ErrInvalidLink
 	}
 	if err := link.Action.Validate(); err != nil {

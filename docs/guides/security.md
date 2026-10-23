@@ -2,7 +2,7 @@
 type: Guide
 title: Security
 description: Security boundaries for HTML rendering, requests, and sessions.
-version: 5
+version: 6
 ---
 
 # Security
@@ -14,9 +14,9 @@ Defaults safe; opt-out explicit.
 - `Context.Text` / `Context.Attribute` escape; no `Raw(string)`.
 - `Static` literals and `Trusted(TrustStatic(...))` = audited server HTML
   only; never request, form, DB, URL, or user input.
-- `htmx` attribute values escaped; URLs validated (root-relative fast path,
+- `web.BrowserAction` attribute values escaped; URLs validated (root-relative fast path,
   else `url.Parse`). Only relative, `http`, `https` allowed;
-  else `ErrInvalidAction`.
+  else `web.ErrInvalidHTMXAction`.
 
 ## Attribute allowlist
 

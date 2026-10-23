@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 16
+version: 17
 ---
 
 # Specs
@@ -21,12 +21,12 @@ version: 16
 | 2 | Architecture, dependency direction | package layout, [internal/arch](../../internal/arch/) | [architecture](../architecture.md), ADR [0002](../adr/0002-package-boundaries.md), [0014](../adr/0014-enforced-package-boundaries.md) |
 | 3 | Rendering model, markers | [html](../../html/) | ADR [0004](../adr/0004-direct-safe-html-rendering.md), [0005](../adr/0005-pages-and-fragments.md) |
 | 4 | HTML context, escaping | [html](../../html/) | [security](../guides/security.md) |
-| 4.1 | Element builder, attribute allowlist | `html.El`, `html.Attrs`, `htmx.Action.Attrs` | [components](../guides/components.md#low-level-element-builder), [security](../guides/security.md), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
+| 4.1 | Element builder, attribute allowlist | `html.El`, `html.Attrs`, `web.BrowserAction.Attrs` | [components](../guides/components.md#low-level-element-builder), [security](../guides/security.md), ADR [0017](../adr/0017-element-builder-and-attrs.md) |
 | 5 | Composition, slots | [components](../../components/), including application integration | [components](../guides/components.md), ADR [0029](../adr/0029-seven-public-packages.md) |
-| 6 | MVU contracts | [mvu](../../mvu/) | ADR [0003](../adr/0003-mvu-runtime-boundaries.md) |
-| 7 | Versioned store | [store](../../store/), [web sessions](../../web/session.go) | ADR [0006](../adr/0006-versioned-session-models.md), [0029](../adr/0029-seven-public-packages.md) |
+| 6 | MVU contracts | [core application](../../core/mvu.go) | ADR [0003](../adr/0003-mvu-runtime-boundaries.md), [0030](../adr/0030-five-public-packages.md) |
+| 7 | Versioned store | [core storage](../../core/store.go), [web sessions](../../web/session.go) | ADR [0006](../adr/0006-versioned-session-models.md), [0030](../adr/0030-five-public-packages.md) |
 | 8 | Web views, RequestContext | [web](../../web/) | [web runtime](../guides/web-runtime.md), ADR [0013](../adr/0013-runtime-request-context.md) |
-| 9 | HTMX actions, request/response | [htmx](../../htmx/) | [components](../guides/components.md), [interactions](../guides/interactions.md) |
+| 9 | HTMX actions, request/response | [web browser contracts](../../web/htmx.go) | [components](../guides/components.md), [interactions](../guides/interactions.md), ADR [0030](../adr/0030-five-public-packages.md) |
 | 10 | HTTP runtime, lifecycle | [web](../../web/) (`Runtime`, `Route`, `Action`, `PostMessage`, `RegisterAll`), [admin workflow](../../examples/admin/) | [runtime ownership](../guides/web-runtime.md#ownership-and-guarantees), [first-app loop](../guides/first-app.md#what-runs-after-a-click), [dialog workflows](../guides/interactions.md#dialog-workflows-temporary-pages) |
 | 11 | Theme system, tokens, modes | [theme](../../theme/) | [themes](../guides/themes.md), ADR [0007](../adr/0007-server-controlled-themes.md), [0011](../adr/0011-system-theme-mode.md) |
 | 12 | Theme switcher, `POST /theme` | `components.ThemeSwitcher`, `theme.Preference.Handler` | [themes](../guides/themes.md) |
@@ -47,13 +47,19 @@ version: 16
 
 ## Deviations
 
-Seven public framework packages remain: `mvu`, `store`, `html`, `htmx`,
-`theme`, `web`, and `components`. HTTP infrastructure from `httpx`, `session`,
-and `middleware` now belongs to `web`; `ui` helpers and `static` assets belong
-to `components`. CSRF rendering lives in `components` while protection and
-token lookup stay in `web`. Dependencies remain one-way: `components` may
-import `web`, never the reverse. Examples and internal packages are outside
-this count. See [ADR-0029](../adr/0029-seven-public-packages.md).
+Five public framework packages remain: `core`, `html`, `theme`, `web`, and
+`components`. `mvu` and `store` are unified in `core`; HTMX contracts are in
+`web` as `BrowserAction`, `HTMXRequest`, `HTMXFromRequest`, and `HTMX*` response
+helpers. The typed runtime `web.Action[Msg]` remains distinct from browser
+attributes. No forwarding packages remain. Pure updates must not access
+storage, HTTP, or rendering, despite sharing a package with storage contracts.
+See [ADR-0030](../adr/0030-five-public-packages.md).
+
+HTTP infrastructure from `httpx`, `session`, and `middleware` belongs to
+`web`; `ui` helpers and `static` assets belong to `components`. CSRF rendering
+lives in `components` while protection and token lookup stay in `web`.
+Dependencies remain one-way: `components` may import `web`, never the reverse.
+Examples and internal packages are outside the public count.
 
 Form validation is consolidated into `web`: `Form`, `FieldErrors`,
 `FormDecoder`, `Bind`, and `ErrMissingDecoder`. The standalone `validation`
@@ -134,7 +140,7 @@ See [ADR-0020](../adr/0020-optional-production-integrations.md).
 | CSP: no unsafe-inline for script | script strict; `style-src 'unsafe-inline'` | inline CSS requirement (ADR 0012) |
 | `AppShell`, `NavigationItem`, `BreadcrumbItem` | `Shell`, `NavItem`, `Breadcrumb`; no aliases | one canonical name |
 | `html.TrustedHTML` | retained; no `html.Trusted` alias | one explicit trusted-markup type |
-| packages per §2 | seven public packages; examples, internals, and benchmarks separate | consolidate supporting APIs while retaining pure core boundaries; ADR-0029 |
+| packages per §2 | five public packages; examples, internals, and benchmarks separate | unify MVU/storage in core and HTMX/HTTP in web; ADR-0030 |
 | middleware deps: html only | middleware and sessions live inside `web`; CSRF HTML lives in `components` | one-way components → web dependency; no render-control dependency in HTTP infrastructure |
 | HTTP support dependencies | contracts, traces, events, response commitment, and sessions share `web` | no separate `httpx`, `session`, or `middleware` package |
 | diagnostics aggregates | + fixed operational event counters | saturation, stale actions, authorization, effect and stream failures |

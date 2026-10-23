@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type Model struct {
@@ -16,13 +16,13 @@ func (Message) MessageName() string { return "counter.increment" }
 
 type App struct{}
 
-func (App) Init(context.Context) (Model, []mvu.Command[Message], error) {
+func (App) Init(context.Context) (Model, []core.Command[Message], error) {
 	return Model{}, nil, nil
 }
 
 func (App) Update(
 	_ context.Context, model Model, _ Message,
-) (Model, []mvu.Command[Message], error) {
+) (Model, []core.Command[Message], error) {
 	model.Count++
 	return model, nil, nil
 }

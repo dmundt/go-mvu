@@ -1,11 +1,11 @@
-package mvu_test
+package core_test
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 type increment struct{}
@@ -13,7 +13,7 @@ type increment struct{}
 func (increment) MessageName() string { return "counter.increment" }
 
 func TestFunctionsDefaults(t *testing.T) {
-	app := mvu.Functions[int, increment]{}
+	app := core.Functions[int, increment]{}
 	model, commands, err := app.Init(context.Background())
 	if model != 0 || commands != nil || err != nil {
 		t.Fatalf("Init = %d, %v, %v", model, commands, err)
@@ -25,11 +25,11 @@ func TestFunctionsDefaults(t *testing.T) {
 }
 
 func TestFunctionsDelegate(t *testing.T) {
-	var app mvu.Application[int, increment] = mvu.Functions[int, increment]{
-		InitFunc: func(context.Context) (int, []mvu.Command[increment], error) {
+	var app core.Application[int, increment] = core.Functions[int, increment]{
+		InitFunc: func(context.Context) (int, []core.Command[increment], error) {
 			return 1, nil, nil
 		},
-		UpdateFunc: func(_ context.Context, model int, _ increment) (int, []mvu.Command[increment], error) {
+		UpdateFunc: func(_ context.Context, model int, _ increment) (int, []core.Command[increment], error) {
 			return model + 1, nil, nil
 		},
 	}
@@ -42,11 +42,11 @@ func TestFunctionsDelegate(t *testing.T) {
 
 func TestCommandFuncDispatches(t *testing.T) {
 	var got []string
-	dispatch := mvu.Dispatch[increment](func(_ context.Context, msg increment) error {
+	dispatch := core.Dispatch[increment](func(_ context.Context, msg increment) error {
 		got = append(got, msg.MessageName())
 		return nil
 	})
-	command := mvu.CommandFunc[increment](func(ctx context.Context, dispatch mvu.Dispatch[increment]) error {
+	command := core.CommandFunc[increment](func(ctx context.Context, dispatch core.Dispatch[increment]) error {
 		return dispatch(ctx, increment{})
 	})
 	if err := command.Execute(context.Background(), dispatch); err != nil {
@@ -59,7 +59,7 @@ func TestCommandFuncDispatches(t *testing.T) {
 
 func TestCommandFuncError(t *testing.T) {
 	want := errors.New("boom")
-	command := mvu.CommandFunc[increment](func(context.Context, mvu.Dispatch[increment]) error {
+	command := core.CommandFunc[increment](func(context.Context, core.Dispatch[increment]) error {
 		return want
 	})
 	if err := command.Execute(context.Background(), nil); !errors.Is(err, want) {

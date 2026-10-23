@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -102,7 +102,7 @@ func (model Model) saveMember(form web.Form[Editor]) (Model, error) {
 	return model, nil
 }
 
-type Message interface{ mvu.Message }
+type Message interface{ core.Message }
 
 type Browse struct {
 	Query string
@@ -130,7 +130,7 @@ func (Cancel) MessageName() string { return "admin.cancel" }
 
 type App struct{}
 
-func (App) Init(context.Context) (Model, []mvu.Command[Message], error) {
+func (App) Init(context.Context) (Model, []core.Command[Message], error) {
 	names := []string{"Ada", "Grace", "Barbara", "Margaret", "Alan", "Donald"}
 	members := make([]Member, memberCount)
 	for index := range members {
@@ -147,7 +147,7 @@ func (App) Init(context.Context) (Model, []mvu.Command[Message], error) {
 
 func (App) Update(
 	_ context.Context, model Model, message Message,
-) (Model, []mvu.Command[Message], error) {
+) (Model, []core.Command[Message], error) {
 	switch message := message.(type) {
 	case Browse:
 		model.Query, model.Role = message.Query, message.Role

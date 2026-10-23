@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
@@ -89,7 +89,7 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, CounterModel, CounterMessage]{
 		App:   CounterApp{},
-		Store: store.NewMemory[string, CounterModel](),
+		Store: core.NewMemory[string, CounterModel](),
 		Keys:  sessionKey,
 		View:  CounterView{Document: document},
 		Theme: theme.Default,

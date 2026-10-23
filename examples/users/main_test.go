@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -91,7 +90,7 @@ func TestUsersPageAndFragmentShareTableSemantics(t *testing.T) {
 
 func TestUsersActionAndRegionShareTarget(t *testing.T) {
 	action := usersPageAction.HTMX()
-	if action.Target != "#"+string(usersRegion) || action.Swap != htmx.OuterHTML {
+	if action.Target != "#"+string(usersRegion) || action.Swap != web.OuterHTML {
 		t.Fatalf("action = %+v", action)
 	}
 	view := UsersView{}

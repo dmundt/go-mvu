@@ -12,9 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/mvu"
-	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
 )
 
@@ -26,21 +25,21 @@ func (testMessage) MessageName() string { return "test.add" }
 
 type testApp struct{ initCommand bool }
 
-func (app testApp) Init(context.Context) (testModel, []mvu.Command[testMessage], error) {
+func (app testApp) Init(context.Context) (testModel, []core.Command[testMessage], error) {
 	if !app.initCommand {
 		return testModel{}, nil, nil
 	}
-	initCommand := mvu.CommandFunc[testMessage](
-		func(ctx context.Context, dispatch mvu.Dispatch[testMessage]) error {
+	initCommand := core.CommandFunc[testMessage](
+		func(ctx context.Context, dispatch core.Dispatch[testMessage]) error {
 			return dispatch(ctx, 10)
 		},
 	)
-	return testModel{}, []mvu.Command[testMessage]{initCommand}, nil
+	return testModel{}, []core.Command[testMessage]{initCommand}, nil
 }
 
 func (testApp) Update(
 	_ context.Context, model testModel, message testMessage,
-) (testModel, []mvu.Command[testMessage], error) {
+) (testModel, []core.Command[testMessage], error) {
 	if message < 0 {
 		return model, nil, errors.New("negative")
 	}
@@ -103,7 +102,7 @@ func newTestRuntime(t *testing.T, mutate func(*RuntimeConfig[string, testModel, 
 	t.Helper()
 	config := RuntimeConfig[string, testModel, testMessage]{
 		App:    testApp{},
-		Store:  store.NewMemory[string, testModel](),
+		Store:  core.NewMemory[string, testModel](),
 		Keys:   fixedKey,
 		View:   testView{},
 		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -141,7 +140,7 @@ func TestNewRuntimeRejectsIncompleteConfig(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			config := RuntimeConfig[string, testModel, testMessage]{
-				App: testApp{}, Store: store.NewMemory[string, testModel](),
+				App: testApp{}, Store: core.NewMemory[string, testModel](),
 				Keys: fixedKey, View: testView{},
 			}
 			clear(&config)
@@ -297,25 +296,25 @@ func TestRenderFailureAfterResponseStartedIsLoggedNotRewritten(t *testing.T) {
 
 // conflictStore fails the first CAS to force a retry.
 type conflictStore struct {
-	*store.Memory[string, testModel]
+	*core.Memory[string, testModel]
 	conflicts int
 }
 
 func (s *conflictStore) CompareAndSwap(
-	ctx context.Context, key string, version store.Version, model testModel,
-) (store.Snapshot[testModel], error) {
+	ctx context.Context, key string, version core.Version, model testModel,
+) (core.Snapshot[testModel], error) {
 	if s.conflicts > 0 {
 		s.conflicts--
 		if _, err := s.Memory.CompareAndSwap(ctx, key, version, testModel{Count: 100}); err != nil {
-			return store.Snapshot[testModel]{}, err
+			return core.Snapshot[testModel]{}, err
 		}
-		return store.Snapshot[testModel]{}, store.ErrConflict
+		return core.Snapshot[testModel]{}, core.ErrConflict
 	}
 	return s.Memory.CompareAndSwap(ctx, key, version, model)
 }
 
 func TestConflictRetriesAgainstLatestModel(t *testing.T) {
-	backing := &conflictStore{Memory: store.NewMemory[string, testModel](), conflicts: 1}
+	backing := &conflictStore{Memory: core.NewMemory[string, testModel](), conflicts: 1}
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) { c.Store = backing })
 	response := serve(runtime.Handle(addRoute(Result{Mode: RenderFragment, Fragment: "count"})),
 		httptest.NewRequest(http.MethodPost, "/add", nil))
@@ -332,15 +331,15 @@ func TestConflictRetriesAgainstLatestModel(t *testing.T) {
 
 // lockProbeStore reports whether a command ran while CAS was in progress.
 type lockProbeStore struct {
-	*store.Memory[string, testModel]
+	*core.Memory[string, testModel]
 	mu     sync.Mutex
 	inCAS  bool
 	inside bool
 }
 
 func (s *lockProbeStore) CompareAndSwap(
-	ctx context.Context, key string, version store.Version, model testModel,
-) (store.Snapshot[testModel], error) {
+	ctx context.Context, key string, version core.Version, model testModel,
+) (core.Snapshot[testModel], error) {
 	s.mu.Lock()
 	s.inCAS = true
 	s.mu.Unlock()
@@ -355,22 +354,22 @@ type commandApp struct {
 
 func (app commandApp) Update(
 	ctx context.Context, model testModel, message testMessage,
-) (testModel, []mvu.Command[testMessage], error) {
+) (testModel, []core.Command[testMessage], error) {
 	model, _, err := app.testApp.Update(ctx, model, message)
 	if message != 1 {
 		return model, nil, err
 	}
-	command := mvu.CommandFunc[testMessage](func(ctx context.Context, dispatch mvu.Dispatch[testMessage]) error {
+	command := core.CommandFunc[testMessage](func(ctx context.Context, dispatch core.Dispatch[testMessage]) error {
 		app.probe.mu.Lock()
 		app.probe.inside = app.probe.inside || app.probe.inCAS
 		app.probe.mu.Unlock()
 		return dispatch(ctx, 5)
 	})
-	return model, []mvu.Command[testMessage]{command}, err
+	return model, []core.Command[testMessage]{command}, err
 }
 
 func TestCommandsRunOutsideStoreAndDispatchFollowups(t *testing.T) {
-	probe := &lockProbeStore{Memory: store.NewMemory[string, testModel]()}
+	probe := &lockProbeStore{Memory: core.NewMemory[string, testModel]()}
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.Store = probe
 		c.App = commandApp{probe: probe}
@@ -386,7 +385,7 @@ func TestCommandsRunOutsideStoreAndDispatchFollowups(t *testing.T) {
 }
 
 func TestAsyncCommandRunnerDispatchesFollowup(t *testing.T) {
-	probe := &lockProbeStore{Memory: store.NewMemory[string, testModel]()}
+	probe := &lockProbeStore{Memory: core.NewMemory[string, testModel]()}
 	runner, err := NewAsyncCommandRunner[testMessage](1, 8, time.Second, func(err error) { t.Error(err) })
 	if err != nil {
 		t.Fatal(err)
@@ -426,7 +425,7 @@ func TestNewRequestContextPrefersHTMXCurrentURL(t *testing.T) {
 }
 
 func TestHandleRequireModelReturnsNotFoundWithoutInit(t *testing.T) {
-	memory := store.NewMemory[string, testModel]()
+	memory := core.NewMemory[string, testModel]()
 	runtime := newTestRuntime(t, func(c *RuntimeConfig[string, testModel, testMessage]) {
 		c.Store = memory
 	})
@@ -437,7 +436,7 @@ func TestHandleRequireModelReturnsNotFoundWithoutInit(t *testing.T) {
 	if response.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", response.Code)
 	}
-	if _, err := memory.Load(context.Background(), "client"); !errors.Is(err, store.ErrNotFound) {
+	if _, err := memory.Load(context.Background(), "client"); !errors.Is(err, core.ErrNotFound) {
 		t.Fatalf("model created: err = %v", err)
 	}
 	if _, err := memory.Create(context.Background(), "client", testModel{Count: 5}); err != nil {
@@ -452,16 +451,16 @@ func TestHandleRequireModelReturnsNotFoundWithoutInit(t *testing.T) {
 func TestSyncCommandsStopOnContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ran := 0
-	first := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	first := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		ran++
 		cancel()
 		return nil
 	})
-	second := mvu.CommandFunc[testMessage](func(context.Context, mvu.Dispatch[testMessage]) error {
+	second := core.CommandFunc[testMessage](func(context.Context, core.Dispatch[testMessage]) error {
 		ran++
 		return nil
 	})
-	err := SyncCommands[testMessage]{}.Run(ctx, []mvu.Command[testMessage]{first, nil, second}, nil)
+	err := SyncCommands[testMessage]{}.Run(ctx, []core.Command[testMessage]{first, nil, second}, nil)
 	if !errors.Is(err, context.Canceled) || ran != 1 {
 		t.Fatalf("err = %v, ran = %d", err, ran)
 	}

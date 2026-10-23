@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
-	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/web"
 	"golang.org/x/oauth2"
 )
@@ -64,7 +64,7 @@ func (auth *authentication) find(r *http.Request) (principal, error) {
 		return principal{}, &web.Error{Status: 401, Location: "/login"}
 	}
 	value, err := auth.records.Load(r.Context(), id)
-	if errors.Is(err, store.ErrNotFound) {
+	if errors.Is(err, core.ErrNotFound) {
 		return principal{}, &web.Error{Status: 401, Location: "/login"}
 	}
 	if err != nil {
@@ -105,7 +105,7 @@ func (auth *authentication) authorize(
 	}
 	// Recheck durable authorization for every CAS attempt/follow-up.
 	current, err := auth.records.Load(ctx, user.SessionID)
-	if errors.Is(err, store.ErrNotFound) {
+	if errors.Is(err, core.ErrNotFound) {
 		return &web.Error{Status: 401, Location: "/login"}
 	}
 	if err != nil {

@@ -1,10 +1,4 @@
-// Package store persists versioned MVU models.
-//
-// Copying policy: Memory stores models by value. Models containing maps,
-// slices, or pointers share that memory with callers; either treat loaded
-// models as immutable (copy before mutating in Update) or configure a clone
-// function with NewMemoryWithClone, which copies on every write and read.
-package store
+package core
 
 import (
 	"context"
@@ -44,6 +38,10 @@ type memoryEntry[M any] struct {
 
 // Memory is a race-safe in-memory Store. Locks cover only map access; callers
 // render and execute commands without holding them.
+//
+// Models are stored by value. Maps, slices, or pointers share memory with
+// callers; treat loaded models as immutable (copy before mutating in Update)
+// or use NewMemoryWithClone, which copies on every write and read.
 type Memory[K comparable, M any] struct {
 	mu      sync.RWMutex
 	entries map[K]memoryEntry[M]

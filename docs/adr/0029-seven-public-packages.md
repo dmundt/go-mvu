@@ -1,12 +1,16 @@
 ---
 type: Architecture Decision Record
 title: "ADR-0029: Seven public packages"
-status: Accepted
+status: Superseded by ADR-0030 for package layout
 description: Consolidate HTTP infrastructure and UI integration without weakening pure core boundaries.
-version: 1
+version: 2
 ---
 
 # ADR-0029: Seven public packages
+
+The package count and separate MVU/store/HTMX ownership below are superseded
+by [ADR-0030](0030-five-public-packages.md). HTTP/UI dependency direction and
+behavioral contracts remain in force.
 
 ## Context
 

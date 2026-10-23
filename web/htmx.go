@@ -1,4 +1,4 @@
-package htmx
+package web
 
 import (
 	"errors"
@@ -32,9 +32,11 @@ const (
 	NoSwap      Swap = "none"
 )
 
-var ErrInvalidAction = errors.New("invalid HTMX action")
+var ErrInvalidHTMXAction = errors.New("invalid HTMX action")
 
-type Action struct {
+// BrowserAction describes HTMX request attributes without runtime routing.
+// Action binds a typed application message to an HTTP endpoint.
+type BrowserAction struct {
 	Method     Method
 	URL        string
 	Target     string
@@ -51,10 +53,10 @@ type Action struct {
 	Boost       bool
 }
 
-func (a Action) Validate() error {
+func (a BrowserAction) Validate() error {
 	if a.Method < Get || a.Method > Delete || a.URL == "" ||
 		a.URL != strings.TrimSpace(a.URL) || strings.ContainsAny(a.URL, "\x00\r\n\t\f\v\\") {
-		return ErrInvalidAction
+		return ErrInvalidHTMXAction
 	}
 	if !plainPath(a.URL) {
 		parsedURL, err := url.Parse(a.URL)
@@ -63,19 +65,19 @@ func (a Action) Validate() error {
 			scheme = strings.ToLower(parsedURL.Scheme)
 		}
 		if err != nil || (scheme != "" && scheme != "http" && scheme != "https") {
-			return ErrInvalidAction
+			return ErrInvalidHTMXAction
 		}
 	}
 	for _, selector := range [...]string{a.Target, a.Select, a.Include, a.Indicator, a.DisabledElt} {
 		if strings.ContainsAny(selector, "\x00\r\n") {
-			return ErrInvalidAction
+			return ErrInvalidHTMXAction
 		}
 	}
 	switch a.Swap {
 	case "", InnerHTML, OuterHTML, BeforeBegin, AfterBegin, BeforeEnd, AfterEnd, DeleteSwap, NoSwap:
 		return nil
 	default:
-		return ErrInvalidAction
+		return ErrInvalidHTMXAction
 	}
 }
 
@@ -88,7 +90,7 @@ func plainPath(value string) bool {
 
 var methodAttributes = [...]string{"", "hx-get", "hx-post", "hx-put", "hx-patch", "hx-delete"}
 
-func (a Action) RenderAttributes(out *html.Context) error {
+func (a BrowserAction) RenderAttributes(out *html.Context) error {
 	if err := a.Validate(); err != nil {
 		return err
 	}
@@ -111,7 +113,7 @@ func (a Action) RenderAttributes(out *html.Context) error {
 
 // Attrs returns the validated hx-* attributes as html.Attrs, for html.El or
 // a component's Attrs field. Order matches RenderAttributes.
-func (a Action) Attrs() (html.Attrs, error) {
+func (a BrowserAction) Attrs() (html.Attrs, error) {
 	if err := a.Validate(); err != nil {
 		return nil, err
 	}
@@ -146,7 +148,9 @@ func writeAttr(out *html.Context, name, value string) {
 	out.Static(`"`)
 }
 
-type Request struct {
+// HTMXRequest contains browser-provided presentation metadata, not proof of
+// identity or authorization.
+type HTMXRequest struct {
 	IsHTMX      bool
 	IsBoosted   bool
 	IsHistory   bool
@@ -157,8 +161,9 @@ type Request struct {
 	Prompt      string
 }
 
-func FromRequest(r *http.Request) Request {
-	return Request{
+// HTMXFromRequest reads HTMX headers without changing the request.
+func HTMXFromRequest(r *http.Request) HTMXRequest {
+	return HTMXRequest{
 		IsHTMX:      r.Header.Get("HX-Request") == "true",
 		IsBoosted:   r.Header.Get("HX-Boosted") == "true",
 		IsHistory:   r.Header.Get("HX-History-Restore-Request") == "true",
@@ -170,11 +175,13 @@ func FromRequest(r *http.Request) Request {
 	}
 }
 
-func Redirect(w http.ResponseWriter, location string)   { w.Header().Set("HX-Redirect", location) }
-func Refresh(w http.ResponseWriter)                     { w.Header().Set("HX-Refresh", "true") }
-func PushURL(w http.ResponseWriter, location string)    { w.Header().Set("HX-Push-Url", location) }
-func ReplaceURL(w http.ResponseWriter, location string) { w.Header().Set("HX-Replace-Url", location) }
-func Retarget(w http.ResponseWriter, target string)     { w.Header().Set("HX-Retarget", target) }
-func Reswap(w http.ResponseWriter, swap Swap)           { w.Header().Set("HX-Reswap", string(swap)) }
-func Reselect(w http.ResponseWriter, selector string)   { w.Header().Set("HX-Reselect", selector) }
-func Trigger(w http.ResponseWriter, events string)      { w.Header().Set("HX-Trigger", events) }
+func HTMXRedirect(w http.ResponseWriter, location string) { w.Header().Set("HX-Redirect", location) }
+func HTMXRefresh(w http.ResponseWriter)                   { w.Header().Set("HX-Refresh", "true") }
+func HTMXPushURL(w http.ResponseWriter, location string)  { w.Header().Set("HX-Push-Url", location) }
+func HTMXReplaceURL(w http.ResponseWriter, location string) {
+	w.Header().Set("HX-Replace-Url", location)
+}
+func HTMXRetarget(w http.ResponseWriter, target string)   { w.Header().Set("HX-Retarget", target) }
+func HTMXReswap(w http.ResponseWriter, swap Swap)         { w.Header().Set("HX-Reswap", string(swap)) }
+func HTMXReselect(w http.ResponseWriter, selector string) { w.Header().Set("HX-Reselect", selector) }
+func HTMXTrigger(w http.ResponseWriter, events string)    { w.Header().Set("HX-Trigger", events) }

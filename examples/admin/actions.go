@@ -9,7 +9,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/dmundt/go-mvu/components"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -22,20 +21,20 @@ const (
 
 var (
 	browseAction = web.Action[Message]{
-		Method: htmx.Get,
+		Method: web.Get,
 		Path:   "/admin",
 		Decode: decodeBrowse,
 		Result: web.Result{Mode: web.RenderAuto, Fragment: string(workspaceRegion)},
 	}
 	editAction = web.Action[Message]{
-		Method: htmx.Get,
+		Method: web.Get,
 		Path:   "/admin/edit",
 		Decode: decodeEdit,
 		Result: web.Result{Mode: web.RenderAuto, Fragment: string(editorRegion)},
-		Swap:   htmx.InnerHTML,
+		Swap:   web.InnerHTML,
 	}
 	saveAction = web.Action[Message]{
-		Method: htmx.Post,
+		Method: web.Post,
 		Path:   "/admin/save",
 		Decode: decodeSave,
 		Result: web.Result{
@@ -45,10 +44,10 @@ var (
 	overviewAction = web.PostMessage[Message]("/admin/overview", Refresh{},
 		web.Result{Mode: web.RenderAuto, Fragment: string(overviewRegion), Location: "/admin/view"})
 	cancelAction = web.Action[Message]{
-		Method: htmx.Get, Path: "/admin/cancel",
+		Method: web.Get, Path: "/admin/cancel",
 		Decode: web.StaticMessage[Message](Cancel{}),
 		Result: web.Result{Mode: web.RenderAuto, Fragment: string(editorRegion)},
-		Swap:   htmx.InnerHTML,
+		Swap:   web.InnerHTML,
 	}
 )
 
@@ -61,13 +60,13 @@ func saveHandler(runtime *web.Runtime[string, Model, Message]) http.Handler {
 			return
 		}
 		result := saveAction.Result
-		metadata := htmx.FromRequest(request)
+		metadata := web.HTMXFromRequest(request)
 		if metadata.IsHTMX && !metadata.IsBoosted && !metadata.IsHistory {
 			if !message.(Save).Form.Valid {
 				result.Status = http.StatusUnprocessableEntity
 				result.Fragment = string(editorRegion)
-				htmx.Retarget(w, "#"+string(editorRegion))
-				htmx.Reswap(w, htmx.InnerHTML)
+				web.HTMXRetarget(w, "#"+string(editorRegion))
+				web.HTMXReswap(w, web.InnerHTML)
 			} else {
 				result.Fragment = "member-saved"
 			}

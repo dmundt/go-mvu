@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dmundt/go-mvu/store"
+	"github.com/dmundt/go-mvu/core"
 )
 
 var (
@@ -21,9 +21,9 @@ var (
 )
 
 type record[M any] struct {
-	Schema  int           `json:"schema"`
-	Version store.Version `json:"version"`
-	Model   M             `json:"model"`
+	Schema  int          `json:"schema"`
+	Version core.Version `json:"version"`
+	Model   M            `json:"model"`
 }
 
 // Store persists one JSON record per key. It serializes operations within one
@@ -62,7 +62,7 @@ func (s *Store[M]) read(name string) (record[M], error) {
 	var value record[M]
 	data, err := os.ReadFile(filepath.Join(s.dir, name))
 	if errors.Is(err, os.ErrNotExist) {
-		return value, store.ErrNotFound
+		return value, core.ErrNotFound
 	}
 	if err != nil {
 		return value, fmt.Errorf("jsonstore: read record: %w", err)
@@ -76,86 +76,86 @@ func (s *Store[M]) read(name string) (record[M], error) {
 	return value, nil
 }
 
-func (s *Store[M]) Load(ctx context.Context, key string) (store.Snapshot[M], error) {
+func (s *Store[M]) Load(ctx context.Context, key string) (core.Snapshot[M], error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.ready(ctx); err != nil {
-		return store.Snapshot[M]{}, err
+		return core.Snapshot[M]{}, err
 	}
 	name, err := fileName(key)
 	if err != nil {
-		return store.Snapshot[M]{}, err
+		return core.Snapshot[M]{}, err
 	}
 	value, err := s.read(name)
 	if err != nil {
-		return store.Snapshot[M]{}, err
+		return core.Snapshot[M]{}, err
 	}
-	return store.Snapshot[M]{Model: value.Model, Version: value.Version}, nil
+	return core.Snapshot[M]{Model: value.Model, Version: value.Version}, nil
 }
 
 func (s *Store[M]) Create(
 	ctx context.Context,
 	key string,
 	model M,
-) (store.Snapshot[M], error) {
+) (core.Snapshot[M], error) {
 	return s.mutate(ctx, key, 0, model, true)
 }
 
 func (s *Store[M]) CompareAndSwap(
 	ctx context.Context,
 	key string,
-	version store.Version,
+	version core.Version,
 	model M,
-) (store.Snapshot[M], error) {
+) (core.Snapshot[M], error) {
 	return s.mutate(ctx, key, version, model, false)
 }
 
 func (s *Store[M]) mutate(
 	ctx context.Context,
 	key string,
-	version store.Version,
+	version core.Version,
 	model M,
 	create bool,
-) (store.Snapshot[M], error) {
+) (core.Snapshot[M], error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.ready(ctx); err != nil {
-		return store.Snapshot[M]{}, err
+		return core.Snapshot[M]{}, err
 	}
 	name, err := fileName(key)
 	if err != nil {
-		return store.Snapshot[M]{}, err
+		return core.Snapshot[M]{}, err
 	}
 	current, err := s.read(name)
 	exists := err == nil
-	if err != nil && !errors.Is(err, store.ErrNotFound) {
-		return store.Snapshot[M]{}, err
+	if err != nil && !errors.Is(err, core.ErrNotFound) {
+		return core.Snapshot[M]{}, err
 	}
 	if create && exists {
-		return store.Snapshot[M]{}, store.ErrAlreadyExists
+		return core.Snapshot[M]{}, core.ErrAlreadyExists
 	}
 	if !create && ((!exists && version != 0) || (exists && version != current.Version)) {
-		return store.Snapshot[M]{}, store.ErrConflict
+		return core.Snapshot[M]{}, core.ErrConflict
 	}
 	if create {
 		version = 0
 	}
 	if version == math.MaxUint64 {
-		return store.Snapshot[M]{}, errors.New("jsonstore: version exhausted")
+		return core.Snapshot[M]{}, errors.New("jsonstore: version exhausted")
 	}
 	next := record[M]{Schema: 1, Version: version + 1, Model: model}
 	data, err := json.Marshal(next)
 	if err != nil {
-		return store.Snapshot[M]{}, fmt.Errorf("jsonstore: encode record: %w", err)
+		return core.Snapshot[M]{}, fmt.Errorf("jsonstore: encode record: %w", err)
 	}
 	var copy record[M]
 	if err := json.Unmarshal(data, &copy); err != nil {
-		return store.Snapshot[M]{}, fmt.Errorf("jsonstore: round trip record: %w", err)
+		return core.Snapshot[M]{}, fmt.Errorf("jsonstore: round trip record: %w", err)
 	}
 	if err := s.write(name, data); err != nil {
-		return store.Snapshot[M]{}, err
+		return core.Snapshot[M]{}, err
 	}
-	return store.Snapshot[M]{Model: copy.Model, Version: copy.Version}, nil
+	return core.Snapshot[M]{Model: copy.Model, Version: copy.Version}, nil
 }
 
 func (s *Store[M]) write(name string, data []byte) error {
@@ -239,4 +239,4 @@ func (s *Store[M]) Close() error {
 	return nil
 }
 
-var _ store.Store[string, struct{}] = (*Store[struct{}])(nil)
+var _ core.Store[string, struct{}] = (*Store[struct{}])(nil)

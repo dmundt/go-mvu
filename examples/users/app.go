@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/dmundt/go-mvu/mvu"
+	"github.com/dmundt/go-mvu/core"
 )
 
 const pageSize = 5
@@ -54,7 +54,7 @@ func (model UsersModel) Visible() []User {
 }
 
 type UsersMessage interface {
-	mvu.Message
+	core.Message
 	isUsersMessage()
 }
 
@@ -68,7 +68,7 @@ type UsersApp struct {
 	Directory []User
 }
 
-func (app UsersApp) Init(context.Context) (UsersModel, []mvu.Command[UsersMessage], error) {
+func (app UsersApp) Init(context.Context) (UsersModel, []core.Command[UsersMessage], error) {
 	return UsersModel{
 		Users:      app.Directory,
 		Page:       1,
@@ -81,7 +81,7 @@ func (UsersApp) Update(
 	_ context.Context,
 	model UsersModel,
 	msg UsersMessage,
-) (UsersModel, []mvu.Command[UsersMessage], error) {
+) (UsersModel, []core.Command[UsersMessage], error) {
 	switch msg := msg.(type) {
 	case ShowPage:
 		model.Page = min(max(msg.Page, 1), model.Pages())

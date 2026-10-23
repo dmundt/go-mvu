@@ -6,7 +6,6 @@ import (
 
 	"github.com/dmundt/go-mvu/components"
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -23,9 +22,9 @@ func (counter CounterFragment) RenderHTML(ctx context.Context, out *html.Context
 		Children: []html.Component{components.Button{
 			Type:  components.ButtonSubmit,
 			Label: "Increment",
-			Action: htmx.Action{
-				Method: htmx.Post, URL: "/increment", Target: "#counter",
-				Swap: htmx.OuterHTML,
+			Action: web.BrowserAction{
+				Method: web.Post, URL: "/increment", Target: "#counter",
+				Swap: web.OuterHTML,
 			},
 		}},
 	}

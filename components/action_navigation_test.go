@@ -7,16 +7,15 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
 	"github.com/dmundt/go-mvu/theme"
 	"github.com/dmundt/go-mvu/web"
 )
 
 func TestActionLinkSharesEscapedURLAndPresentation(t *testing.T) {
 	output := renderIntegration(t, ActionLink{
-		Action: htmx.Action{
-			Method: htmx.Get, URL: "/edit?id=1&q=%3Cname%3E&role=Admin",
-			Target: "#members", Swap: htmx.OuterHTML, PushURL: "true",
+		Action: web.BrowserAction{
+			Method: web.Get, URL: "/edit?id=1&q=%3Cname%3E&role=Admin",
+			Target: "#members", Swap: web.OuterHTML, PushURL: "true",
 		},
 		Label: "Edit <member>", Variant: ButtonSecondary,
 		Attrs: html.Attrs{html.A("aria-label", "Edit <profile>")},
@@ -35,13 +34,13 @@ func TestActionLinkSharesEscapedURLAndPresentation(t *testing.T) {
 
 func TestActionLinkRejectsInvalidActionsBeforeOutput(t *testing.T) {
 	for _, test := range []struct {
-		action htmx.Action
+		action web.BrowserAction
 		err    error
 	}{
-		{htmx.Action{}, ErrInvalidLink},
-		{htmx.Action{Method: htmx.Post, URL: "/save"}, ErrInvalidLink},
-		{htmx.Action{Method: htmx.Get, URL: "javascript:alert(1)"}, htmx.ErrInvalidAction},
-		{htmx.Action{Method: htmx.Get, URL: "/edit", Swap: "invalid"}, htmx.ErrInvalidAction},
+		{web.BrowserAction{}, ErrInvalidLink},
+		{web.BrowserAction{Method: web.Post, URL: "/save"}, ErrInvalidLink},
+		{web.BrowserAction{Method: web.Get, URL: "javascript:alert(1)"}, web.ErrInvalidHTMXAction},
+		{web.BrowserAction{Method: web.Get, URL: "/edit", Swap: "invalid"}, web.ErrInvalidHTMXAction},
 	} {
 		var output strings.Builder
 		err := html.Render(context.Background(), &output, ActionLink{Action: test.action})
@@ -83,7 +82,7 @@ func TestNavigationPropagatesWriterErrors(t *testing.T) {
 	failure := errors.New("navigation writer failed")
 	protectedContext(t, func(ctx context.Context) {
 		for _, component := range []html.Component{
-			ActionLink{Action: htmx.Action{Method: htmx.Get, URL: "/members"}, Label: "Members"},
+			ActionLink{Action: web.BrowserAction{Method: web.Get, URL: "/members"}, Label: "Members"},
 			SecureThemeSwitcher{Mode: theme.Light, Return: "/members"},
 		} {
 			if err := html.Render(ctx, failedWriter{err: failure}, component); !errors.Is(err, failure) {

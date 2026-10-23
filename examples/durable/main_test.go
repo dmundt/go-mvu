@@ -16,8 +16,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dmundt/go-mvu/core"
 	"github.com/dmundt/go-mvu/internal/example/jsonstore"
-	"github.com/dmundt/go-mvu/store"
 )
 
 var csrfToken = regexp.MustCompile(`X-CSRF-Token&#34;:&#34;([^&]+)&#34;`)
@@ -60,7 +60,7 @@ func TestJSONStorePersistsCompareAndSwapAcrossRestart(t *testing.T) {
 	}
 	if _, err := first.CompareAndSwap(
 		context.Background(), "session/key", 0, CounterModel{},
-	); !errors.Is(err, store.ErrConflict) {
+	); !errors.Is(err, core.ErrConflict) {
 		t.Fatalf("stale CAS error = %v, want conflict", err)
 	}
 

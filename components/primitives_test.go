@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
-	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func render(t *testing.T, component html.Component) string {
@@ -56,7 +56,7 @@ func TestPrimitivesRenderEscapedMarkup(t *testing.T) {
 func TestButtonRendersHTMXAction(t *testing.T) {
 	got := render(t, Button{
 		Label:  "Save",
-		Action: htmx.Action{Method: htmx.Post, URL: "/save", Target: "#form"},
+		Action: web.BrowserAction{Method: web.Post, URL: "/save", Target: "#form"},
 	})
 	for _, want := range []string{`hx-post="/save"`, `hx-target="#form"`} {
 		if !strings.Contains(got, want) {
