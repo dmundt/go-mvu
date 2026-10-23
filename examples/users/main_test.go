@@ -8,6 +8,9 @@ import (
 	"testing"
 
 	"github.com/dmundt/go-mvu/html"
+	"github.com/dmundt/go-mvu/htmx"
+	"github.com/dmundt/go-mvu/ui"
+	"github.com/dmundt/go-mvu/web"
 )
 
 func get(t *testing.T, target string, headers map[string]string) *httptest.ResponseRecorder {
@@ -51,6 +54,7 @@ func TestUsersPageAndFragmentShareTableSemantics(t *testing.T) {
 		if fragment {
 			headers = map[string]string{"HX-Request": "true"}
 		}
+
 		response := get(t, "/users?page=1", headers)
 		if response.Code != http.StatusOK {
 			t.Fatalf("status = %d: %s", response.Code, response.Body)
@@ -83,6 +87,26 @@ func TestUsersPageAndFragmentShareTableSemantics(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestUsersActionAndRegionShareTarget(t *testing.T) {
+	action := usersPageAction.HTMX()
+	if action.Target != "#"+string(usersRegion) || action.Swap != htmx.OuterHTML {
+		t.Fatalf("action = %+v", action)
+	}
+	view := ui.RegionView[UsersModel]{Region: usersRegion, Content: usersContent}
+	fragment, err := view.Fragment(context.Background(), usersPageAction.Result.Fragment,
+		UsersModel{}, web.RequestContext{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var output strings.Builder
+	if err := html.Render(context.Background(), &output, fragment); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(output.String(), `<section id="users-results">`) {
+		t.Fatalf("region root = %s", output.String())
 	}
 }
 

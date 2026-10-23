@@ -2,7 +2,7 @@
 type: Guide
 title: Components and pagination
 description: Contracts and usage for reusable components and pagination.
-version: 1
+version: 4
 ---
 
 # Components and pagination
@@ -77,6 +77,146 @@ components.Card{
 
 Nil slots are optional. A component owns semantic HTML and accessibility;
 theme classes should describe roles and variants, not a CSS framework.
+
+## Shorter composition
+
+`Column(...)` and `Row(...)` return `Stack` and `Inline`. They remove child
+slice boilerplate without adding a new rendering model:
+
+```go
+components.Column(
+	components.Heading{Level: 2, Text: "Contact"},
+	components.Row(
+		components.Paragraph("Questions?"),
+		components.Link{URL: "/contact", Label: "Write to us"},
+	),
+)
+```
+
+Use `Stack{Gap: ..., Attrs: ...}` and `Inline{Attrs: ...}` for custom
+configuration. `FormLayout(...)` returns a stack whose inputs, selects, and
+textareas fill the available width; labels and field errors remain separate,
+accessible components. Its CSS works with all shipped themes.
+
+### Shared page policy
+
+The optional `ui` package connects existing components and HTTP helpers.
+Configure document policy once when constructing your view:
+
+```go
+type View struct{ Document ui.Document }
+
+view := View{Document: ui.Document{
+	HTMX: true,
+	CSRF: true,
+	SwapValidationErrors: true,
+}}
+```
+
+Inside `Page`, return `view.Document.Page(request, "Contact", body)`.
+It uses the request's theme and mode and the embedded HTMX source and SRI.
+`CSRF` enables the header wrapper when HTMX is enabled. The application
+must still mount `static.Handler`, session middleware, and CSRF middleware;
+the helper never installs routes or protection. A zero `ui.Document` emits
+plain pages without HTMX or the header wrapper.
+
+Call `document.Validate()` at startup and propagate its error. Enabling
+`CSRF` or `SwapValidationErrors` without `HTMX` returns
+`ui.ErrInvalidDocument` instead of silently ignoring the setting. `Page`
+also rejects that configuration at render time before writing any bytes.
+`CSRF` means HTMX headers only; it does not protect server endpoints.
+
+### Lists and text tables
+
+`Map` converts typed items into a `Sequence` in input order. It allocates
+the component slice immediately; it is not a lazy collection or virtual DOM.
+An empty input renders nothing.
+
+```go
+rows := components.Map(users, func(user User) html.Component {
+	return components.TableRow{Cells: []html.Component{
+		components.RowHeader(user.Name),
+		components.TextCell(user.Email),
+	}}
+})
+table := components.Table{
+	Caption: "Users",
+	Header: components.HeaderRow{"Name", "Email"},
+	Body: rows,
+}
+```
+
+`RowHeader` emits `<th scope="row">`; `TextCell` emits `<td>`. Both escape
+text and return configurable `TableCell` structs. Use `TableCell` directly
+for non-text content. Mapping callbacks return ordinary components whose
+rendering errors propagate normally.
+
+### Rooted fragments
+
+Use a region for a stable fragment name and its section root:
+
+```go
+const contactRegion ui.Region = "contact-form"
+
+// In the shared web.Action:
+result := web.Result{Mode: web.RenderAuto, Fragment: string(contactRegion)}
+
+// On the full page:
+body := contactRegion.Wrap(contactBody(model))
+
+// In View.Fragment:
+return contactRegion.Select(name, contactBody(model))
+```
+
+`Wrap` and `Select` render the same section ID for `outerHTML` replacement.
+`Select` reports `web.ErrUnknownFragment` for other names. Names start with
+an ASCII letter or underscore, followed by letters, digits, underscores, or
+hyphens; invalid names report `ui.ErrInvalidRegion`. For multiple regions,
+dispatch to the matching region explicitly. Helpers preserve rendering
+errors and escape child content.
+
+### Define region content once
+
+`ui.RegionView[Model]` binds a region to a typed content function. Embed it
+in an application view to provide its `Fragment` method automatically:
+
+```go
+type View struct {
+	ui.RegionView[Model]
+	Document ui.Document
+}
+
+view := View{
+	Document: ui.Document{HTMX: true, CSRF: true},
+	RegionView: ui.RegionView[Model]{
+		Region: contactRegion,
+		Content: func(
+			ctx context.Context, model Model, request web.RequestContext,
+		) (html.Component, error) {
+			return content(model), nil
+		},
+	},
+}
+```
+
+Inside `Page`, call `content, err := view.Render(ctx, model, request)`,
+check the error, and place `content` in the page. The promoted `Fragment`
+method uses the same content function and root. Context and presentation
+state are passed explicitly on every call; no model or request is retained.
+Unknown names are rejected before calling the content function. Missing
+content reports `ui.ErrMissingContent`; content errors propagate before
+rendering begins. Use explicit dispatch when a page has multiple regions.
+
+For small screens, ordinary component-returning functions with
+`web.ViewFunctions` can be simpler than an embedded `RegionView`.
+The [contact example](../../examples/contact/view.go) uses `contactBody`
+for both page and fragment, without defining a component type or render
+method. Its view factory captures document policy only, not request state.
+Use whichever approach leaves fewer concepts in the application.
+
+See [forms](forms.md) for secure action forms and explicit field helpers.
+Existing `Document`, `Form`, control structs, and custom fragment types
+remain supported. See [ADR-0021](../adr/0021-concise-ui-composition.md).
 
 ## Low-level element builder
 
@@ -161,7 +301,7 @@ out.Static(` role="region">`)
 Run `npm ci --ignore-scripts`, `npx playwright install chromium --only-shell`,
 then `npm run test:browser`. Go consumers do not need Node or browser tooling.
 The suite uses real example handlers through opt-in Go test servers, not mocks.
-It starts four loopback servers on ports 18080–18083 and stops them after the
+It starts five loopback servers on ports 18080–18084 and stops them after the
 run; occupied ports fail startup rather than reusing an unrelated process.
 
 Projects: `desktop-light`, `desktop-dark`, `mobile-light`, `mobile-dark`
@@ -321,6 +461,10 @@ components.Button{
 	Action:    htmx.Action{Method: htmx.Post, URL: "/counter/increment"},
 }
 ```
+
+When an action also has a Go route, define it as `web.Action` and pass
+`action.HTMX()` to the control. This keeps its method, path, and fragment in
+one place; see [web actions](web-runtime.md#routes).
 
 Components stream output directly. `Table` supplies `table`/`thead`/
 `tbody`/`tfoot`; rows built from `TableRow` + `TableCell`:

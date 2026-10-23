@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 2
+version: 3
 ---
 
 # Architecture Decision Records
@@ -39,3 +39,4 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0018](0018-ui-authoring-boundaries.md) | Semantic composition with scoped authoring boundaries | Accepted |
 | [0019](0019-http-policy-and-runtime-reliability.md) | Explicit HTTP policy, streaming lifecycle, reliable transitions | Accepted |
 | [0020](0020-optional-production-integrations.md) | Optional CASK adapter and OIDC production integration | Accepted |
+| [0021](0021-concise-ui-composition.md) | Small layout constructors and optional UI composition helpers | Accepted |

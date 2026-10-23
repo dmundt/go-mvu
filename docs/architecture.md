@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 2
+version: 5
 ---
 
 # Architecture
@@ -29,7 +29,8 @@ CSS inlined in `<style>`. Source of truth:
 | `middleware` | security headers/CSP, CSRF, recover, request ID, logging, diagnostics |
 | `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
 | `httpx` | stdlib-only HTTP error policy, request IDs, Vary merging, response commitment |
-| `web` | runtime: route → message → Update → store → commands → view |
+| `web` | runtime: `Action`/route → message → Update → store → commands → view |
+| `ui` | optional app composition: document policy, secure action forms, rooted regions, typed region views, field errors |
 | `internal/arch` | boundary enforcement test |
 | `benchmarks` | render benchmarks vs `html/template` |
 
@@ -59,6 +60,7 @@ middleware → html, session, timing, httpx
 components → html, htmx, theme
 shared     → components, html, htmx
 web        → mvu, html, htmx, store, theme, timing, httpx
+ui         → components, html, htmx, middleware, static, validation, web
 examples   → anything
 ```
 
@@ -71,11 +73,16 @@ flowchart BT
   components --> html & htmx & theme
   shared --> components & html & htmx
   web --> mvu & html & htmx & store & theme & timing & httpx
+  ui --> components & html & htmx & middleware & static & validation & web
   app[application] --> web & components & shared & middleware & session & static
 ```
 
 Forbidden: `unsafe`; `reflect` in `html`/`components`; `html/template`,
 `text/template` in library code; `mvu` → anything HTTP/HTML/storage.
+
+`ui` sits above the existing layers; core packages never import it. Apps
+opt in explicitly and still own middleware and asset routing. See
+[ADR-0021](adr/0021-concise-ui-composition.md).
 
 ## Request lifecycle
 
@@ -119,6 +126,18 @@ appending a replacement body. HTTP failure after CAS does not undo persistence.
   swap target subtree. Distinct marker types; runtime cannot mix.
 - `RenderAuto`: HTMX → fragment; plain form → 303 `Location`; else page.
   Same route serves HTMX and no-JS clients.
+
+## Interaction ownership
+
+- Server owns domain and workflow state; browser owns transient native control
+  state, such as input values and expanded disclosure widgets.
+- Prefer native HTML for local behavior. Use HTMX requests and stable fragment
+  roots for server-backed transitions, not a client-side state mirror.
+- No application JavaScript: no inline handlers or HTMX expressions either.
+  HTMX itself is browser JavaScript; full-page links and forms remain the
+  baseline. Push transports and additional extensions are not implied.
+- Capability boundaries, fallback rules, and interaction recipes:
+  [interactive applications](guides/interactions.md).
 
 ## Rendering
 

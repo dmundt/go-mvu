@@ -1,9 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
-const examples = ['counter', 'users', 'themes', 'components'];
+const examples = ['counter', 'users', 'themes', 'components', 'contact', 'hello', 'admin'];
 const basePort = Number(process.env.GOMVU_BROWSER_BASE_PORT ?? 18080);
-if (!Number.isInteger(basePort) || basePort < 1024 || basePort > 65532) {
-  throw new Error('GOMVU_BROWSER_BASE_PORT must be an integer from 1024 to 65532');
+if (!Number.isInteger(basePort) || basePort < 1024 || basePort > 65529) {
+  throw new Error('GOMVU_BROWSER_BASE_PORT must be an integer from 1024 to 65529');
 }
 
 export default defineConfig({
@@ -28,12 +28,16 @@ export default defineConfig({
       },
     })),
   ),
-  webServer: examples.map((example, index) => ({
-    command: `go test -count=1 -run "^TestBrowserServer$" -v -timeout=0 ./examples/${example}`,
-    url: `http://127.0.0.1:${basePort + index}/${example === 'users' ? 'users' : ''}`,
-    env: { GOMVU_BROWSER_ADDR: `127.0.0.1:${basePort + index}` },
-    timeout: 180_000,
-    reuseExistingServer: false,
-    gracefulShutdown: { signal: 'SIGTERM', timeout: 5_000 },
-  })),
+  webServer: examples.map((example, index) => {
+    const paths = { users: '/users', contact: '/contact', admin: '/admin' };
+    const readyPath = paths[example] ?? '/';
+    return {
+      command: `go test -count=1 -run "^TestBrowserServer$" -v -timeout=0 ./examples/${example}`,
+      url: `http://127.0.0.1:${basePort + index}${readyPath}`,
+      env: { GOMVU_BROWSER_ADDR: `127.0.0.1:${basePort + index}` },
+      timeout: 180_000,
+      reuseExistingServer: false,
+      gracefulShutdown: { signal: 'SIGTERM', timeout: 5_000 },
+    };
+  }),
 });

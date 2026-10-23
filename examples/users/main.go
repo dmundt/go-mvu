@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/dmundt/go-mvu/static"
 	"github.com/dmundt/go-mvu/store"
 	"github.com/dmundt/go-mvu/theme"
+	"github.com/dmundt/go-mvu/ui"
 	"github.com/dmundt/go-mvu/web"
 )
 
@@ -67,11 +67,21 @@ func newHandler(secret []byte) (http.Handler, error) {
 		return nil, err
 	}
 	directory := syntheticUsers(42)
+	document := ui.Document{HTMX: true, CSRF: true, SwapValidationErrors: true}
+	if err := document.Validate(); err != nil {
+		return nil, err
+	}
+	view := UsersView{
+		Document: document,
+		RegionView: ui.RegionView[UsersModel]{
+			Region: usersRegion, Content: usersContent,
+		},
+	}
 	runtime, err := web.NewRuntime(web.RuntimeConfig[string, UsersModel, UsersMessage]{
 		App:    UsersApp{Directory: directory},
 		Store:  store.NewMemory[string, UsersModel](),
 		Keys:   web.KeyResolverFunc[string](sessionKey),
-		View:   UsersView{},
+		View:   view,
 		Theme:  theme.Default,
 		Themes: preference,
 	})
@@ -80,15 +90,12 @@ func newHandler(secret []byte) (http.Handler, error) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("GET /users", runtime.Handle(web.Route[UsersMessage]{
-		Method:  http.MethodGet,
-		Pattern: "/users",
-		Decode:  web.DecoderFunc[UsersMessage](decodeShowPage),
-		Result:  web.Result{Mode: web.RenderAuto, Fragment: "results"},
-	}))
+	if err := runtime.Register(mux, usersPageAction); err != nil {
+		return nil, err
+	}
 	mux.HandleFunc("GET /users/cards", func(w http.ResponseWriter, r *http.Request) {
 		request := web.NewRequestContext(r, theme.Default, preference)
-		page := cardsPage(request, directory[:6])
+		page := view.cardsPage(request, directory[:6])
 		if err := web.WritePage(r.Context(), w, http.StatusOK, page); err != nil {
 			log.Printf("render user cards: %v", err)
 		}
@@ -112,15 +119,6 @@ func newHandler(secret []byte) (http.Handler, error) {
 		middleware.Recover,
 		policy,
 	), nil
-}
-
-// decodeShowPage reads ?page=N. Missing or invalid → page 1.
-func decodeShowPage(r *http.Request) (UsersMessage, error) {
-	number, err := strconv.Atoi(r.URL.Query().Get("page"))
-	if err != nil {
-		number = 1
-	}
-	return ShowPage{Page: number}, nil
 }
 
 func sessionKey(r *http.Request) (string, error) {
