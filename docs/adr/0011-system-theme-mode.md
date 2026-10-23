@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0011: System theme mode as default"
+description: Use system preference as the default theme mode.
+version: 1
+---
+
 # ADR-0011: System theme mode as default
 
 - Status: Accepted

@@ -1,3 +1,9 @@
+---
+type: Framework Specification
+title: Go MVU Framework for SSR
+description: Authoritative specification for the Go MVU server-rendered framework.
+version: 1
+---
 <!--
 Source: "Go MVU Framework for SSR" Copilot chat, pasted by user as the gomvu
 build prompt. Shared chat link requires Microsoft sign-in; this text is the

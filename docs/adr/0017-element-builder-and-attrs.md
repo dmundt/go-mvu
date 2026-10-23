@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0017: Element builder and attribute passthrough"
+description: Use typed element construction and safe attribute passthrough.
+version: 1
+---
+
 # ADR-0017: Element builder and attribute passthrough
 
 - Status: Accepted

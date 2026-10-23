@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0004: Stream HTML directly with explicit escaping"
+description: Render HTML directly while preserving explicit safe escaping.
+version: 1
+---
+
 # ADR-0004: Stream HTML directly with explicit escaping
 
 - Status: Accepted
@@ -26,4 +33,3 @@ server-controlled markup.
 - Rendering remains streaming and avoids building a virtual DOM.
 - Call sites make text, attribute, and static-markup boundaries visible.
 - User-controlled values must never be passed as static or trusted markup.
-

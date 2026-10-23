@@ -1,0 +1,52 @@
+name: Theme contract
+
+on:
+  push:
+    paths:
+      - ".github/workflows/theme-contract.yml"
+      - "docs/guides/themes.md"
+      - "examples/components/**"
+      - "examples/themes/**"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/**"
+      - "theme/**"
+      - "go.mod"
+      - "go.sum"
+  pull_request:
+    paths:
+      - ".github/workflows/theme-contract.yml"
+      - "docs/guides/themes.md"
+      - "examples/components/**"
+      - "examples/themes/**"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/**"
+      - "theme/**"
+      - "go.mod"
+      - "go.sum"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:themes
+      - run: go test ./examples/components ./examples/themes
+      - run: go vet ./examples/components ./examples/themes
+      - run: npm run test:themes:browser

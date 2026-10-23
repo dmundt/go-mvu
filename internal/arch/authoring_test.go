@@ -24,18 +24,24 @@ var lowLevelExamples = map[string]string{
 
 func TestExampleAuthoringBoundaries(t *testing.T) {
 	root := filepath.Join("..", "..")
-	command := exec.Command("go", "list", "-export", "-deps", "-f", "{{.ImportPath}}|{{.Export}}", "./examples/...")
-	command.Dir = root
-	output, err := command.CombinedOutput()
-	if err != nil {
-		t.Fatalf("load example dependency exports: %v\n%s", err, output)
-	}
 	exports := make(map[string]string)
-	for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
-		pair := strings.SplitN(strings.TrimSpace(line), "|", 2)
-		if len(pair) == 2 && pair[1] != "" {
-			exports[pair[0]] = pair[1]
+	loadExports := func(directory, pattern string) error {
+		command := exec.Command("go", "list", "-export", "-deps", "-f", "{{.ImportPath}}|{{.Export}}", pattern)
+		command.Dir = directory
+		output, err := command.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("load example dependency exports in %s: %w\n%s", directory, err, output)
 		}
+		for _, line := range strings.Split(strings.TrimSpace(string(output)), "\n") {
+			pair := strings.SplitN(strings.TrimSpace(line), "|", 2)
+			if len(pair) == 2 && pair[1] != "" {
+				exports[pair[0]] = pair[1]
+			}
+		}
+		return nil
+	}
+	if err := loadExports(root, "./examples/..."); err != nil {
+		t.Fatal(err)
 	}
 	fset := token.NewFileSet()
 	dependencies := importer.ForCompiler(fset, "gc", func(path string) (io.ReadCloser, error) {
@@ -46,12 +52,19 @@ func TestExampleAuthoringBoundaries(t *testing.T) {
 		return os.Open(export)
 	})
 	seen := make(map[string]bool)
-	err = filepath.WalkDir(filepath.Join(root, "examples"), func(path string, entry os.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(filepath.Join(root, "examples"), func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
 		if !entry.IsDir() {
 			return nil
+		}
+		if _, err := os.Stat(filepath.Join(path, "go.mod")); err == nil {
+			if err := loadExports(path, "./..."); err != nil {
+				return err
+			}
+		} else if !os.IsNotExist(err) {
+			return err
 		}
 		packages, err := parser.ParseDir(fset, path, func(info os.FileInfo) bool {
 			return strings.HasSuffix(info.Name(), ".go") && !strings.HasSuffix(info.Name(), "_test.go")

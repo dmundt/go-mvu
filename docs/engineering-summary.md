@@ -1,3 +1,10 @@
+---
+type: Engineering Summary
+title: Engineering summary
+description: Project direction, implementation status, and technical summary.
+version: 2
+---
+
 # Engineering Summary
 
 Direction + status. Source of truth: [gomvu spec](specs/gomvu-chat-spec.md)
@@ -41,10 +48,15 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 
 ## Known limits
 
-- Memory store + sessions single-process; durable store = app adapter.
+- Memory store is process-local; optional CASK adapter persists models under
+  exclusive single-process directory ownership.
 - `style-src 'unsafe-inline'` required by inline CSS.
-- Shared widgets: tooltip no Escape; tabs = links, no ARIA tablist keys.
-- No auth, rate limiting, session revocation.
+- Shared widgets: tooltip uses native Escape-dismissible popover; tabs are
+  native navigation links, not scripted ARIA tablists.
+- OIDC production example supplies authentication integration, not user
+  management. Durable grants make local logout survive restart.
+- Rate limiting and cookie revocation exist; framework implementations remain
+  process-local, not distributed infrastructure.
 
 ## Extension rules
 

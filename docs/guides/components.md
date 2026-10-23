@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Components and pagination
+description: Contracts and usage for reusable components and pagination.
+version: 1
+---
+
 # Components and pagination
 
 `Document.HTMXSwapValidationErrors` explicitly enables 422 validation fragment
@@ -167,10 +174,10 @@ also get computed-style checks.
 
 Each theme checks keyboard tab order, visible focus, Enter/Space dialog
 activation, Escape dismissal, focus restoration, dialog accessible names and
-tooltip descriptions. Tooltips hide on blur; Escape dismissal remains an
-explicit native-CSS limitation. System mode must match explicit palettes under
+tooltip descriptions. Tooltips activate with Enter/Space or click and dismiss
+with Escape or an outside click. System mode must match explicit palettes under
 both OS preferences and respond to live preference changes. Reduced motion
-must suppress tooltip transitions and limit spinners to one iteration lasting
+keeps tooltips motion-free and must limit spinners to one iteration lasting
 at most 1ms. No arbitrary sleeps or selector-only styling assertions.
 
 Focused run: `npm run test:browser -- --project=mobile-dark`.
@@ -193,7 +200,7 @@ See [ADR-0010](../adr/0010-shared-ui-components.md). Gallery:
 
 | Group | Components | Native basis |
 | --- | --- | --- |
-| Overlay | `Accordion`, `Tabs`, `Dialog`, `Dropdown`, `Tooltip` | `details`, links (+HTMX), `popover`, `:focus-within` |
+| Overlay | `Accordion`, `Tabs`, `Dialog`, `Dropdown`, `Tooltip` | `details`, native links, auto-dismiss popovers |
 | Display | `Avatar`, `Progress`, `Spinner`, `Skeleton`, `Separator`, `Kbd`, `Stat`, `Steps` (+ aliases `Inline`, `EmptyState`) | `progress`, `role=status`, `dl`, `ol` |
 | Forms | `Switch`, `RadioGroup` (+ aliases `Checkbox`, `Textarea`) | `input[role=switch]`, `fieldset`, `textarea` |
 
@@ -206,7 +213,10 @@ shared.Dialog{
 
 - Invalid IDs, URLs, variants, ranges → render error.
 - Styles: `theme/default/shared.css`, included in every theme.
-- Limits: tooltip lacks Escape dismissal; tabs are links, not ARIA tablist.
+- `Tabs` are labelled navigation links with `aria-current`, not scripted ARIA
+  tabs; browser link keyboard behavior and full-page fallback remain native.
+- `Tooltip` uses an auto popover tied to its button with `aria-describedby`;
+  native Escape and light-dismiss behavior work without application JavaScript.
 
 ## Reusing application components
 

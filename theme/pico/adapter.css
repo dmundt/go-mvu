@@ -2,7 +2,10 @@ html[data-theme] {
 	--bg: var(--pico-background-color);
 	--fg: var(--pico-color);
 	--surface: var(--pico-card-background-color);
+	--surface-raised: var(--pico-card-background-color);
+	--subtle: var(--pico-muted-border-color);
 	--border: var(--pico-form-element-border-color);
+	--muted: var(--pico-muted-color);
 	--primary: var(--pico-primary);
 }
 

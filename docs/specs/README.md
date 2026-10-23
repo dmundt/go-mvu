@@ -1,5 +1,13 @@
+---
+type: Specification Catalog
+title: Specifications
+description: Authoritative specification links, implementation map, and deviations.
+version: 2
+---
+
 # Specs
 
+- Use the [specification router](index.md) to browse documents in this directory.
 - [gomvu-chat-spec.md](gomvu-chat-spec.md): authoritative build spec,
   verbatim from "Go MVU Framework for SSR" chat. Original link needs
   Microsoft sign-in; this copy is source of truth.
@@ -38,6 +46,12 @@
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+Production integrations: optional nested modules `adapters/caskstore` and
+`examples/production` add CASK persistence and generic OIDC without importing
+those dependencies into framework packages. CASK is single-host/single-owner;
+no database abstraction, identity platform, or distributed rate limiter is added.
+See [ADR-0020](../adr/0020-optional-production-integrations.md).
 
 | Spec | Implementation | Reason |
 | --- | --- | --- |

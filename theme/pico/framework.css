@@ -7,7 +7,10 @@ html[data-theme] {
 	--bg: var(--pico-background-color);
 	--fg: var(--pico-color);
 	--surface: var(--pico-card-background-color);
+	--surface-raised: var(--pico-card-background-color);
+	--subtle: var(--pico-muted-border-color);
 	--border: var(--pico-form-element-border-color);
+	--muted: var(--pico-muted-color);
 	--primary: var(--pico-primary);
 }
 
@@ -55,12 +58,16 @@ details.dropdown[open] > summary:not([role])::after { margin: 0; transform: rota
 .stack {
 	display: flex;
 	flex-direction: column;
-	gap: 1rem;
+	gap: var(--space-4);
 }
 
 .grid {
 	display: grid;
-	gap: 1rem;
+	gap: var(--space-4);
+}
+
+.grid > * {
+	min-width: 0;
 }
 
 .stack--gap-none,
@@ -70,33 +77,33 @@ details.dropdown[open] > summary:not([role])::after { margin: 0; transform: rota
 
 .stack--gap-xs,
 .grid--gap-xs {
-	gap: .25rem;
+	gap: var(--space-1);
 }
 
 .stack--gap-sm,
 .grid--gap-sm {
-	gap: .5rem;
+	gap: var(--space-2);
 }
 
 .stack--gap-md,
 .grid--gap-md {
-	gap: 1rem;
+	gap: var(--space-4);
 }
 
 .stack--gap-lg,
 .grid--gap-lg {
-	gap: 1.5rem;
+	gap: var(--space-5);
 }
 
 .stack--gap-xl,
 .grid--gap-xl {
-	gap: 2rem;
+	gap: var(--space-6);
 }
 
 .shell {
 	display: grid;
 	grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
-	gap: 1rem;
+	gap: var(--space-4);
 }
 
 .shell main {

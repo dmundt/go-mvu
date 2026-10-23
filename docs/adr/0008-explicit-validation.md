@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0008: Decode and validate forms explicitly"
+description: Decode and validate form inputs without reflection.
+version: 1
+---
+
 # ADR-0008: Decode and validate forms explicitly
 
 - Status: Accepted
@@ -20,4 +27,3 @@ errors, and decoding errors. Keep validation errors and form state in the
 - Invalid input can be rendered back through ordinary HTML components.
 - Decoder and validation behavior is directly testable without hidden
   reflection conventions.
-

@@ -254,8 +254,7 @@ func (dropdown Dropdown) RenderHTML(_ context.Context, out *html.Context) error 
 	return out.Err()
 }
 
-// Tooltip renders a button whose accessible description appears on hover and
-// keyboard focus.
+// Tooltip renders a button that toggles an accessible, dismissible tooltip.
 type Tooltip struct {
 	ID      string
 	Label   string
@@ -279,9 +278,13 @@ func (tooltip Tooltip) RenderHTML(ctx context.Context, out *html.Context) error 
 	out.Component(ctx, components.Button{
 		Label:   tooltip.Label,
 		Variant: components.ButtonSecondary,
-		Attrs:   html.Attrs{html.A("aria-describedby", tooltip.ID)},
+		Attrs: html.Attrs{
+			html.A("aria-describedby", tooltip.ID),
+			html.A("aria-controls", tooltip.ID),
+			html.A("popovertarget", tooltip.ID),
+		},
 	})
-	out.Static(`<span class="tip__content" role="tooltip"`)
+	out.Static(`<span class="tip__content" popover="auto" role="tooltip"`)
 	attr(out, "id", tooltip.ID)
 	out.Static(">")
 	out.Text(tooltip.Content)

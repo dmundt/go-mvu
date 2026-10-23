@@ -1,3 +1,10 @@
+---
+type: Engineering Requirements
+title: Engineering prompt
+description: Original framework requirements and implementation sequence.
+version: 1
+---
+
 Act as a senior Go framework architect and implementation engineer.
 
 Build a complete, production-oriented Go framework named "gomvu" for server-rendered HTML applications using MVU architecture and HTMX.
@@ -38,6 +45,7 @@ The framework must render HTML directly to io.Writer.
 
 Use these packages:
 
+```text
 gomvu/
 ├── mvu/
 ├── html/
@@ -55,9 +63,11 @@ gomvu/
 ├── static/
 ├── go.mod
 └── README.md
+```
 
 Enforce this dependency direction:
 
+```text
 components -> html, htmx, theme
 web        -> mvu, html, htmx, store, theme
 session    -> store
@@ -66,6 +76,7 @@ theme      -> standard library only
 mvu        -> standard library only
 html       -> standard library only
 store      -> standard library only
+```
 
 Forbidden dependencies:
 
@@ -87,21 +98,26 @@ Do not build intermediate Element, Node, or attribute trees before rendering.
 
 Use direct component rendering:
 
+```go
 type Component interface {
     RenderHTML(context.Context, *Context) error
 }
+```
 
 Add:
 
+```go
 type ComponentFunc func(context.Context, *Context) error
 
 func (fn ComponentFunc) RenderHTML(
     ctx context.Context,
     out *Context,
 ) error
+```
 
 Define separate marker interfaces:
 
+```go
 type Page interface {
     Component
     IsPage()
@@ -111,14 +127,19 @@ type Fragment interface {
     Component
     IsFragment()
 }
+```
 
 Provide reusable markers:
 
+```go
 type PageMarker struct{}
+
 func (PageMarker) IsPage()
 
 type FragmentMarker struct{}
+
 func (FragmentMarker) IsFragment()
+```
 
 A Page represents a complete HTML document.
 
@@ -130,12 +151,15 @@ Page and Fragment must remain distinct to prevent accidental use of complete doc
 
 Implement:
 
+```go
 type Context struct {
     // private fields
 }
 
 func NewContext(io.Writer, theme.Theme, theme.Mode) *Context
+```
 
+```go
 func Render(
     context.Context,
     io.Writer,
@@ -143,7 +167,9 @@ func Render(
     theme.Theme,
     theme.Mode,
 ) error
+```
 
+```go
 func (c *Context) Err() error
 func (c *Context) Writer() io.Writer
 
@@ -162,6 +188,7 @@ func (c *Context) Components(context.Context, []Component)
 
 func (c *Context) Theme() theme.Theme
 func (c *Context) ThemeMode() theme.Mode
+```
 
 Requirements:
 
@@ -182,10 +209,12 @@ Do not expose Raw(string).
 
 If trusted output is required, use an explicit type:
 
+```go
 type TrustedHTML string
 
 func TrustStatic(string) TrustedHTML
 func (c *Context) Trusted(TrustedHTML)
+```
 
 Document that TrustStatic accepts only audited, server-controlled HTML. It must never receive request, form, database, URL, or user-provided content.
 
@@ -195,6 +224,7 @@ Components compose through ordinary Go structs and explicit slots.
 
 Example:
 
+```go
 type Card struct {
     ID      string
     Header  html.Component
@@ -202,9 +232,11 @@ type Card struct {
     Footer  html.Component
     Variant CardVariant
 }
+```
 
 Usage:
 
+```go
 Card{
     ID: "counter-card",
     Header: Heading{
@@ -218,9 +250,11 @@ Card{
         Value: "State maintained by Go",
     },
 }
+```
 
 Nested render chain:
 
+```text
 Document
 └── AppShell
     ├── Header
@@ -234,6 +268,7 @@ Document
     │       ├── Table
     │       └── Pagination
     └── Footer
+```
 
 Do not use hidden component registries.
 
@@ -243,6 +278,7 @@ Use ordinary Go composition, interfaces, and concrete structs.
 
 Provide:
 
+```go
 type Empty struct{}
 type Text struct { Value string }
 type Sequence []Component
@@ -250,6 +286,7 @@ type Optional struct {
     Show bool
     Body Component
 }
+```
 
 Document that `Sequence` and interface-valued slots prioritize flexibility. Performance-critical components may use concrete child types and direct method calls.
 
@@ -257,6 +294,7 @@ Document that `Sequence` and interface-valued slots prioritize flexibility. Perf
 
 Implement a pure MVU core independent of HTML and HTTP.
 
+```go
 type Message interface {
     MessageName() string
 }
@@ -289,13 +327,16 @@ type Application[Model any, Msg Message] interface {
         error,
     )
 }
+```
 
 Provide function adapters:
 
+```go
 type Functions[Model any, Msg Message] struct {
     InitFunc   ...
     UpdateFunc ...
 }
+```
 
 The framework must treat Update as logically pure:
 
@@ -313,6 +354,7 @@ Commands represent external effects and may asynchronously dispatch additional m
 
 Implement versioned persistence:
 
+```go
 type Version uint64
 
 type Snapshot[M any] struct {
@@ -338,16 +380,21 @@ type Store[K comparable, M any] interface {
 
     Delete(context.Context, K) error
 }
+```
 
 Provide errors:
 
+```go
 var ErrNotFound error
 var ErrAlreadyExists error
 var ErrConflict error
+```
 
 Implement an in-memory store:
 
+```go
 func NewMemory Store[K, M]
+```
 
 Requirements:
 
@@ -360,10 +407,12 @@ Requirements:
 
 Optionally support:
 
+```go
 func NewMemoryWithClone[
     K comparable,
     M any,
 ](clone func(M) M) Store[K, M]
+```
 
 # 8. Web views
 
@@ -371,6 +420,7 @@ Keep MVU transition logic separate from HTML projection.
 
 Implement:
 
+```go
 type View[Model any] interface {
     Page(
         context.Context,
@@ -385,14 +435,17 @@ type View[Model any] interface {
         RequestContext,
     ) (html.Fragment, error)
 }
+```
 
 RequestContext may contain only presentation-related request information:
 
+```go
 type RequestContext struct {
     Theme     theme.Mode
     IsHTMX    bool
     CurrentURL string
 }
+```
 
 It must not expose response writers or persistence.
 
@@ -402,6 +455,7 @@ Provide ViewFunctions function adapter.
 
 Implement typed HTMX configuration.
 
+```go
 type Method uint8
 
 const (
@@ -424,7 +478,9 @@ const (
     DeleteSwap  Swap = "delete"
     NoSwap      Swap = "none"
 )
+```
 
+```go
 type Action struct {
     Method      Method
     URL         string
@@ -443,6 +499,7 @@ type Action struct {
 
 func (a Action) Validate() error
 func (a Action) RenderAttributes(*html.Context)
+```
 
 All dynamic attribute values must use Context.Attribute.
 
@@ -450,6 +507,7 @@ Do not permit dynamic attribute names.
 
 Implement HTMX request metadata:
 
+```go
 type Request struct {
     IsHTMX      bool
     IsBoosted   bool
@@ -462,9 +520,11 @@ type Request struct {
 }
 
 func FromRequest(*http.Request) Request
+```
 
 Implement response helpers:
 
+```go
 func Redirect(http.ResponseWriter, string)
 func Refresh(http.ResponseWriter)
 func PushURL(http.ResponseWriter, string)
@@ -473,11 +533,13 @@ func Retarget(http.ResponseWriter, string)
 func Reswap(http.ResponseWriter, Swap)
 func Reselect(http.ResponseWriter, string)
 func Trigger(http.ResponseWriter, string)
+```
 
 # 10. HTTP runtime
 
 Implement:
 
+```go
 type Decoder[Msg mvu.Message] interface {
     Decode(*http.Request) (Msg, error)
 }
@@ -514,14 +576,18 @@ type Result struct {
     PushURL    string
     ReplaceURL string
 }
+```
 
+```go
 type Route[Msg mvu.Message] struct {
     Method  string
     Pattern string
     Decode  Decoder[Msg]
     Result  Result
 }
+```
 
+```go
 type Runtime[
     Key comparable,
     Model any,
@@ -529,7 +595,9 @@ type Runtime[
 ] struct {
     // private fields
 }
+```
 
+```go
 type RuntimeConfig[
     Key comparable,
     Model any,
@@ -545,7 +613,9 @@ type RuntimeConfig[
     OnError    ErrorHandler
     MaxRetries int
 }
+```
 
+```go
 func NewRuntimeRuntimeConfig[...],
  (*Runtime[...], error)
 
@@ -556,6 +626,7 @@ func (r *Runtime[...]) Handle(
 func (r *Runtime[...]) Page(
     result Result,
 ) http.Handler
+```
 
 Request lifecycle:
 
@@ -583,6 +654,7 @@ If rendering fails after response output begins, log the failure but do not atte
 
 Implement server-controlled light and dark modes.
 
+```go
 type Mode uint8
 
 const (
@@ -593,17 +665,20 @@ const (
 
 func (m Mode) String() string
 func ParseMode(string) (Mode, error)
+```
 
 System mode must use CSS media queries, not client-side JavaScript.
 
 Implement semantic theme tokens:
 
+```go
 type Theme interface {
     Name() string
     Stylesheet() string
     DocumentClass(Mode) string
     ComponentClass(ComponentKind, Variant, Mode) string
 }
+```
 
 However, avoid expensive dynamic theme lookup in every component where CSS variables can solve the problem.
 
@@ -619,6 +694,7 @@ Preferred strategy:
 
 Create a default theme stylesheet containing tokens:
 
+```text
 --color-background
 --color-surface
 --color-surface-raised
@@ -636,9 +712,11 @@ Create a default theme stylesheet containing tokens:
 --radius-small
 --radius-medium
 --space-1 through --space-8
+```
 
 Provide:
 
+```go
 type Default struct{}
 
 func (Default) Name() string
@@ -649,9 +727,11 @@ func (Default) ComponentClass(
     Variant,
     Mode,
 ) string
+```
 
 Theme mode resolution:
 
+```go
 type ThemeResolver interface {
     Resolve(*http.Request) (theme.Mode, error)
     Persist(
@@ -660,9 +740,11 @@ type ThemeResolver interface {
         theme.Mode,
     ) error
 }
+```
 
 Provide cookie-based implementation:
 
+```go
 type CookieThemeResolver struct {
     Name     string
     Path     string
@@ -670,6 +752,7 @@ type CookieThemeResolver struct {
     Secure   bool
     SameSite http.SameSite
 }
+```
 
 Cookie values:
 
@@ -683,17 +766,21 @@ Use HttpOnly when appropriate, Secure configuration, SameSite, and explicit path
 
 Implement an SSR and HTMX-compatible ThemeSwitcher component.
 
+```go
 type ThemeSwitcher struct {
     Mode   theme.Mode
     Action string
     Target string
 }
+```
 
 It must render a normal HTML form that works without HTMX:
 
+```html
 <form method="post" action="/theme">
     ...
 </form>
+```
 
 Enhance the same form with HTMX when available.
 
@@ -707,13 +794,17 @@ Support three explicit choices:
 
 Theme route behavior:
 
+```http
 POST /theme
+```
 
 Input:
 
+```text
 mode=system
 mode=light
 mode=dark
+```
 
 Requirements:
 
@@ -798,6 +889,7 @@ Each component must:
 
 Implement production-quality pagination.
 
+```go
 type Pagination struct {
     Page       int
     PageSize   int
@@ -814,6 +906,7 @@ type Pagination struct {
     NextLabel     string
     AriaLabel     string
 }
+```
 
 Requirements:
 
@@ -838,6 +931,7 @@ Requirements:
 
 Example output:
 
+```html
 <a
     href="/users?page=3"
     hx-get="/users?page=3"
@@ -847,6 +941,7 @@ Example output:
     aria-current="page">
     3
 </a>
+```
 
 # 15. Counter example
 
@@ -854,9 +949,11 @@ Build a complete counter application.
 
 Model:
 
+```go
 type CounterModel struct {
     Count int
 }
+```
 
 Messages:
 
@@ -866,26 +963,33 @@ Messages:
 
 Routes:
 
+```http
 GET  /
 POST /counter/increment
 POST /counter/decrement
 POST /counter/reset
 POST /theme
+```
 
 GET / returns a complete themed Document.
 
 Counter routes return only:
 
+```html
 <div id="counter">...</div>
+```
 
 Counter buttons use:
 
+```html
 hx-post
 hx-target="#counter"
 hx-swap="outerHTML"
+```
 
 The page must contain:
 
+```text
 Document
 └── AppShell
     ├── Header
@@ -896,6 +1000,7 @@ Document
     │   └── Card
     │       └── CounterFragment
     └── Footer
+```
 
 # 16. Users and pagination example
 
@@ -903,25 +1008,31 @@ Build a users application demonstrating pagination.
 
 Model:
 
+```go
 type UsersModel struct {
     Users      []User
     Page       int
     PageSize   int
     TotalItems int
 }
+```
 
 Fragment root:
 
+```html
 <section id="users-results">
     <table>...</table>
     <nav>...</nav>
 </section>
+```
 
 Routes:
 
+```http
 GET /users
 GET /users?page=N
 POST /theme
+```
 
 Ordinary request returns complete Document.
 
@@ -942,6 +1053,7 @@ Use deterministic sample users. Clearly document that sample data is synthetic.
 
 Implement:
 
+```go
 type Errors map[string][]string
 
 func (e Errors) Add(field, message string)
@@ -955,14 +1067,17 @@ type Form[T any] struct {
     Dirty  bool
     Valid  bool
 }
+```
 
 Do not build reflection-based automatic binding.
 
 Use explicit decoders:
 
+```go
 type Decoder[T any] interface {
     Decode(*http.Request) (T, Errors, error)
 }
+```
 
 # 18. Middleware
 
@@ -977,11 +1092,13 @@ Implement:
 
 Security headers should include documented defaults for:
 
+```text
 - Content-Security-Policy
 - X-Content-Type-Options
 - Referrer-Policy
 - Permissions-Policy
 - Frame protection via CSP frame-ancestors
+```
 
 Do not use unsafe-inline for script policy unless explicitly documented as an opt-in compromise.
 
@@ -1014,6 +1131,7 @@ Requirements:
 
 Modes:
 
+```css
 html[data-theme="light"] {
     color-scheme: light;
 }
@@ -1025,14 +1143,17 @@ html[data-theme="dark"] {
 html[data-theme="system"] {
     color-scheme: light dark;
 }
+```
 
 System theme must use:
 
+```css
 @media (prefers-color-scheme: dark) {
     html[data-theme="system"] {
         ...
     }
 }
+```
 
 No JavaScript theme initialization.
 
@@ -1129,11 +1250,13 @@ Security tests:
 
 Run:
 
+```sh
 gofmt
 go vet ./...
 go test ./...
 go test -race ./...
 go test -bench=. -benchmem ./...
+```
 
 Fix all failures before completion.
 
@@ -1194,6 +1317,7 @@ Include diagrams:
 
 Request lifecycle:
 
+```text
 Browser
   -> HTTP route
   -> typed message
@@ -1203,9 +1327,11 @@ Browser
   -> Page or Fragment
   -> direct HTML stream
   -> HTMX swap
+```
 
 Package boundaries:
 
+```text
 mvu       state transitions
 store     model persistence
 html      safe rendering
@@ -1213,6 +1339,7 @@ htmx      hypermedia attributes
 theme     semantic visual tokens
 components reusable HTML structures
 web       HTTP orchestration
+```
 
 # 23. Quality rules
 
@@ -1277,4 +1404,3 @@ Return:
 9. Known limitations
 
 If response length prevents showing every file, create the complete files in the working directory and provide the repository as a downloadable archive. Do not replace files with shortened snippets.
-

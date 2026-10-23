@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0014: Enforce package boundaries by test"
+description: Verify package dependency constraints with automated tests.
+version: 1
+---
+
 # ADR-0014: Enforce package boundaries by test
 
 - Status: Accepted

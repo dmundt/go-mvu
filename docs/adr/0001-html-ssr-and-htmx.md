@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0001: Focus on HTML server-side rendering and HTMX"
+description: Keep the framework focused on server-rendered HTML and HTMX.
+version: 1
+---
+
 # ADR-0001: Focus on HTML server-side rendering and HTMX
 
 - Status: Accepted
@@ -29,4 +36,3 @@ dependency, reflection-based rendering, or generic non-HTML renderer.
   interactions with HTMX.
 - New abstractions must serve concrete HTML/HTMX use cases rather than
   hypothetical output targets.
-

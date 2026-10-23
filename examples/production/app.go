@@ -1,0 +1,28 @@
+package main
+
+import (
+	"context"
+
+	"github.com/dmundt/go-mvu/mvu"
+)
+
+type Model struct {
+	Count int `json:"count"`
+}
+
+type Message struct{}
+
+func (Message) MessageName() string { return "counter.increment" }
+
+type App struct{}
+
+func (App) Init(context.Context) (Model, []mvu.Command[Message], error) {
+	return Model{}, nil, nil
+}
+
+func (App) Update(
+	_ context.Context, model Model, _ Message,
+) (Model, []mvu.Command[Message], error) {
+	model.Count++
+	return model, nil, nil
+}

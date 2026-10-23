@@ -154,7 +154,7 @@ func overlaysCard() html.Component {
 	}}
 	tooltip := shared.Tooltip{
 		ID:      "save-tip",
-		Label:   "Hover or focus",
+		Label:   "Show help",
 		Content: "Tooltips describe their trigger.",
 	}
 	return card("Overlays",

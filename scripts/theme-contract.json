@@ -1,0 +1,28 @@
+{
+  "requiredTokens": [
+    "--color-background",
+    "--color-surface",
+    "--color-surface-raised",
+    "--color-text",
+    "--color-text-muted",
+    "--color-border",
+    "--color-primary",
+    "--color-primary-text",
+    "--color-success",
+    "--color-warning",
+    "--color-danger",
+    "--focus-ring",
+    "--shadow-small",
+    "--shadow-medium",
+    "--radius-small",
+    "--radius-medium",
+    "--space-1",
+    "--space-2",
+    "--space-3",
+    "--space-4",
+    "--space-5",
+    "--space-6",
+    "--space-7",
+    "--space-8"
+  ]
+}

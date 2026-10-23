@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0012: Strict CSP with locally served HTMX"
+description: Enforce a strict content security policy and serve HTMX locally.
+version: 1
+---
+
 # ADR-0012: Strict CSP with locally served HTMX
 
 - Status: Accepted

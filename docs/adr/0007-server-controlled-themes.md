@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0007: Provide server-controlled light and dark themes"
+description: Keep theme preference and rendering under server control.
+version: 1
+---
+
 # ADR-0007: Provide server-controlled light and dark themes
 
 - Status: Accepted; light default superseded by [ADR-0011](0011-system-theme-mode.md)
@@ -24,4 +31,3 @@ application JavaScript.
   color choices in application markup.
 - Applications control how theme preference is stored and selected.
 - Additional theme implementations must honor the same package boundary.
-

@@ -1,3 +1,10 @@
+---
+type: Guide
+title: Security
+description: Security boundaries for HTML rendering, requests, and sessions.
+version: 1
+---
+
 # Security
 
 Defaults safe; opt-out explicit.

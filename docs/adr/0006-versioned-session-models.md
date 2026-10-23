@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0006: Keep versioned models behind storage and session boundaries"
+description: Persist versioned models through storage and session boundaries.
+version: 1
+---
+
 # ADR-0006: Keep versioned models behind storage and session boundaries
 
 - Status: Accepted
@@ -25,4 +32,3 @@ Applications choose durable storage appropriate to their deployment.
 - Concurrent request handling must respect store versions.
 - Restarting an in-memory deployment loses its state; durable persistence is
   an application/deployment choice.
-

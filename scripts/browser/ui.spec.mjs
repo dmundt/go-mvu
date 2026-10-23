@@ -22,7 +22,7 @@ test('counter swaps without replacing the document and keeps layout', async ({ p
   expect(await landmark.evaluate((element) => element.isConnected)).toBe(true);
   await expect(page.locator('#counter')).toHaveCount(1);
   await expect(page.locator('#counter > .stack')).toHaveCSS('display', 'flex');
-  await expect(page.locator('#counter > .stack')).toHaveCSS('gap', '16px');
+  await expect(page.locator('#counter > .stack')).toHaveCSS('gap', '20px');
   await page.getByRole('button', { name: 'Decrement', exact: true }).click();
   await expect(page.locator('#counter output')).toHaveText('0');
   await page.getByRole('button', { name: 'Increment', exact: true }).click();
@@ -146,15 +146,17 @@ for (const theme of themes) {
     await expect(dialog).toBeHidden();
     await expect(trigger).toBeFocused();
 
-    const tooltip = page.getByRole('button', { name: 'Hover or focus', exact: true });
+    const tooltip = page.getByRole('button', { name: 'Show help', exact: true });
     await tooltip.focus();
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Tab');
     await expectVisibleFocus(tooltip);
     await expect(tooltip).toHaveAccessibleDescription('Tooltips describe their trigger.');
+    await page.keyboard.press('Space');
     await expect(page.getByRole('tooltip')).toBeVisible();
-    await page.keyboard.press('Tab');
+    await page.keyboard.press('Escape');
     await expect(page.getByRole('tooltip')).toBeHidden();
+    await expect(tooltip).toBeFocused();
   });
 
   test(`${theme}: system palette follows OS changes and reduces motion`, async ({ page }) => {
@@ -181,7 +183,7 @@ for (const theme of themes) {
       (el, name) => Math.max(...getComputedStyle(el)[name].split(',').map(parseFloat)),
       property,
     );
-    expect(await duration('.tip__content', 'transitionDuration')).toBeGreaterThan(0);
+    expect(await duration('.tip__content', 'transitionDuration')).toBeLessThanOrEqual(0.00001);
     expect(await duration('.spinner__icon', 'animationDuration')).toBeGreaterThan(0.01);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect.poll(() => duration('.tip__content', 'transitionDuration')).toBeLessThanOrEqual(0.00001);
@@ -212,7 +214,7 @@ for (const theme of themes) {
     expect(padding).toBeGreaterThan(0);
     await expect(page.locator('input[name="tab"]')).toHaveCSS('display', 'none');
     await expectNoPageOverflow(page);
-    await page.getByRole('button', { name: 'Hover or focus', exact: true }).focus();
+    await page.getByRole('button', { name: 'Show help', exact: true }).click();
     await expect(page.getByRole('tooltip')).toBeVisible();
     await expectNoPageOverflow(page);
 

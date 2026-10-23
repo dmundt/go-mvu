@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0016: Render timing and diagnostics"
+description: Expose render timing and diagnostic information.
+version: 1
+---
+
 # ADR-0016: Render timing and diagnostics
 
 - Status: Accepted

@@ -23,7 +23,11 @@ func TestWidgetTriggersUseCoreButton(t *testing.T) {
 	}
 	tooltipButton := render(t, components.Button{
 		Label: "Info", Variant: components.ButtonSecondary,
-		Attrs: html.Attrs{html.A("aria-describedby", "info")},
+		Attrs: html.Attrs{
+			html.A("aria-describedby", "info"),
+			html.A("aria-controls", "info"),
+			html.A("popovertarget", "info"),
+		},
 	})
 	if got := render(t, Tooltip{ID: "info", Label: "Info", Content: "More"}); !strings.Contains(got, tooltipButton) {
 		t.Fatalf("tooltip trigger differs from core Button: %s", got)

@@ -1,3 +1,10 @@
+---
+type: Architecture Decision Record
+title: "ADR-0010: Separate shared UI components from core components"
+description: Separate shared UI components from the core component package.
+version: 1
+---
+
 # ADR-0010: Separate shared UI components from core components
 
 - Status: Accepted
@@ -24,7 +31,8 @@ with client JS. Framework forbids app JS; core `components` must stay small.
 
 - Apps import `shared` selectively; no registration.
 - All themes style widgets without markup changes.
-- Limits: tooltip has no Escape dismissal; tabs are links, not ARIA tablist
-  (no arrow keys); `popover` needs current browsers.
+- `Tabs` are native navigation links, not scripted ARIA tabs. `Tooltip` uses
+  an auto popover with native Escape and light-dismiss behavior.
+- `popover` needs current browsers.
 - New widget: semantic HTML first, CSS in `theme/default/shared.css`, gallery entry,
   tests, adapter browser check.
