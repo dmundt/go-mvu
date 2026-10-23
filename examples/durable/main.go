@@ -142,7 +142,7 @@ func newService(dataDir string) (*service, error) {
 		},
 	}))
 	mux.Handle("POST /theme", preference.Handler("/"))
-	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
+	policy, err := server.NewRequestPolicy(server.RequestPolicyOptions{
 		MaxBodyBytes: 1 << 20,
 		Timeout:      10 * time.Second,
 	})
@@ -151,7 +151,7 @@ func newService(dataDir string) (*service, error) {
 	}
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
-	root.Handle("/", middleware.NoStore(
+	root.Handle("/", server.NoStore(
 		sessions.Wrap(preference.Wrap(csrf.Wrap(mux))),
 	))
 	handler := middleware.SecurityHeaders(middleware.Recover(policy(root)))

@@ -2,7 +2,7 @@
 type: Architecture Decision Catalog
 title: Architecture Decision Records
 description: Catalog of accepted architectural decisions.
-version: 5
+version: 6
 ---
 
 # Architecture Decision Records
@@ -42,4 +42,5 @@ Use the [ADR router](index.md) to browse decisions by identifier.
 | [0021](0021-concise-ui-composition.md) | Small layout constructors and optional UI composition helpers | Accepted |
 | [0022](0022-default-theme-and-deployment-boundaries.md) | One bundled theme and application-owned deployment policies | Accepted |
 | [0023](0023-unified-components.md) | One reusable component package | Accepted |
-| [0024](0024-ecosystem-owned-generic-middleware.md) | Keep generic HTTP middleware in the ecosystem | Accepted |
+| [0024](0024-ecosystem-owned-generic-middleware.md) | Keep generic HTTP middleware in the ecosystem | Accepted; request/cache wrapper scope superseded by 0025 |
+| [0025](0025-application-owned-request-policy.md) | Keep request and cache policy in applications | Accepted |

@@ -18,6 +18,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/dmundt/go-mvu/examples/durable/jsonstore"
+	"github.com/dmundt/go-mvu/examples/internal/server"
 	"github.com/dmundt/go-mvu/httpx"
 	"github.com/dmundt/go-mvu/middleware"
 	"github.com/dmundt/go-mvu/session"
@@ -268,7 +269,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 	}))
 	private.HandleFunc("POST /logout", auth.logout)
 	mux.Handle("/", auth.protect(private))
-	authenticated := middleware.NoStore(sessions.Wrap(csrf.Wrap(mux)))
+	authenticated := server.NoStore(sessions.Wrap(csrf.Wrap(mux)))
 	root := http.NewServeMux()
 	root.Handle("GET "+static.Prefix, static.Handler())
 	root.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -278,7 +279,7 @@ func newHandler(ctx context.Context, cfg config) (_ *application, result error) 
 		}
 		authenticated.ServeHTTP(w, r)
 	}))
-	policy, err := middleware.NewRequestPolicy(middleware.RequestPolicyOptions{
+	policy, err := server.NewRequestPolicy(server.RequestPolicyOptions{
 		MaxBodyBytes: 64 << 10,
 		Timeout:      15 * time.Second,
 	})

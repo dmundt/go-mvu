@@ -2,7 +2,7 @@
 type: Engineering Summary
 title: Engineering summary
 description: Project direction, implementation status, and technical summary.
-version: 5
+version: 6
 ---
 
 # Engineering Summary
@@ -40,7 +40,7 @@ HTTP request → middleware → route → typed Msg → Update (pure)
 | `web` runtime: RequestContext, ThemeResolver, CommandRunner, RenderAuto | done, tested |
 | `theme`: default tokens, system mode, signed preference | done; Go + node tests |
 | `components`: controls, layouts, native widgets | done; unified gallery example |
-| `middleware`: CSP, CSRF, stream-safe recover, request bounds, diagnostics | done, tested |
+| `middleware`: CSP, CSRF, stream-safe recover, diagnostics | done, tested; request/cache policy application-owned |
 | `static`: local HTMX 2.0.4 + SRI | done |
 | examples: counter, users, component gallery, themes | done; HTTP tests |
 | boundaries test, benchmarks | done |

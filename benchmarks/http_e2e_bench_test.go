@@ -110,9 +110,12 @@ func newHTTPBenchmarkServer(
 			Mode: web.RenderFragment, Fragment: "counter",
 		},
 	}))
-	handler := middleware.SecurityHeaders(
-		middleware.Recover(middleware.NoStore(mux)),
-	)
+	handler := middleware.SecurityHeaders(middleware.Recover(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "no-store")
+			mux.ServeHTTP(w, r)
+		}),
+	))
 	server := httptest.NewServer(handler)
 	b.Cleanup(server.Close)
 	return server

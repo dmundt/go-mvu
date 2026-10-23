@@ -9,6 +9,9 @@ go-mvu is not stable yet. Its API may change at any time.
 
 Reusable controls and widgets share one `components` package.
 Upgrading from `shared`? See the [migration notes](CHANGELOG.md#unreleased).
+Middleware keeps CSRF, security headers, streaming-aware recovery, and
+diagnostics. Applications own request limits and cache policy; see
+[HTTP middleware](docs/guides/middleware.md#request-bounds).
 
 ## Try it
 

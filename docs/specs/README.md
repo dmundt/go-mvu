@@ -2,7 +2,7 @@
 type: Specification Catalog
 title: Specifications
 description: Authoritative specification links, implementation map, and deviations.
-version: 11
+version: 12
 ---
 
 # Specs
@@ -46,6 +46,12 @@ version: 11
 | 23 | Quality rules | [AGENTS.md](../../AGENTS.md) files | — |
 
 ## Deviations
+
+Request bounds, deadlines, content-type checks, and cache wrappers are
+application-owned rather than public middleware APIs. CSRF, security headers,
+stream-aware recovery including `RecoverWith`, and diagnostics remain in the
+framework. Examples preserve request limits using standard-library handlers.
+See [ADR-0025](../adr/0025-application-owned-request-policy.md).
 
 Reusable native widgets moved from `shared` into `components`; the old package
 and aliases are removed. Markup, styles, and dependency boundaries are retained.

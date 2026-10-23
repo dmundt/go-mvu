@@ -2,7 +2,7 @@
 type: Architecture Overview
 title: Architecture
 description: Package responsibilities, dependency rules, and runtime flow.
-version: 8
+version: 9
 ---
 
 # Architecture
@@ -25,7 +25,7 @@ CSS inlined in `<style>`. Source of truth:
 | `validation` | explicit field errors, no reflection |
 | `components` | optional layout, controls, forms, tables, pagination, switcher, and native-HTML widgets |
 | `static` | embedded HTMX + SRI hash, `/static/` handler |
-| `middleware` | security headers/CSP, CSRF, stream-safe recovery, request policy, runtime diagnostics |
+| `middleware` | security headers/CSP, CSRF, stream-safe recovery, runtime diagnostics |
 | `timing` | nil-safe per-request phase trace in context (decode, dispatch, load, view, render) |
 | `httpx` | stdlib-only HTTP error policy, request IDs, Vary merging, response commitment |
 | `web` | runtime: `Action`/route → message → Update → store → commands → view |
@@ -38,6 +38,12 @@ example-only JSON file store and an outbox embedded in each model record. Its
 CAS operations serialize within one process; use a distributed transactional
 store for multi-process deployments. This storage is not part of the framework.
 See [framework positioning](guides/positioning.md).
+
+Request limits, deadlines, accepted content types, and cache policy are
+application-owned. Examples share internal server helpers; the copyable counter
+keeps its small request wrapper locally. Framework diagnostics and
+`RecoverWith` remain supported. See
+[ADR-0025](adr/0025-application-owned-request-policy.md).
 
 ## Dependency rules
 
